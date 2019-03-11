@@ -16,5 +16,10 @@
  * However, assume Var(A) is deterministic, and Var(B) is not. In this case, Var(A) will have it's entry erased, and
  * there will exist a trace of undo(Var(B)), undo(Coreference()).
  * </p>
+ * <p>
+ *     TODO: Tsil-call issue.
+ * Another tail-call issue is co-reference chaining. Consider the factorial example, each iteration creates a new
+ * co-reference. Termination of a clause needs to eliminate intermediate co-references.
+ * </p>
  */
 package prolog.variables;
