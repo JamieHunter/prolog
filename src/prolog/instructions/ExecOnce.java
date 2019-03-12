@@ -13,8 +13,8 @@ import prolog.expressions.Term;
  */
 public class ExecOnce extends ExecCall {
 
-    public ExecOnce(Environment environment, Term notProvableTerm) {
-        super(environment, notProvableTerm);
+    public ExecOnce(Environment environment, Term onceTerm) {
+        super(environment, onceTerm);
     }
 
     /**

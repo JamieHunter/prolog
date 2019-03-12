@@ -57,22 +57,32 @@ public class Query {
      * @return true on success, false otherwise
      */
     public ExecutionState run() {
+        reset();
+        ExecutionState state;
+        do {
+            state = cycle();
+        } while(!state.isTerminal());
+        return state;
+    }
+
+    public void reset() {
         environment.reset();
         environment.setLocalContext(context);
         precompiled.invoke(environment);
-        for (; ; ) {
-            ExecutionState state = environment.run();
-            if (state == ExecutionState.SUCCESS) {
-                state = onSuccess();
-                if (state == ExecutionState.BACKTRACK) {
-                    environment.backtrack();
-                    continue;
-                }
-            } else {
-                onFailed();
+    }
+
+    public ExecutionState cycle() {
+        ExecutionState state = environment.run();
+        if (state == ExecutionState.SUCCESS) {
+            state = onSuccess();
+            if (state == ExecutionState.BACKTRACK) {
+                environment.backtrack();
+                return state;
             }
-            return state;
+        } else {
+            onFailed();
         }
+        return state;
     }
 
     /**

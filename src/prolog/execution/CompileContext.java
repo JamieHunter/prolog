@@ -47,7 +47,12 @@ public final class CompileContext {
      * @param instruction Instruction to add.
      */
     public void add(Instruction instruction) {
-        instructions.add(instruction);
+        if (instruction instanceof ExecBlock) {
+            // flatten blocks
+            instructions.addAll(((ExecBlock)instruction).all());
+        } else {
+            instructions.add(instruction);
+        }
     }
 
     /**

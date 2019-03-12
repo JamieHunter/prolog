@@ -1,5 +1,8 @@
 package prolog.suite;
 
+import prolog.test.Given;
+import prolog.test.PrologTest;
+import prolog.test.Then;
 import prolog.test.internal.StateImpl;
 
 import java.nio.file.Files;
@@ -15,11 +18,9 @@ public class Suite {
         Path cwd = Paths.get("suites").toAbsolutePath();
         Path testDir = cwd.resolve(directory).normalize().toAbsolutePath();
         assertTrue("Directory not found", Files.isDirectory(testDir));
-        StateImpl state = new StateImpl();
-        state.environment().setCWD(testDir);
+        Given given = PrologTest.given().cwd(testDir);
         for(String goal: goals) {
-            state.parse(goal);
-            assertTrue("failed: " + goal, state.succeeded());
+            given.when(goal).assertSuccess();
         }
     }
 }

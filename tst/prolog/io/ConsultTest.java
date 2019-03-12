@@ -58,7 +58,7 @@ public class ConsultTest {
 
     private Given given() {
         return PrologTest.given(
-                "log(X) :- open('"+logPath+"', append, File), "+
+                "expectLog(X) :- open('"+logPath+"', append, File), "+
                         "current_output(Last), " +
                         "set_output(File), " +
                         "write(X), " +
@@ -69,7 +69,7 @@ public class ConsultTest {
     @Test
     public void testLogging() throws IOException {
         // this verifies the logging above works
-        given().when("?- log('a'), log('b'), log('.').").assertSuccess();
+        given().when("?- expectLog('a'), expectLog('b'), expectLog('.').").assertSuccess();
         checkLog(isAtom("ab"));
     }
 
@@ -92,7 +92,7 @@ public class ConsultTest {
         String path = createFile(testFolder.newFile(),
                 "a(1).",
                 "a(2).",
-                ":- a(X), log(X), log('.')."
+                ":- a(X), expectLog(X), expectLog('.')."
         );
         given().when("?- consult('"+path+"').")
                 .assertSuccess();
@@ -103,21 +103,21 @@ public class ConsultTest {
     public void testConsultList() throws IOException {
         String path1 = createFile(testFolder.newFile(),
                 "a(1).",
-                "?- log('a')."
+                "?- expectLog('a')."
         );
         String path2 = createFile(testFolder.newFile(),
                 "a(2).",
-                "?- log('b')."
+                "?- expectLog('b')."
         );
         String path3 = createFile(testFolder.newFile(),
                 "a(3).",
-                "?- log('c')."
+                "?- expectLog('c')."
         );
         given().when("?- ['"+path1+"','"+path2+"','"+path3+"'].")
                 .assertSuccess()
                 .andWhen("?- a(1), a(2), a(3).")
                 .assertSuccess()
-                .andWhen("?- log('.').")
+                .andWhen("?- expectLog('.').")
                 .assertSuccess();
         checkLog(isAtom("abc"));
     }

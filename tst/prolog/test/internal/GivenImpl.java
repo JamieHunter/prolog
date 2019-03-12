@@ -1,11 +1,12 @@
+// Author: Jamie Hunter, 2019
+// Refer to LICENSE.TXT for copyright and license information
+//
 package prolog.test.internal;
 
-
-import prolog.execution.LocalContext;
 import prolog.test.Given;
 import prolog.test.Then;
 
-import static org.junit.Assert.fail;
+import java.nio.file.Path;
 
 /**
  * PrologTest given clause. This sets up pre-conditions. For the interpreter, all preconditions are applied to
@@ -13,27 +14,30 @@ import static org.junit.Assert.fail;
  */
 public class GivenImpl implements Given {
 
-    protected final StateImpl state = new StateImpl();
+    private final StateImpl state = new StateImpl();
 
     @Override
     public Given that(String text) {
-        state.parse(text);
+        when(text);
         return this;
     }
 
     @Override
     public Given and(String text) {
-        state.parse(text);
+        return that(text);
+    }
+
+    @Override
+    public Given cwd(Path directory) {
+        state.environment().setCWD(directory);
         return this;
     }
 
     @Override
     public Then when(String text) {
-        LocalContext context = state.parse(text);
-        if (context == null) {
-            fail("Directive did not return local localContext");
-        }
-        return new ThenImpl(state, context);
+        ThenImpl then = new ThenImpl(state);
+        then.parse(text);
+        return then;
     }
 
 }

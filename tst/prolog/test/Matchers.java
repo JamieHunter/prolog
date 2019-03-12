@@ -1,6 +1,8 @@
+// Author: Jamie Hunter, 2019
+// Refer to LICENSE.TXT for copyright and license information
+//
 package prolog.test;
 
-import lombok.experimental.UtilityClass;
 import org.hamcrest.Description;
 import org.hamcrest.DiagnosingMatcher;
 import org.hamcrest.Matcher;
@@ -17,8 +19,11 @@ import java.util.Arrays;
 
 import static org.hamcrest.Matchers.equalTo;
 
-@UtilityClass
-public class Matchers {
+public final class Matchers {
+
+    private Matchers() {
+        // Utility class
+    }
 
     private static class IsConstant<T> extends DiagnosingMatcher<T> {
 

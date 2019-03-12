@@ -3,7 +3,6 @@
 //
 package prolog.bootstrap;
 
-import lombok.experimental.UtilityClass;
 import prolog.constants.PrologAtom;
 
 import java.util.Collections;
@@ -16,8 +15,10 @@ import java.util.Map;
  * <p>
  * TODO: Many of these need to be refactored out.
  */
-@UtilityClass
-public class Interned {
+public final class Interned {
+    private Interned() {
+        // Utility
+    }
     // must be first!
     private static final HashMap<String, PrologAtom> internedAtoms = new HashMap<>();
 
@@ -41,6 +42,7 @@ public class Interned {
     public static final PrologAtom MINUS_ATOM = internAtom("-");
     public static final PrologAtom PLUS_ATOM = internAtom("+");
     public static final PrologAtom SLASH_ATOM = internAtom("/");
+    public static final PrologAtom IF_FUNCTOR = internAtom("->");
     public static final PrologAtom UNKNOWN_ATOM = internAtom("unknown");
     public static final PrologAtom ERROR_FUNCTOR = internAtom("error");
     public static final PrologAtom CONTEXT_FUNCTOR = internAtom("context");
@@ -77,7 +79,7 @@ public class Interned {
     //
     // Debugging aid. This is to catch errors when atoms are interned after they are used.
     //
-    private boolean used = false;
+    private static boolean used = false;
 
     /**
      * Create and/or retrieve an atom that is made available to all environments. Only one atom exists per name. This

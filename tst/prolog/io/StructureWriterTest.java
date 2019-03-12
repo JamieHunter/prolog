@@ -41,7 +41,7 @@ public class StructureWriterTest {
         return new ExpressionReader(tok).read();
     }
 
-    private void expect(Term source, Matcher<? super String> matcher) throws IOException {
+    private void expect(Term source, Matcher<? super String> matcher) {
         String text = StructureWriter.toString(environment, source);
         assertThat(text, matcher);
     }

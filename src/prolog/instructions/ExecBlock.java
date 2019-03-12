@@ -3,12 +3,17 @@
 //
 package prolog.instructions;
 
+import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.InstructionIterator;
+import prolog.expressions.Term;
 import prolog.library.Control;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * A block of instructions (conjunction). Each instruction is executed in turn as long as the executionState is forward.
@@ -38,6 +43,19 @@ public final class ExecBlock implements Instruction {
     }
 
     /**
+     * Convert array of sequential instructions into a single instruction.
+     *
+     * @param environment Execution environment
+     * @param term single term to compile
+     * @return Single instruction including instruction block
+     */
+    public static Instruction from(Environment environment, Term term) {
+        CompileContext context = new CompileContext(environment);
+        term.compile(context);
+        return context.toInstruction();
+    }
+
+    /**
      * Constructor to create an execution block.
      *
      * @param instructions Array of instructions excluding tail instruction
@@ -46,6 +64,14 @@ public final class ExecBlock implements Instruction {
     private ExecBlock(ArrayList<Instruction> instructions, Instruction tail) {
         this.block = instructions.toArray(new Instruction[instructions.size()]);
         this.tail = tail;
+    }
+
+    /**
+     * Retrieve all instructions as a collection.
+     * @return collection of instructions
+     */
+    public Collection<? extends Instruction> all() {
+        return Collections.unmodifiableList(Arrays.asList(block));
     }
 
     /**
