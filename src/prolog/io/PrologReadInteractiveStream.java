@@ -146,6 +146,7 @@ public class PrologReadInteractiveStream extends PrologReadStreamImpl {
             if (text != null) {
                 System.err.print(prompt.text());
                 System.err.flush();
+                prompt = prompt.next();
             }
         }
 

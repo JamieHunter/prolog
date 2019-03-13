@@ -26,7 +26,7 @@ public class InteractiveQuery extends Query {
     private static final PrologWriteStream OUT = PrologWriteStdoutStream.STREAM;
     private static final PrologReadStream IN = PrologReadInteractiveStream.STREAM;
 
-    public InteractiveQuery(Environment environment) {
+    InteractiveQuery(Environment environment) {
         super(environment);
     }
 
@@ -89,7 +89,7 @@ public class InteractiveQuery extends Query {
      * @throws IOException IO Exception if any
      */
     private void reportVar(WriteContext context, String name, BoundVariable value) throws IOException {
-        OUT.write(" " + name + "=");
+        OUT.write(" " + name + " <- ");
         new StructureWriter(context, value.value(environment)).write();
     }
 

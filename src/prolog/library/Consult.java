@@ -35,6 +35,18 @@ public final class Consult {
     }
 
     /**
+     * Ends interactive prompt.
+     *
+     * @param environment Execution environment
+     * @param streamName  Single term specifying stream.
+     */
+    @Predicate("$no_prompt")
+    public static void noPrompt(Environment environment, Term streamName) {
+        PrologReadStream stream = Io.getReader(environment, streamName, null);
+        stream.setPrompt(Prompt.NONE);
+    }
+
+    /**
      * List of predicates defined by the resource "consult.pl".
      */
     @DemandLoad("consult.pl")

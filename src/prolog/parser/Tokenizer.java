@@ -137,8 +137,6 @@ public final class Tokenizer extends TokenRegex {
             return state.term();
         } catch (IOException ioe) {
             throw PrologError.systemError(environment, ioe);
-        } finally {
-            prologStream.setPrompt(Prompt.NONE);
         }
     }
 

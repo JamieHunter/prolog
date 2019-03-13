@@ -119,6 +119,17 @@ public class PrologSyntaxError extends PrologError {
     }
 
     /**
+     * A sentence was expected, however a single period was given
+     *
+     * @param environment Execution environment
+     * @param message     Error message
+     * @return exception (not thrown)
+     */
+    public static PrologSyntaxError expectedSentenceError(Environment environment, String message) {
+        return error(environment, "expected_sentence_error", message);
+    }
+
+    /**
      * {@inheritDoc}
      */
     protected PrologSyntaxError(Term formal, ErrorContext context, Throwable cause) {

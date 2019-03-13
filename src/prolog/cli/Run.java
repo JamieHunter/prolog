@@ -3,12 +3,15 @@
 //
 package prolog.cli;
 
+import prolog.bootstrap.DefaultIoBinding;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 import prolog.io.PrologReadInteractiveStream;
 import prolog.io.PrologReadStream;
 import prolog.io.Prompt;
 import prolog.library.Io;
+
+import java.io.IOException;
 
 /**
  * CLI entrypoint.
@@ -19,8 +22,14 @@ public class Run {
         Environment environment = new Environment();
         for(;;) {
             PrologReadStream reader = PrologReadInteractiveStream.STREAM;
+            try {
+                DefaultIoBinding.USER_OUTPUT.getWrite().flush();
+            } catch (IOException e) {
+                // ignore
+            }
             reader.setPrompt(Prompt.QUERY);
             Term term = reader.read(environment);
+            reader.setPrompt(Prompt.NONE);
             if (term == Io.END_OF_FILE) {
                 return;
             }

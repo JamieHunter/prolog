@@ -15,6 +15,11 @@ public enum Prompt {
         public String text() {
             return "?- ";
         }
+
+        @Override
+        public Prompt next() {
+            return CONTINUE;
+        }
     },
     /**
      * A term sentence is not complete (no '.')
@@ -44,5 +49,12 @@ public enum Prompt {
      */
     public String text() {
         return null;
+    }
+
+    /**
+     * @return next prompt after this prompt is shown
+     */
+    public Prompt next() {
+        return this;
     }
 }

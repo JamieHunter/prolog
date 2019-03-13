@@ -91,7 +91,7 @@ public final class ExpressionReader {
                 } else if (token == Interned.OPEN_BRACES) {
                     handleBraces();
                 } else if (token == terminal && confirmTerminal.getAsBoolean()) {
-                    return handleEnd();
+                    return handleEnd(terminal);
                 } else {
                     handleTerm(token);
                 }
@@ -315,8 +315,10 @@ public final class ExpressionReader {
      * Reconsider last operator parsed as being an argument instead.
      * Case (1) - (op) -- op prefix, becomes (arg).
      * Case (2) - (arg op), op infix, is illegal
+     *
+     * @param terminal Expected terminal
      */
-    private void reinterpretLastOperator() {
+    private void reinterpretLastOperator(PrologAtom terminal) {
         // consider (atom) scenario where atom was being interpreted as a prefix
         if (operators.peek() != OperatorEntry.TERMINAL) {
             OperatorEntry lastOp = operators.pop();
@@ -330,18 +332,23 @@ public final class ExpressionReader {
                     "Expected argument after '" + op.toString() + "'");
         } else {
             // initial position
-            throw PrologSyntaxError.expectedArgumentError(environment, "Expected arg");
+            if (terminal == Interned.DOT) {
+                throw PrologSyntaxError.expectedSentenceError(environment, "Expected sentence");
+            } else {
+                throw PrologSyntaxError.expectedArgumentError(environment, "Expected arg");
+            }
         }
     }
 
     /**
      * Handle end of expression, reduce all remaining operators
      *
+     * @param terminal Expected terminal
      * @return Completed term
      */
-    private Term handleEnd() {
+    private Term handleEnd(PrologAtom terminal) {
         if (state == State.ARG_OR_PREFIX) {
-            reinterpretLastOperator();
+            reinterpretLastOperator(terminal);
         }
 
         //

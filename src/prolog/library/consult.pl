@@ -9,12 +9,15 @@
 consult([H]) :- consult(H).
 
 % Consult with a list, will visit each file in the list
-consult([H|T]) :- consult(H), !, consult(T).
+consult([H|T]) :- once(consult(H)), consult(T).
+
+% Consult user, special case
+consult(user) :-
+    '$consult_stream'(user_input).
 
 % Consult with a single file
 consult(File) :-
     % TODO: Auto-append ".pl"
-    % TODO: Handle "user"
 
     open(File, read, Stream),
     '$consult_stream'(Stream),
@@ -22,42 +25,54 @@ consult(File) :-
 
 % internal - given a stream, consult the stream until EOF
 '$consult_stream'(Stream) :-
-    '$consult_next'(Stream, Disp),!,
-    '$consult_and_then'(Stream, Disp).
+    once('$consult_this'(Stream, Disp)),
+    '$consult_next'(Stream, Disp).
 
 % internal - consult next sentence.
-'$consult_next'(Stream, Disp) :-
+'$consult_this'(Stream, Disp) :-
+    catch('$consult_read'(Stream, T), error(syntax_error(expected_sentence_error), Cause),
+        (
+            Stream = user_input ->
+                T = end_of_file;
+                throw(error(syntax_error(expected_sentence_error), Cause))
+        )),
+    '$consult_sentence'(T, Disp).
+
+% wrap read with prompts
+'$consult_read'(Stream, T) :-
     '$consult_prompt'(Stream),
-    read(Stream, T),
-    '$consult_handle'(T, Disp).
+    catch(read(Stream, T), Error, (
+        '$no_prompt'(Stream),
+        throw(Error)
+        )).
 
 % internal - handle end-of-file (success)
-'$consult_handle'(end_of_file, end_of_file).
+'$consult_sentence'(end_of_file, end_of_file).
 
 % internal - handle directive (call Goal)
-'$consult_handle'((:-)(Goal), Disp) :-
+'$consult_sentence'((:-)(Goal), Disp) :-
     '$consult_goal'(Goal), Disp = 'directive'.
 
 % internal - handle query (call Goal)
-'$consult_handle'((?-)(Goal), Disp) :-
+'$consult_sentence'((?-)(Goal), Disp) :-
     '$consult_goal'(Goal), Disp = 'query'.
 
 % internal - everything else is fact or clause
-'$consult_handle'(X, Disp) :-
+'$consult_sentence'(X, Disp) :-
     % TODO: Handle reconsultation
     assertz(X), Disp = 'assert'.
 
 % internal - call goal, with fast fail
 '$consult_goal'(Goal) :-
-    call(Goal),! ;
+    once(Goal) ;
     % TODO: Standard error to throw here?
     throw(failed_goal(Goal)).
 
 % internal - finish if EOF
-'$consult_and_then'(Stream, end_of_file).
+'$consult_next'(Stream, end_of_file).
 
 % internal - keep going if not end of file (tail-call recursion)
-'$consult_and_then'(Stream, X) :- !, '$consult_stream'(Stream).
+'$consult_next'(Stream, X) :- '$consult_stream'(Stream).
 
 % [...] is shortcut for consult
 [H|T] :- consult([H|T]).
