@@ -19,6 +19,7 @@ import static prolog.bootstrap.Interned.internAtom;
 public class PrologFlags implements Flags {
 
     private static final FlagsParser global = new FlagsParser();
+
     static {
         global.enumFlag(internAtom("back_quotes"), Quotes.class, (o, v) -> o.backQuotes = v).
                 readEnum(Quotes.class, o -> o.backQuotes).protect();
@@ -28,46 +29,103 @@ public class PrologFlags implements Flags {
                 constant(Interned.FALSE_ATOM).protect();
         global.protectedFlag(internAtom("break_level")).
                 readInteger(o -> o.breakLevel).protect();
-        global.booleanFlag(internAtom("character_escapes"), (o,v) -> o.characterEscapes = v).
+        global.booleanFlag(internAtom("character_escapes"), (o, v) -> o.characterEscapes = v).
                 readBoolean(o -> o.characterEscapes).protect();
-        global.booleanFlag(internAtom("debug"), (o,v) -> o.debug = v).
+        global.booleanFlag(internAtom("debug"), (o, v) -> o.debug = v).
                 readBoolean(o -> o.debug).protect();
     }
 
     private final Environment environment;
     private final FlagsParser local;
+    /**
+     * Handling of back quotes
+     */
     public Quotes backQuotes = Quotes.ATOM_codes;
+    /**
+     * Handling of double quotes
+     */
     public Quotes doubleQuotes = Quotes.ATOM_string;
+    /**
+     * Current break levels
+     */
     public int breakLevel = 0;
+    /**
+     * Handling of character escapes
+     */
     public boolean characterEscapes = true;
+    /**
+     * Mode to make prolog more debuggable
+     */
     public boolean debug = false;
-    // Flags created via create_prolog_flag
-    private final Map<Atomic,Term> otherFlags = new HashMap<>();
 
+    // Flags created via create_prolog_flag
+    private final Map<Atomic, Term> otherFlags = new HashMap<>();
+
+    /**
+     * Create a new PrologFlags associated with a new environment
+     *
+     * @param environment Execution environment
+     */
     public PrologFlags(Environment environment) {
+        // TODO don't use this if cloning environment
         this.environment = environment;
         this.local = new FlagsParser(global);
     }
 
+    /**
+     * @return Execution environment
+     */
     public Environment environment() {
         return environment;
     }
 
+    /**
+     * Get flag
+     *
+     * @param key Flag key
+     * @return Flag value as a term
+     */
     public Term get(Atomic key) {
         return local.get(this, key);
     }
 
+    /**
+     * Update flag
+     *
+     * @param key   Flag key
+     * @param value New value as a term
+     */
     public void set(Atomic key, Term value) {
         local.set(this, key, value);
     }
 
+    /**
+     * Create a new flag
+     *
+     * @param key     Flag key
+     * @param value   Initial value
+     * @param options Options controlling how this create works
+     */
     public void create(Atomic key, Term value, CreateFlagOptions options) {
         local.create(this, key, value, options);
     }
 
+    /**
+     * Allows indirect management of values for custom flags
+     *
+     * @param key   Flag key
+     * @param value Flag value
+     */
     /*package*/ void setOther(Atomic key, Term value) {
         otherFlags.put(key, value);
     }
+
+    /**
+     * Allows indirect management of values for custom flags
+     *
+     * @param key Flag key
+     * @return Flag value
+     */
     /*package*/ Term getOther(Atomic key) {
         return otherFlags.get(key);
     }

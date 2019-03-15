@@ -9,7 +9,6 @@ import prolog.constants.PrologNumber;
 import prolog.exceptions.FutureFlagKeyError;
 import prolog.exceptions.FutureFlagPermissionError;
 import prolog.exceptions.FutureTypeError;
-import prolog.execution.Environment;
 import prolog.expressions.Term;
 
 import java.util.HashMap;
@@ -32,16 +31,18 @@ public class FlagsParser extends ParserBase<PrologFlags, PrologFlagEntry> {
 
     /**
      * Create a copy of a parser, for a new environment. This is a deep copy.
+     *
      * @param source Source parser
      */
     FlagsParser(FlagsParser source) {
-        for (Map.Entry<Atomic, PrologFlagEntry> entry : flags.entrySet()) {
+        for (Map.Entry<Atomic, PrologFlagEntry> entry : source.flags.entrySet()) {
             flags.put(entry.getKey(), new PrologFlagEntry(entry.getValue()));
         }
     }
 
     /**
      * Provides the consumer for flags scenario.
+     *
      * @param key Flag key
      * @return consumer
      */
@@ -57,7 +58,8 @@ public class FlagsParser extends ParserBase<PrologFlags, PrologFlagEntry> {
 
     /**
      * Create a new key entry.
-     * @param key Key name
+     *
+     * @param key      Key name
      * @param onUpdate Function to update value
      * @return entry to allow further modification, see {@link PrologFlagEntry}.
      */
@@ -70,6 +72,7 @@ public class FlagsParser extends ParserBase<PrologFlags, PrologFlagEntry> {
 
     /**
      * Retrieve existing value (even if value is changed through another means)
+     *
      * @param obj Instance of PrologFlags
      * @param key Flag name
      * @return Existing value
@@ -84,8 +87,9 @@ public class FlagsParser extends ParserBase<PrologFlags, PrologFlagEntry> {
 
     /**
      * Change value
-     * @param obj Instance of PrologFlags
-     * @param key Flag name
+     *
+     * @param obj   Instance of PrologFlags
+     * @param key   Flag name
      * @param value New value
      */
     public void set(PrologFlags obj, Atomic key, Term value) {
@@ -100,8 +104,9 @@ public class FlagsParser extends ParserBase<PrologFlags, PrologFlagEntry> {
     /**
      * Create a new key. If a new key returns a constant (read-only), the read/write methods are selected based on that,
      * otherwise the read/write values use a value map in the PrologFlags object (to allow copies).
-     * @param key Flag name
-     * @param value New/initial value
+     *
+     * @param key     Flag name
+     * @param value   New/initial value
      * @param options Set of options controlling create
      */
     public void create(final PrologFlags obj, final Atomic key, final Term value, final CreateFlagOptions options) {
@@ -117,7 +122,7 @@ public class FlagsParser extends ParserBase<PrologFlags, PrologFlagEntry> {
         if (!options.type.isPresent()) {
             // infer from value
             if (value.isInteger()) {
-                options.type = Optional.of(CreateFlagOptions.Type.ATOM_iteger);
+                options.type = Optional.of(CreateFlagOptions.Type.ATOM_integer);
             } else if (value.isNumber()) {
                 options.type = Optional.of(CreateFlagOptions.Type.ATOM_float);
             } else if (value.isAtom()) {
@@ -137,7 +142,7 @@ public class FlagsParser extends ParserBase<PrologFlags, PrologFlagEntry> {
             obj.setOther(key, value);
             entry.read(o -> o.getOther(key));
             switch (options.type.get()) {
-                case ATOM_iteger:
+                case ATOM_integer:
                     entry.setOnUpdate((o, v) -> {
                         if (!v.isInteger()) {
                             throw new FutureTypeError(Interned.INTEGER_TYPE, value);

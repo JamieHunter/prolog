@@ -5,6 +5,7 @@ package prolog.execution;
 
 import prolog.bootstrap.Interned;
 import prolog.expressions.Term;
+import prolog.instructions.ExecDefer;
 import prolog.library.Control;
 import prolog.predicates.Predication;
 
@@ -47,7 +48,7 @@ public class Query {
         environment.setLocalContext(context); // establish for purpose of compiling and exceptions
         CompileContext compiling = new CompileContext(environment);
         term.compile(compiling);
-        precompiled = compiling.toInstruction();
+        precompiled = new ExecDefer(compiling.toInstruction());
     }
 
     /**

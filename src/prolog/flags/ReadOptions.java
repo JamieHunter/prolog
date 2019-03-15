@@ -25,7 +25,7 @@ public class ReadOptions implements Flags {
         parser.booleanFlag(internAtom("character_escapes"), (o, v) -> o.characterEscapes = v);
         parser.booleanFlag(internAtom("cycles"), (o, v) -> o.cycles = v);
         parser.booleanFlag(internAtom("dotlists"), (o, v) -> o.dotlists = v);
-        parser.enumFlag(internAtom("double_quotes"), DoubleQuotes.class, (o, v) -> o.doubleQuotes = v);
+        parser.enumFlag(internAtom("double_quotes"), PrologFlags.Quotes.class, (o, v) -> o.doubleQuotes = v);
         parser.enumFlag(internAtom("singletons"), Singletons.class, (o, v) -> o.singletons = v);
         parser.enumFlag(internAtom("syntax_errors"), SyntaxErrors.class, (o, v) -> o.syntaxErrors = v);
         parser.booleanFlag(internAtom("var_prefix"), (o, v) -> o.varPrefix = v);
@@ -33,15 +33,45 @@ public class ReadOptions implements Flags {
         parser.other(internAtom("variable_names"), (o, v) -> o.variableNames = Optional.of(v));
     }
 
-    public boolean backquotedString = true; // SWI Prolog sets this depending on global flag
-    public boolean characterEscapes = true; // SWI Prolog sets this depending on global flag
+    /**
+     * If true, backquotes produces a string object
+     */
+    public boolean backquotedString;
+    /**
+     * If true (default), parse '\' in strings
+     */
+    public boolean characterEscapes;
+    /**
+     * Override how double-quotes are handled
+     */
+    public PrologFlags.Quotes doubleQuotes;
+    /**
+     * If true, handle the @(Template, Substitution) operator for producing cycling terms
+     */
     public boolean cycles = false;
+    /**
+     * If true, read .(x,y) as a list term.
+     */
     public boolean dotlists = false;
-    public DoubleQuotes doubleQuotes = DoubleQuotes.ATOM_chars; // Or get from global flag
+    /**
+     * Specify how to handle variables that are mentioned only once.
+     */
     public Singletons singletons = Singletons.ATOM_warning;
+    /**
+     * Specify how to handle syntax errors.
+     */
     public SyntaxErrors syntaxErrors = SyntaxErrors.ATOM_error;
+    /**
+     * Force variables to begin with '_'
+     */
     public boolean varPrefix = false;
+    /**
+     * Receives list of variables read
+     */
     public Optional<Term> variables = Optional.empty();
+    /**
+     * Receive list of unifiable variables
+     */
     public Optional<Term> variableNames = Optional.empty();
 
     /**
@@ -51,18 +81,15 @@ public class ReadOptions implements Flags {
      * @param optionsTerm List of options
      */
     public ReadOptions(Environment environment, Term optionsTerm) {
+        PrologFlags flags = environment.getFlags();
         try {
+            backquotedString = flags.backQuotes == PrologFlags.Quotes.ATOM_string;
+            doubleQuotes = flags.doubleQuotes;
+            characterEscapes = flags.characterEscapes;
             parser.apply(environment, this, optionsTerm);
         } catch (FutureFlagError ffe) {
             throw PrologDomainError.error(environment, environment.getAtom("read_option"), ffe.getTerm(), ffe);
         }
-    }
-
-    public enum DoubleQuotes {
-        ATOM_string,
-        ATOM_codes,
-        ATOM_chars,
-        ATOM_atom
     }
 
     public enum Singletons {

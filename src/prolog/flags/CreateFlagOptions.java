@@ -61,7 +61,7 @@ public class CreateFlagOptions implements Flags {
 
     public enum Type {
         ATOM_atom,
-        ATOM_iteger,
+        ATOM_integer,
         ATOM_float,
         ATOM_term
     }

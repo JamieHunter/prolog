@@ -42,6 +42,18 @@ public class ExecCall implements Instruction {
     }
 
     /**
+     * Construct a call bound to a given Environment with a precompiled term.
+     *
+     * @param environment Execution environment.
+     * @param precompiled Term to call
+     */
+    public ExecCall(Environment environment, Instruction precompiled) {
+        this.environment = environment;
+        this.callTerm = null;
+        this.precompiled = precompiled;
+    }
+
+    /**
      * Invocation of call. If term was not precompiled, it is compiled now. The term is then executed in a constrained
      * scope. When overridden other rules may be applied.
      *

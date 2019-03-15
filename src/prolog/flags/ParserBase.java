@@ -27,6 +27,7 @@ public abstract class ParserBase<T extends Flags, R> {
 
     /**
      * Retrieves a consumer used to update target Flags object.
+     *
      * @param key Key (Option/Flag)
      * @return consumer
      */
@@ -34,7 +35,8 @@ public abstract class ParserBase<T extends Flags, R> {
 
     /**
      * Create a new key with a consumer
-     * @param key Option/Flag key
+     *
+     * @param key      Option/Flag key
      * @param consumer Consumer function for update
      * @return Option/Flag specific
      */

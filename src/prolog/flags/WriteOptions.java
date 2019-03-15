@@ -21,7 +21,7 @@ public class WriteOptions implements Flags {
 
     static {
         // TODO: These are all placeholders and not yet parsed
-        parser.enumFlag(internAtom("back_quotes"), BackQuotes.class, (o, v) -> o.backQuotes = v);
+        parser.enumFlag(internAtom("back_quotes"), PrologFlags.Quotes.class, (o, v) -> o.backQuotes = v);
         parser.booleanFlag(internAtom("brace_terms"), (o, v) -> o.braceTerms = v);
         parser.booleanFlag(internAtom("character_escapes"), (o, v) -> o.characterEscapes = v);
         parser.booleanFlag(internAtom("cycles"), (o, v) -> o.cycles = v);
@@ -39,21 +39,69 @@ public class WriteOptions implements Flags {
         parser.other(internAtom("variable_names"), (o, v) -> o.variableNames = Optional.of(v));
     }
 
-    public BackQuotes backQuotes = BackQuotes.ATOM_string;
+    /**
+     * Indicate how to handle back-quotes
+     */
+    public PrologFlags.Quotes backQuotes;
+    /**
+     * Indicate how to handle character escapes
+     */
+    public boolean characterEscapes;
+    /**
+     * Write {} term as {...}
+     */
     public boolean braceTerms = true;
-    public boolean characterEscapes = true; // SWI Prolog sets this depending on global flag
+    /**
+     * Write cycles as a special term @(Template, Substitutions)
+     */
     public boolean cycles = false;
+    /**
+     * Write lists using dotted notation rather than list notation
+     */
     public boolean dotlists = false;
+    /**
+     * Write a '.' at end of term
+     */
     public boolean fullstop = false;
+    /**
+     * Ignore operator precedence
+     */
     public boolean ignoreOps = false;
+    /**
+     * Write ellipses if depth is greater than this index, 0 indicates unlimited.
+     */
     public int maxDepth = 0;
+    /**
+     * Write new line at end of term
+     */
     public boolean nl = false;
+    /**
+     * Alternative to dotlists, allowing for [|]
+     */
     public boolean noLists = false;
+    /**
+     * Special handling of $VAR terms
+     */
     public boolean numbervars = false;
+    /**
+     * if true, do not reset spacing state engine
+     */
     public boolean partial = false;
+    /**
+     * Specify assumed priority for term being written
+     */
     public int priority = 1200;
+    /**
+     * If true, quote atoms that need quoting
+     */
     public boolean quoted = false;
+    /**
+     * Specify spacing behavior
+     */
     public Spacing spacing = Spacing.ATOM_standard;
+    /**
+     * provide names for variables
+     */
     public Optional<Term> variableNames = Optional.empty();
 
     /**
@@ -63,17 +111,14 @@ public class WriteOptions implements Flags {
      * @param optionsTerm List of options
      */
     public WriteOptions(Environment environment, Term optionsTerm) {
+        PrologFlags flags = environment.getFlags();
         try {
+            backQuotes = flags.backQuotes;
+            characterEscapes = flags.characterEscapes;
             parser.apply(environment, this, optionsTerm);
         } catch (FutureFlagError ffe) {
             throw PrologDomainError.error(environment, environment.getAtom("write_option"), ffe.getTerm(), ffe);
         }
-    }
-
-    public enum BackQuotes {
-        ATOM_string,
-        ATOM_symbol_char,
-        ATOM_codes
     }
 
     public enum Spacing {
