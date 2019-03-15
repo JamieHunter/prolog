@@ -61,19 +61,6 @@ public class PrologWriteStreamImpl extends PrologStream implements PrologWriteSt
     /**
      * {@inheritDoc}
      */
-    public void write(Environment environment, Term term) {
-        try {
-            WriteContext context = new WriteContext(environment, this);
-            StructureWriter structWriter = new StructureWriter(context, term);
-            structWriter.write();
-        } catch (IOException ioe) {
-            throw PrologError.systemError(environment, ioe);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public void flush() throws IOException {
         writer.flush();
     }

@@ -18,6 +18,9 @@ import prolog.exceptions.PrologTypeError;
 import prolog.execution.Backtrack;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
+import prolog.flags.OpenOptions;
+import prolog.flags.ReadOptions;
+import prolog.flags.WriteOptions;
 import prolog.io.IoBinding;
 import prolog.io.PrologReadInteractiveStream;
 import prolog.io.PrologReadStream;
@@ -52,7 +55,6 @@ public final class Io {
     public static final PrologAtom OPEN_READ = Interned.internAtom("read");
     public static final PrologAtom OPEN_WRITE = Interned.internAtom("write");
     public static final PrologAtom OPEN_UPDATE = Interned.internAtom("update");
-    public static final PrologAtom USER_STREAM = Interned.internAtom("user");
 
     /**
      * Open a stream
@@ -64,7 +66,21 @@ public final class Io {
      */
     @Predicate("open")
     public static void open(Environment environment, Term fileName, Term mode, Term streamIdent) {
-        openHelper(environment, fileName, mode, streamIdent, false);
+        openHelper(environment, null, fileName, mode, streamIdent);
+    }
+
+    /**
+     * Open a stream with options
+     *
+     * @param environment Execution environment
+     * @param fileName    File to be opened
+     * @param mode        Mode of open
+     * @param streamIdent Captures stream identifier
+     * @param options     List of open options
+     */
+    @Predicate("open")
+    public static void open(Environment environment, Term fileName, Term mode, Term streamIdent, Term options) {
+        openHelper(environment, options, fileName, mode, streamIdent);
     }
 
     /**
@@ -200,7 +216,7 @@ public final class Io {
     public static void read(Environment environment, Term term) {
         IoBinding io = environment.getReader();
         PrologReadStream stream = io.getRead();
-        Term value = stream.read(environment);
+        Term value = stream.read(environment, new ReadOptions(environment, null));
         Unifier.unify(environment.getLocalContext(), term, value);
     }
 
@@ -214,7 +230,37 @@ public final class Io {
     @Predicate("read")
     public static void read(Environment environment, Term streamIdent, Term term) {
         PrologReadStream stream = getReader(environment, streamIdent, null);
-        Term value = stream.read(environment);
+        Term value = stream.read(environment, new ReadOptions(environment, null));
+        Unifier.unify(environment.getLocalContext(), term, value);
+    }
+
+    /**
+     * Reads a term from specified input stream with processing options
+     *
+     * @param environment Execution environment
+     * @param term        receives read term
+     * @param options     Set of read options
+     */
+    @Predicate("read_term")
+    public static void readTerm(Environment environment, Term term, Term options) {
+        IoBinding io = environment.getReader();
+        PrologReadStream stream = io.getRead();
+        Term value = stream.read(environment, new ReadOptions(environment, options));
+        Unifier.unify(environment.getLocalContext(), term, value);
+    }
+
+    /**
+     * Reads a term from specified input stream with processing options
+     *
+     * @param environment Execution environment
+     * @param streamIdent Stream to read
+     * @param term        receives read term
+     * @param options     Set of read options
+     */
+    @Predicate("read_term")
+    public static void readTerm(Environment environment, Term streamIdent, Term term, Term options) {
+        PrologReadStream stream = getReader(environment, streamIdent, null);
+        Term value = stream.read(environment, new ReadOptions(environment, options));
         Unifier.unify(environment.getLocalContext(), term, value);
     }
 
@@ -228,7 +274,7 @@ public final class Io {
     public static void write(Environment environment, Term term) {
         IoBinding io = environment.getWriter();
         PrologWriteStream stream = io.getWrite();
-        write(environment, stream, term);
+        write(environment, null, stream, term);
     }
 
     /**
@@ -241,7 +287,35 @@ public final class Io {
     @Predicate("write")
     public static void write(Environment environment, Term streamIdent, Term term) {
         PrologWriteStream stream = getWriter(environment, streamIdent, null);
-        write(environment, stream, term);
+        write(environment, null, stream, term);
+    }
+
+    /**
+     * Writes a term to current output stream with options
+     *
+     * @param environment Execution environment
+     * @param term        term to write
+     * @param options     formatting options
+     */
+    @Predicate("write_term")
+    public static void writeTerm(Environment environment, Term term, Term options) {
+        IoBinding io = environment.getWriter();
+        PrologWriteStream stream = io.getWrite();
+        write(environment, options, stream, term);
+    }
+
+    /**
+     * Writes a term to specified output stream with options
+     *
+     * @param environment Execution environment
+     * @param streamIdent Stream to write
+     * @param term        term to write
+     * @param options     formatting options
+     */
+    @Predicate("write_term")
+    public static void writeTerm(Environment environment, Term streamIdent, Term term, Term options) {
+        PrologWriteStream stream = getWriter(environment, streamIdent, null);
+        write(environment, options, stream, term);
     }
 
     /**
@@ -337,13 +411,15 @@ public final class Io {
      * Open file, returning a binding
      *
      * @param environment Execution environment
+     * @param optionsTerm Open options
      * @param fileName    File to be opened
      * @param mode        Mode to open file
      * @param streamAlias Desired stream alias
-     * @param mapUser     True if 'user' should have special handling (TODO: deprecate)
      * @return IoBinding
      */
-    public static IoBinding openHelper(Environment environment, Term fileName, Term mode, Term streamAlias, boolean mapUser) {
+    public static IoBinding openHelper(Environment environment, Term optionsTerm, Term fileName, Term mode, Term streamAlias) {
+        OpenOptions options = new OpenOptions(environment, optionsTerm);
+        // TODO: consider options above for the open mode below
         OpenOption[] op;
         if (mode == OPEN_READ) {
             op = new OpenOption[0];
@@ -357,7 +433,7 @@ public final class Io {
             throw PrologDomainError.ioMode(environment, mode);
         }
 
-        Path path = parsePath(environment, fileName, mapUser);
+        Path path = parsePath(environment, fileName);
         Atomic name = null;
         if (streamAlias.isInstantiated()) {
             if (!(streamAlias.isAtom())) {
@@ -404,12 +480,9 @@ public final class Io {
      * @param fileName    Term representing file name
      * @return Path to open
      */
-    private static Path parsePath(Environment environment, Term fileName, boolean mapUser) {
+    private static Path parsePath(Environment environment, Term fileName) {
         String pathName;
         if (fileName.isAtom()) {
-            if (mapUser && fileName == USER_STREAM) {
-                return null; // special case
-            }
             pathName = ((PrologAtom) (fileName.value(environment))).name();
         } else if (fileName.isString()) {
             pathName = ((PrologString) (fileName.value(environment))).get();
@@ -481,14 +554,16 @@ public final class Io {
      * Write term to stream
      *
      * @param environment Execution environment
+     * @param optionsTerm Write options
      * @param stream      Stream to write to
      * @param term        Term to format and write
      */
-    private static void write(Environment environment, PrologWriteStream stream, Term term) {
+    private static void write(Environment environment, Term optionsTerm, PrologWriteStream stream, Term term) {
         if (!term.isInstantiated()) {
             throw PrologInstantiationError.error(environment, term);
         }
-        WriteContext context = new WriteContext(environment, stream);
+        WriteOptions options = new WriteOptions(environment, optionsTerm);
+        WriteContext context = new WriteContext(environment, options, stream);
         StructureWriter writer = new StructureWriter(context, term);
         try {
             writer.write();

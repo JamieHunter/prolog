@@ -8,6 +8,7 @@ import prolog.constants.PrologCharacter;
 import prolog.exceptions.PrologError;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
+import prolog.flags.ReadOptions;
 import prolog.library.Io;
 import prolog.parser.ExpressionReader;
 import prolog.parser.Tokenizer;
@@ -29,7 +30,7 @@ public class PrologReadStreamImpl extends PrologStream implements PrologReadStre
      * Create a stream from a name and a reader.
      *
      * @param sourceName Name of source
-     * @param reader         Java buffered reader
+     * @param reader     Java buffered reader
      */
     public PrologReadStreamImpl(String sourceName, BufferedReader reader) {
         super(sourceName);
@@ -80,8 +81,8 @@ public class PrologReadStreamImpl extends PrologStream implements PrologReadStre
     /**
      * {@inheritDoc}
      */
-    public Term read(Environment environment) {
-        Tokenizer tokenizer = new Tokenizer(environment, this);
+    public Term read(Environment environment, ReadOptions options) {
+        Tokenizer tokenizer = new Tokenizer(environment, options, this);
         ExpressionReader reader = new ExpressionReader(tokenizer);
         return reader.read();
     }

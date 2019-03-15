@@ -12,6 +12,7 @@ import prolog.constants.PrologAtom;
 import prolog.exceptions.PrologError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.expressions.Term;
+import prolog.flags.PrologFlags;
 import prolog.functions.StackFunction;
 import prolog.io.IoBinding;
 import prolog.predicates.BuiltInPredicate;
@@ -72,6 +73,8 @@ public class Environment {
     private long nextVariableId = 1;
     // local localContext used for variable binding
     private LocalContext localContext = new LocalContext(this, Predication.UNDEFINED);
+    // global flags
+    private final PrologFlags flags = new PrologFlags(this);
 
     /**
      * Construct a new environment.
@@ -608,4 +611,11 @@ public class Environment {
         entry.setPrecedence(precedence);
     }
 
+    /**
+     * Retrieve the prolog flags structure
+     * @return Flags
+     */
+    public PrologFlags getFlags() {
+        return flags;
+    }
 }

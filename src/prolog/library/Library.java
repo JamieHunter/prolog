@@ -19,6 +19,7 @@ public final class Library extends LibraryBase {
         consult(Dictionary.class);
         consult(Io.class);
         consult(Lists.class);
+        consult(Flags.class);
         consult(Terms.class);
         consult(ThrowCatch.class);
         consult(Unify.class);

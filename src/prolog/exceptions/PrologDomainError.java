@@ -120,6 +120,28 @@ public class PrologDomainError extends PrologError {
     }
 
     /**
+     * Invalid read option
+     *
+     * @param environment Execution environment
+     * @param target      Option with error
+     * @return Domain error (not thrown)
+     */
+    public static PrologDomainError readOption(Environment environment, Term target) {
+        return error(environment, environment.getAtom("read_option"), target);
+    }
+
+    /**
+     * Invalid open option
+     *
+     * @param environment Execution environment
+     * @param target      Option with error
+     * @return Domain error (not thrown)
+     */
+    public static PrologDomainError openOption(Environment environment, Term target) {
+        return error(environment, environment.getAtom("open_option"), target);
+    }
+
+    /**
      * Create a Java error representation of a Prolog error(formal,context) exception.
      * In general, any Java thrown exceptions are converted to this to allow dual
      * representation between Java and Prolog.

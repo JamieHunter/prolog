@@ -9,8 +9,8 @@ import prolog.constants.PrologInteger;
 import prolog.exceptions.PrologError;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
+import prolog.flags.ReadOptions;
 import prolog.io.PrologReadStream;
-import prolog.io.Prompt;
 import prolog.variables.UnboundVariable;
 
 import java.io.BufferedReader;
@@ -33,6 +33,7 @@ public final class Tokenizer extends TokenRegex {
     private static final int MAX_LINE_SIZE = 1024; // Arbitrary.
 
     private final Environment environment;
+    private final ReadOptions options;
     private final PrologReadStream prologStream; // For better error messages
     private final BufferedReader javaStream; // Java reader
     private final Map<String, UnboundVariable> variableMap = new HashMap<>();
@@ -104,12 +105,24 @@ public final class Tokenizer extends TokenRegex {
      * Build tokenizer for environment reading from a prolog stream.
      *
      * @param environment  Execution environment.
+     * @param options      Options to control tokenization and general parsing.
+     * @param prologStream Prolog stream
+     */
+    public Tokenizer(Environment environment, ReadOptions options, PrologReadStream prologStream) {
+        this.environment = environment;
+        this.options = options;
+        this.prologStream = prologStream;
+        this.javaStream = prologStream.javaReader();
+    }
+
+    /**
+     * Build tokenizer for environment reading from a prolog stream, default options
+     *
+     * @param environment  Execution environment.
      * @param prologStream Prolog stream
      */
     public Tokenizer(Environment environment, PrologReadStream prologStream) {
-        this.environment = environment;
-        this.prologStream = prologStream;
-        this.javaStream = prologStream.javaReader();
+        this(environment, new ReadOptions(environment, null), prologStream);
     }
 
     /**
@@ -117,6 +130,13 @@ public final class Tokenizer extends TokenRegex {
      */
     public Environment environment() {
         return environment;
+    }
+
+    /**
+     * @return parsing options
+     */
+    public ReadOptions options() {
+        return options;
     }
 
     /**

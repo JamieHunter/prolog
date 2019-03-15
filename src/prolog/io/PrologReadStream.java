@@ -6,6 +6,7 @@ package prolog.io;
 import prolog.constants.Atomic;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
+import prolog.flags.ReadOptions;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -31,9 +32,10 @@ public interface PrologReadStream extends Closeable {
      * Read a term from input via parser
      *
      * @param environment Execution environment
+     * @param options     Flags to control how term is parsed
      * @return parsed term
      */
-    Term read(Environment environment);
+    Term read(Environment environment, ReadOptions options);
 
     /**
      * For interactive streams, change the current prompt.

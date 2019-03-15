@@ -14,6 +14,7 @@ import prolog.predicates.BuiltinPredicateArity0;
 import prolog.predicates.BuiltinPredicateArity1;
 import prolog.predicates.BuiltinPredicateArity2;
 import prolog.predicates.BuiltinPredicateArity3;
+import prolog.predicates.BuiltinPredicateArity4;
 import prolog.predicates.BuiltinPredicateCompiles;
 import prolog.predicates.Predication;
 
@@ -45,6 +46,7 @@ public class LibraryBase {
             new Entry(BuiltinPredicateArity1.class, BuiltinPredicateArity1.Lambda.class),
             new Entry(BuiltinPredicateArity2.class, BuiltinPredicateArity2.Lambda.class),
             new Entry(BuiltinPredicateArity3.class, BuiltinPredicateArity3.Lambda.class),
+            new Entry(BuiltinPredicateArity4.class, BuiltinPredicateArity4.Lambda.class),
             // Extend as needed
     };
 
@@ -55,6 +57,12 @@ public class LibraryBase {
      * @param cls Java Class to consult.
      */
     protected void consult(Class<?> cls) {
+        // force-load
+        try {
+            Class.forName(cls.getName()); // forces a class to be initialized
+        } catch(ClassNotFoundException e) {
+            throw new InternalError(e);
+        }
         for (Method m : cls.getMethods()) {
             //
             // Predicate described by a method - either execution style,

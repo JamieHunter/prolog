@@ -34,13 +34,4 @@ public interface PrologWriteStream extends Closeable {
      * @throws IOException on IO Error
      */
     void flush() throws IOException;
-
-    /**
-     * Write a single term, formatting as needed.
-     *
-     * @param environment Execution environment
-     * @param term        Term to be written
-     */
-    void write(Environment environment, Term term);
-
 }

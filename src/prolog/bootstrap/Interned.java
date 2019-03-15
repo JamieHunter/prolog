@@ -16,6 +16,7 @@ import java.util.Map;
  * TODO: Many of these need to be refactored out.
  */
 public final class Interned {
+
     private Interned() {
         // Utility
     }
@@ -64,6 +65,7 @@ public final class Interned {
     public static final PrologAtom ATOM_TYPE = internAtom("atom");
     public static final PrologAtom CALLABLE_TYPE = internAtom("callable");
     public static final PrologAtom EVALUABLE_TYPE = internAtom("evaluable");
+    public static final PrologAtom COMPOUND_OR_ATOM_TYPE = internAtom("compound_or_atom");
     public static final PrologAtom STREAM_TYPE = internAtom("stream");
     public static final PrologAtom NOT_LESS_THAN_ZERO_DOMAIN = internAtom("not_less_than_zero");
     public static final PrologAtom OUT_OF_RANGE_DOMAIN = internAtom("out_of_range");

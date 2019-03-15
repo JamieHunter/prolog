@@ -11,6 +11,7 @@ import prolog.execution.LocalContext;
 import prolog.execution.Query;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.flags.ReadOptions;
 import prolog.io.PrologReadStream;
 import prolog.io.PrologReadStringStream;
 import prolog.library.Dictionary;
@@ -47,7 +48,7 @@ public class ThenImpl implements Then {
         query.reset();
         lastExec = null;
         PrologReadStream reader = new PrologReadStringStream(text);
-        Term term = reader.read(state.environment);
+        Term term = reader.read(state.environment, new ReadOptions(state.environment, null));
         if (CompoundTerm.termIsA(term, Interned.QUERY_FUNCTOR, 1)) {
             CompoundTerm clause = (CompoundTerm) term;
             query.compile(clause.get(0));

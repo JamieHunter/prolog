@@ -36,6 +36,7 @@ public class Builtins {
     static {
         // Begin bootstrap of above maps
         consult(prolog.library.Library.class);
+        consult(prolog.flags.FlagSets.class);
     }
 
     private Builtins() {

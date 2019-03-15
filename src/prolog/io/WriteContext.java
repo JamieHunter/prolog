@@ -4,6 +4,7 @@
 package prolog.io;
 
 import prolog.execution.Environment;
+import prolog.flags.WriteOptions;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -14,19 +15,31 @@ import java.io.Writer;
  */
 public final class WriteContext {
     private final Environment environment;
+    private final WriteOptions options;
     private final Writer writer;
     private Safety safety = Safety.SAFE;
 
     /**
      * Create a context given an environment and a Prolog stream.
-     * TODO: Add flags to this.
+     *
+     * @param environment Execution environment.
+     * @param options     Formatting options.
+     * @param stream      Write stream.
+     */
+    public WriteContext(Environment environment, WriteOptions options, PrologWriteStream stream) {
+        this.environment = environment;
+        this.options = options;
+        this.writer = stream.javaWriter();
+    }
+
+    /**
+     * Create a context given an environment and a Prolog stream. Default options.
      *
      * @param environment Execution environment.
      * @param stream      Write stream.
      */
     public WriteContext(Environment environment, PrologWriteStream stream) {
-        this.environment = environment;
-        this.writer = stream.javaWriter();
+        this(environment, new WriteOptions(environment, null), stream);
     }
 
     /**
@@ -34,6 +47,13 @@ public final class WriteContext {
      */
     public Environment environment() {
         return environment;
+    }
+
+    /**
+     * @return options
+     */
+    private WriteOptions options() {
+        return options;
     }
 
     /**

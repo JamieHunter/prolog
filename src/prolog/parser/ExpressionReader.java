@@ -17,6 +17,7 @@ import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.expressions.TermListImpl;
+import prolog.flags.ReadOptions;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -28,6 +29,7 @@ import java.util.function.BooleanSupplier;
  */
 public final class ExpressionReader {
     private final Tokenizer tokenizer;
+    private final ReadOptions options;
     private final Environment environment;
 
     // Stack of operators
@@ -52,6 +54,7 @@ public final class ExpressionReader {
      */
     public ExpressionReader(Tokenizer tokenizer) {
         this.tokenizer = tokenizer;
+        this.options = tokenizer.options();
         this.environment = tokenizer.environment();
     }
 

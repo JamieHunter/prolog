@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
+import prolog.flags.ReadOptions;
 import prolog.test.Given;
 import prolog.test.PrologTest;
 
@@ -51,7 +52,7 @@ public class ConsultTest {
         Term term;
         Environment environment = new Environment();
         try(PrologReadStream reader = new PrologReadStreamImpl(logFile.toPath())) {
-            term = reader.read(environment);
+            term = reader.read(environment, new ReadOptions(environment, null));
         }
         assertThat(term, m);
     }

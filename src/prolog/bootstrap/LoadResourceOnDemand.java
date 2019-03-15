@@ -7,6 +7,7 @@ import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.flags.ReadOptions;
 import prolog.instructions.ExecCall;
 import prolog.io.PrologReadStream;
 import prolog.io.PrologReadStreamImpl;
@@ -45,7 +46,7 @@ public class LoadResourceOnDemand implements OnDemand {
         PrologReadStream prologStream = new PrologReadStreamImpl(resource,
                 new BufferedReader(new InputStreamReader(javaStream, StandardCharsets.UTF_8)));
         for (; ; ) {
-            Term term = prologStream.read(environment);
+            Term term = prologStream.read(environment, new ReadOptions(environment, null));
             if (term == Io.END_OF_FILE) {
                 break;
             }
