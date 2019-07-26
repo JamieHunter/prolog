@@ -31,7 +31,7 @@ public class TailCallRecursionTest {
                 .variable("X", isInteger(120))
                 // call(1) = clause-end for !(5,X)
                 // call(0) = terminal
-                .callDepth(equalTo(2))
+                .callDepth(equalTo(3))
                 // backtrack(2) = X binding for !(1,X,X)
                 // backtrack(1) = !(1,X,X) which also matches !(P,Q,R)
                 // backtrack(0) = terminal
@@ -45,7 +45,7 @@ public class TailCallRecursionTest {
                 .variable("X", isInteger(120))
                 // call(1) = clause-end for !(5,X)
                 // call(0) = terminal
-                .callDepth(equalTo(2))
+                .callDepth(equalTo(3))
                 // backtrack(2) = X binding for !(1,X,X)
                 // backtrack(1) = !(1,X,X) which also matches !(P,Q,R)
                 // backtrack(0) = terminal

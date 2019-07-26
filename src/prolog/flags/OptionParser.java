@@ -14,13 +14,14 @@ import prolog.library.Lists;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 /**
  * Class that when executed, modifies a flags object from a list of flags. These structures are expected to be created
  * as part of the bootstrap.
  */
-public class OptionParser<T extends Flags> extends ParserBase<T, Void> {
+class OptionParser<T extends Flags> extends ParserBase<T, Void> {
     private final Map<Atomic, BiConsumer<T, Term>> consumers = new HashMap<>();
 
     /**
@@ -31,7 +32,7 @@ public class OptionParser<T extends Flags> extends ParserBase<T, Void> {
      * @param listTerm    A term providing a list of terms.
      */
     public T apply(Environment environment, T obj, Term listTerm) {
-        if (listTerm == null || listTerm == PrologEmptyList.EMPTY_LIST) {
+        if (Optional.ofNullable(listTerm).orElse(PrologEmptyList.EMPTY_LIST) == PrologEmptyList.EMPTY_LIST) {
             return obj;
         }
         if (!CompoundTerm.termIsA(listTerm, Interned.LIST_FUNCTOR, 2)) {

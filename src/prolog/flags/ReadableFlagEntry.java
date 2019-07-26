@@ -15,12 +15,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
- * For {@link PrologFlags} this adds ability to read an object value and to protect the entry.
+ * An extended structure that adds ability to read an object value and to protect the entry.
  */
-public class PrologFlagEntry {
+public class ReadableFlagEntry<T extends FlagsWithEnvironment> {
     private final Atomic key;
-    private BiConsumer<PrologFlags, Term> onUpdate;
-    private Function<PrologFlags, Term> onRead;
+    private BiConsumer<T, Term> onUpdate;
+    private Function<T, Term> onRead;
     private boolean protect = false;
 
     /**
@@ -28,7 +28,7 @@ public class PrologFlagEntry {
      *
      * @param key Flag key
      */
-    PrologFlagEntry(Atomic key) {
+    ReadableFlagEntry(Atomic key) {
         this(key, null);
     }
 
@@ -38,7 +38,7 @@ public class PrologFlagEntry {
      * @param key      Flag key
      * @param onUpdate update handler
      */
-    PrologFlagEntry(Atomic key, BiConsumer<PrologFlags, Term> onUpdate) {
+    ReadableFlagEntry(Atomic key, BiConsumer<T, Term> onUpdate) {
         this.key = key;
         this.onUpdate = onUpdate;
         this.onRead = null;
@@ -49,7 +49,7 @@ public class PrologFlagEntry {
      *
      * @param source Source entry
      */
-    PrologFlagEntry(PrologFlagEntry source) {
+    ReadableFlagEntry(ReadableFlagEntry<T> source) {
         this.key = source.key;
         this.onUpdate = source.onUpdate;
         this.onRead = source.onRead;
@@ -60,7 +60,7 @@ public class PrologFlagEntry {
      *
      * @return update handler
      */
-    BiConsumer<PrologFlags, Term> getOnUpdate() {
+    BiConsumer<T, Term> getOnUpdate() {
         return onUpdate;
     }
 
@@ -69,7 +69,7 @@ public class PrologFlagEntry {
      *
      * @param onUpdate update handler
      */
-    void setOnUpdate(BiConsumer<PrologFlags, Term> onUpdate) {
+    void setOnUpdate(BiConsumer<T, Term> onUpdate) {
         this.onUpdate = onUpdate;
     }
 
@@ -78,7 +78,7 @@ public class PrologFlagEntry {
      *
      * @return Read handler
      */
-    Function<PrologFlags, Term> getOnRead() {
+    Function<T, Term> getOnRead() {
         return onRead;
     }
 
@@ -88,7 +88,7 @@ public class PrologFlagEntry {
      * @param onRead read handler
      * @return self (for chaining)
      */
-    PrologFlagEntry read(Function<PrologFlags, Term> onRead) {
+    ReadableFlagEntry<T> read(Function<T, Term> onRead) {
         this.onRead = onRead;
         return this;
     }
@@ -99,7 +99,7 @@ public class PrologFlagEntry {
      * @param constValue Constant value
      * @return self (for chaining)
      */
-    PrologFlagEntry constant(Term constValue) {
+    ReadableFlagEntry<T> constant(Term constValue) {
         return read(o -> constValue);
     }
 
@@ -109,7 +109,7 @@ public class PrologFlagEntry {
      * @param onRead read handler
      * @return self (for chaining)
      */
-    PrologFlagEntry readInteger(Function<PrologFlags, Integer> onRead) {
+    ReadableFlagEntry<T> readInteger(Function<T, Integer> onRead) {
         return read(o -> new PrologInteger(BigInteger.valueOf(onRead.apply(o))));
     }
 
@@ -119,7 +119,7 @@ public class PrologFlagEntry {
      * @param onRead read handler
      * @return self (for chaining)
      */
-    PrologFlagEntry readBoolean(Function<PrologFlags, Boolean> onRead) {
+    ReadableFlagEntry<T> readBoolean(Function<T, Boolean> onRead) {
         return read(o -> onRead.apply(o) ? Interned.TRUE_ATOM : Interned.FALSE_ATOM);
     }
 
@@ -148,15 +148,16 @@ public class PrologFlagEntry {
      * @param <E>    Enum type
      * @return self (for chaining)
      */
-    <E extends Enum<E>> PrologFlagEntry readEnum(Class<E> cls, Function<PrologFlags, E> onRead) {
+    <E extends Enum<E>> ReadableFlagEntry<T> readEnum(Class<E> cls, Function<T, E> onRead) {
         return read(o -> parseEnum(o.environment(), onRead.apply(o)));
     }
 
     /**
      * Protect this entry so that it cannot be redefined.
      */
-    public void protect() {
+    public ReadableFlagEntry<T> protect() {
         this.protect = true;
+        return this;
     }
 
     /**

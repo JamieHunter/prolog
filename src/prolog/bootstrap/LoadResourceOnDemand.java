@@ -8,18 +8,20 @@ import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.flags.ReadOptions;
+import prolog.flags.StreamProperties;
 import prolog.instructions.ExecCall;
-import prolog.io.PrologReadStream;
-import prolog.io.PrologReadStreamImpl;
+import prolog.io.InputBuffered;
+import prolog.io.InputLineHandler;
+import prolog.io.PrologInputStream;
+import prolog.io.SequentialInputStream;
 import prolog.library.Dictionary;
 import prolog.library.Io;
+import prolog.parser.ExpressionReader;
+import prolog.parser.Tokenizer;
 import prolog.predicates.OnDemand;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Bootstrap read script file from a Java resource. Note that ':-' directives are allowed, however there is limited
@@ -42,32 +44,36 @@ public class LoadResourceOnDemand implements OnDemand {
      */
     @Override
     public void load(Environment environment) {
-        InputStream javaStream = cls.getResourceAsStream(resource);
-        PrologReadStream prologStream = new PrologReadStreamImpl(resource,
-                new BufferedReader(new InputStreamReader(javaStream, StandardCharsets.UTF_8)));
-        for (; ; ) {
-            Term term = prologStream.read(environment, new ReadOptions(environment, null));
-            if (term == Io.END_OF_FILE) {
-                break;
-            }
-            if (CompoundTerm.termIsA(term, Interned.CLAUSE_FUNCTOR, 1)) {
-                // Allow limited compiler directive support, e.g. to change permissions
-                // Execution is wrapped in call, but not guarded. This should only be used
-                // for a select number of directives.
-                CompoundTerm clause = (CompoundTerm) term;
-                final Term goalTerm = clause.get(0);
-                Instruction callable = new ExecCall(
-                        environment,
-                        goalTerm);
-                callable.invoke(environment);
-                if (!environment.isForward()) {
-                    throw new InternalError("Directive error in resource " + resource);
+        try (InputStream javaStream = cls.getResourceAsStream(resource)) {
+            PrologInputStream baseStream = new SequentialInputStream(javaStream);
+            PrologInputStream bufferedStream = new InputBuffered(new InputLineHandler(baseStream, StreamProperties.NewLineMode.ATOM_detect), -1);
+            Tokenizer tokenizer = new Tokenizer(environment,
+                    new ReadOptions(environment, null),
+                    bufferedStream
+            );
+            ExpressionReader reader = new ExpressionReader(tokenizer);
+            for (; ; ) {
+                Term term = reader.read();
+                if (term == Io.END_OF_FILE) {
+                    break;
                 }
-            } else {
-                Dictionary.addClauseZ(environment, term);
+                if (CompoundTerm.termIsA(term, Interned.CLAUSE_FUNCTOR, 1)) {
+                    // Allow limited compiler directive support, e.g. to change permissions
+                    // Execution is wrapped in call, but not guarded. This should only be used
+                    // for a select number of directives.
+                    CompoundTerm clause = (CompoundTerm) term;
+                    final Term goalTerm = clause.get(0);
+                    Instruction callable = new ExecCall(
+                            environment,
+                            goalTerm);
+                    callable.invoke(environment);
+                    if (!environment.isForward()) {
+                        throw new InternalError("Directive error in resource " + resource);
+                    }
+                } else {
+                    Dictionary.addClauseZ(environment, term);
+                }
             }
-        }
-        try {
             javaStream.close();
         } catch (IOException ioe) {
             throw new InternalError(ioe);

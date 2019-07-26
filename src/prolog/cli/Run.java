@@ -7,8 +7,7 @@ import prolog.bootstrap.DefaultIoBinding;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 import prolog.flags.ReadOptions;
-import prolog.io.PrologReadInteractiveStream;
-import prolog.io.PrologReadStream;
+import prolog.io.LogicalStream;
 import prolog.io.Prompt;
 import prolog.library.Io;
 
@@ -19,18 +18,18 @@ import java.io.IOException;
  * TODO: No options processed yet.
  */
 public class Run {
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         Environment environment = new Environment();
-        for(;;) {
-            PrologReadStream reader = PrologReadInteractiveStream.STREAM;
+        for (; ; ) {
+            LogicalStream reader = DefaultIoBinding.USER_INPUT;
             try {
-                DefaultIoBinding.USER_OUTPUT.getWrite().flush();
+                DefaultIoBinding.USER_OUTPUT.flush();
             } catch (IOException e) {
                 // ignore
             }
-            reader.setPrompt(Prompt.QUERY);
-            Term term = reader.read(environment, new ReadOptions(environment, null));
-            reader.setPrompt(Prompt.NONE);
+            reader.setPrompt(environment, null, Prompt.QUERY);
+            Term term = reader.read(environment, null, new ReadOptions(environment, null));
+            reader.setPrompt(environment, null, Prompt.NONE);
             if (term == Io.END_OF_FILE) {
                 return;
             }

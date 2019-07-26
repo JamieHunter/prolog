@@ -42,7 +42,7 @@ public class AtomWriter extends TermWriter<PrologAtom> {
             } else {
                 context.beginAlphaNum();
             }
-            writer.write(term.name());
+            output.write(term.name());
             return;
         }
         writeQuoted('\'', term.name());

@@ -9,12 +9,13 @@ import prolog.bootstrap.Interned;
 import prolog.bootstrap.Operators;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtom;
+import prolog.constants.PrologInteger;
 import prolog.exceptions.PrologError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.expressions.Term;
 import prolog.flags.PrologFlags;
 import prolog.functions.StackFunction;
-import prolog.io.IoBinding;
+import prolog.io.LogicalStream;
 import prolog.predicates.BuiltInPredicate;
 import prolog.predicates.ClauseSearchPredicate;
 import prolog.predicates.DemandLoadPredicate;
@@ -43,14 +44,15 @@ public class Environment {
     // tables of operators for this instance
     private final HashMap<Atomic, OperatorEntry> infixPostfixOperatorTable = new HashMap<>();
     private final HashMap<Atomic, OperatorEntry> prefixOperatorTable = new HashMap<>();
-    // io
-    private final HashMap<Atomic, IoBinding> streams = new HashMap<>();
+    // io, ID mappings
+    private final HashMap<PrologInteger, LogicalStream> streamById = new HashMap<>();
+    private final HashMap<PrologAtom, LogicalStream> streamByAlias = new HashMap<>();
     // stacks
     private final LinkedList<InstructionPointer> callStack = new LinkedList<>();
     private final LinkedList<Backtrack> backtrackStack = new LinkedList<>();
     private final LinkedList<Term> dataStack = new LinkedList<>();
-    private IoBinding readBinding = DefaultIoBinding.USER_INPUT;
-    private IoBinding writeBinding = DefaultIoBinding.USER_OUTPUT;
+    private LogicalStream inputStream = DefaultIoBinding.USER_INPUT;
+    private LogicalStream outputStream = DefaultIoBinding.USER_OUTPUT;
     private Path cwd = Paths.get(".").normalize().toAbsolutePath();
     private CatchPoint catchPoint = CatchPoint.TERMINAL;
     // state
@@ -70,7 +72,7 @@ public class Environment {
     };
     private InstructionPointer ip = terminalIP;
     // Variable ID allocator
-    private long nextVariableId = 1;
+    private long nextVariableId = 10;
     // local localContext used for variable binding
     private LocalContext localContext = new LocalContext(this, Predication.UNDEFINED);
     // global flags
@@ -85,7 +87,8 @@ public class Environment {
         functions.putAll(Builtins.getFunctions());
         infixPostfixOperatorTable.putAll(Operators.getInfixPostfix());
         prefixOperatorTable.putAll(Operators.getPrefix());
-        streams.putAll(DefaultIoBinding.getSystem());
+        streamById.putAll(DefaultIoBinding.getById());
+        streamByAlias.putAll(DefaultIoBinding.getByAlias());
         // Add atoms last to ensure that all interned atoms are added
         atomTable.putAll(Interned.getInterned());
     }
@@ -529,68 +532,101 @@ public class Environment {
     }
 
     /**
-     * Change reader. The binding is specified, not the read/write stream itself, so that
-     * the stream identifier/alias can be retrieved.
+     * Change input stream.
      *
-     * @param reader New reader
-     * @return old reader
+     * @param logicalStream New stream
+     * @return old stream
      */
-    public IoBinding setReader(IoBinding reader) {
-        IoBinding oldReader = readBinding;
-        this.readBinding = reader;
-        return oldReader;
+    public LogicalStream setInputStream(LogicalStream logicalStream) {
+        LogicalStream oldStream = inputStream;
+        this.inputStream = logicalStream;
+        return oldStream;
     }
 
     /**
-     * Change writer. The binding is specified, not the read/write stream itself, so that
-     * the stream identifier/alias can be retrieved.
+     * Change output stream.
      *
-     * @param writer New writer
-     * @return old writer
+     * @param logicalStream New stream
+     * @return old stream
      */
-    public IoBinding setWriter(IoBinding writer) {
-        IoBinding oldWriter = writeBinding;
-        this.writeBinding = writer;
-        return oldWriter;
+    public LogicalStream setOutputStream(LogicalStream logicalStream) {
+        LogicalStream oldStream = outputStream;
+        this.outputStream = logicalStream;
+        return oldStream;
     }
 
     /**
-     * Get current reader
+     * Get current input stream
      *
-     * @return reader
+     * @return input stream
      */
-    public IoBinding getReader() {
-        return readBinding;
+    public LogicalStream getInputStream() {
+        return inputStream;
     }
 
     /**
-     * Get current writer
+     * Get current output stream
      *
-     * @return writer
+     * @return output stream
      */
-    public IoBinding getWriter() {
-        return writeBinding;
+    public LogicalStream getOutputStream() {
+        return outputStream;
     }
 
     /**
-     * Retrieve existing stream binding by name
+     * Retrieve existing stream by id or alias
      *
-     * @param name Name of stream
-     * @return stream
+     * @param streamIdent Stream identifier
+     * @return stream or null if not found
      */
-    public IoBinding lookupStream(Atomic name) {
-        return streams.get(name);
+    public LogicalStream lookupStream(Atomic streamIdent) {
+        LogicalStream logicalStream = streamById.get(streamIdent);
+        if (logicalStream == null) {
+            logicalStream = streamByAlias.get(streamIdent);
+        }
+        return logicalStream;
     }
 
     /**
-     * Add stream binding by name
+     * Add stream by unique id
      *
-     * @param name       Stream name
-     * @param newBinding New stream
-     * @return old stream of same name
+     * @param id     Stream id
+     * @param stream Stream (null to delete)
      */
-    public IoBinding addStream(Atomic name, IoBinding newBinding) {
-        return streams.put(name, newBinding);
+    public void addStream(PrologInteger id, LogicalStream stream) {
+        if (stream != null) {
+            streamById.put(id, stream);
+        } else {
+            streamById.remove(id);
+        }
+    }
+
+    /**
+     * Add stream by unique id
+     *
+     * @param alias  Stream alias (if null, becomes a no-op)
+     * @param stream Stream, or null to remove
+     * @return previous stream with this alias, or null if none
+     */
+    public LogicalStream addStreamAlias(PrologAtom alias, LogicalStream stream) {
+        if (alias == null) {
+            return null;
+        }
+        LogicalStream prior;
+        if (stream != null) {
+            prior = streamByAlias.put(alias, stream);
+        } else {
+            prior = streamByAlias.remove(alias);
+        }
+        if (prior != stream) {
+            if (prior != null) {
+                prior.removeAlias(alias);
+            }
+            if (stream != null) {
+                stream.addAlias(alias);
+            }
+        }
+        return prior;
     }
 
     /**
@@ -613,6 +649,7 @@ public class Environment {
 
     /**
      * Retrieve the prolog flags structure
+     *
      * @return Flags
      */
     public PrologFlags getFlags() {

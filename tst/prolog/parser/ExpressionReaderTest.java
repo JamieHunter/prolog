@@ -5,12 +5,13 @@ import org.junit.Test;
 import prolog.execution.Environment;
 import prolog.execution.OperatorEntry;
 import prolog.expressions.Term;
-import prolog.io.PrologReadStream;
-import prolog.io.PrologReadStringStream;
+import prolog.flags.ReadOptions;
+import prolog.io.PrologInputStream;
 import prolog.library.Io;
+import prolog.test.StreamUtils;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 import static prolog.test.Matchers.*;
 
 /**
@@ -20,15 +21,15 @@ public class ExpressionReaderTest {
 
     // Note that generally, text should end with "."
     @SuppressWarnings("unchecked")
-    private void expect(String text, Matcher<? super Term> ... terms) {
+    private void expect(String text, Matcher<? super Term>... terms) {
         Environment environment = new Environment();
         // fake postfix operator
         environment.makeOperator(450, OperatorEntry.Code.YF, environment.getAtom("@@@")); // between * and +
-        PrologReadStream stream = new PrologReadStringStream(text);
-        Tokenizer tok = new Tokenizer(environment, stream);
+        PrologInputStream stream = StreamUtils.bufferedString(text);
+        Tokenizer tok = new Tokenizer(environment, new ReadOptions(environment, null), stream);
         ExpressionReader reader = new ExpressionReader(tok);
 
-        for(int i = 0; i < terms.length; i++) {
+        for (int i = 0; i < terms.length; i++) {
             Term t = reader.read();
             assertThat(t, terms[i]);
         }
@@ -100,10 +101,10 @@ public class ExpressionReaderTest {
     public void testExpression() {
         expect("a + (b - c).",
                 isCompoundTerm("+",
-                    isAtom("a"),
-                    isCompoundTerm("-",
-                            isAtom("b"),
-                            isAtom("c"))));
+                        isAtom("a"),
+                        isCompoundTerm("-",
+                                isAtom("b"),
+                                isAtom("c"))));
     }
 
     @Test
@@ -147,13 +148,13 @@ public class ExpressionReaderTest {
         // ':-' is lower than ',' and is also a prefix
         // This parses in a non-obvious way
         expect("'$x'(':-'(A), B) :- C.",
-            isCompoundTerm(":-",
-                    isCompoundTerm("$x",
-                            isCompoundTerm(":-",
-                                    isCompoundTerm(",",
-                                        isUnboundVariable("A"),
-                                        isUnboundVariable("B")))),
-                    isUnboundVariable("C")) );
+                isCompoundTerm(":-",
+                        isCompoundTerm("$x",
+                                isCompoundTerm(":-",
+                                        isCompoundTerm(",",
+                                                isUnboundVariable("A"),
+                                                isUnboundVariable("B")))),
+                        isUnboundVariable("C")));
 
         // This addresses the above parsing, but still treats ':-' as unary
         expect("'$x'((':-'(A)), B) :- C.",
@@ -162,7 +163,7 @@ public class ExpressionReaderTest {
                                 isCompoundTerm(":-",
                                         isUnboundVariable("A")),
                                 isUnboundVariable("B")),
-                        isUnboundVariable("C")) );
+                        isUnboundVariable("C")));
 
         // This addresses the above parsing, using brackets. I don't see this in ISO
         // standard, but it's logically acceptable and not contrary to standard
@@ -172,7 +173,7 @@ public class ExpressionReaderTest {
                                 isCompoundTerm(":-",
                                         isUnboundVariable("A")),
                                 isUnboundVariable("B")),
-                        isUnboundVariable("C")) );
+                        isUnboundVariable("C")));
 
     }
 }

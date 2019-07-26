@@ -16,9 +16,9 @@ import static prolog.bootstrap.Interned.internAtom;
 /**
  * Global flags and options
  */
-public class PrologFlags implements Flags {
+public class PrologFlags implements FlagsWithEnvironment {
 
-    private static final FlagsParser global = new FlagsParser();
+    private static final PrologFlagsParser global = new PrologFlagsParser();
 
     static {
         global.enumFlag(internAtom("back_quotes"), Quotes.class, (o, v) -> o.backQuotes = v).
@@ -36,7 +36,7 @@ public class PrologFlags implements Flags {
     }
 
     private final Environment environment;
-    private final FlagsParser local;
+    private final PrologFlagsParser local;
     /**
      * Handling of back quotes
      */
@@ -69,12 +69,13 @@ public class PrologFlags implements Flags {
     public PrologFlags(Environment environment) {
         // TODO don't use this if cloning environment
         this.environment = environment;
-        this.local = new FlagsParser(global);
+        this.local = new PrologFlagsParser(global);
     }
 
     /**
      * @return Execution environment
      */
+    @Override
     public Environment environment() {
         return environment;
     }

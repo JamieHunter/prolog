@@ -5,12 +5,12 @@ import org.junit.Test;
 import prolog.constants.PrologEOF;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
-import prolog.io.PrologReadStream;
-import prolog.io.PrologReadStringStream;
-import prolog.library.Io;
+import prolog.flags.ReadOptions;
+import prolog.io.PrologInputStream;
+import prolog.test.StreamUtils;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 import static prolog.test.Matchers.*;
 
 /**
@@ -19,11 +19,14 @@ import static prolog.test.Matchers.*;
 @SuppressWarnings("OctalInteger")
 public class TokenizerTest {
 
-    private void expect(String text, Matcher<? super Term> ... terms) {
+    private void expect(String text, Matcher<? super Term>... terms) {
         Environment environment = new Environment();
-        PrologReadStream stream = new PrologReadStringStream(text);
-        Tokenizer tok = new Tokenizer(environment, stream);
-        for(int i = 0; i < terms.length; i++) {
+        PrologInputStream stream = StreamUtils.bufferedString(text);
+        Tokenizer tok = new Tokenizer(
+                environment,
+                new ReadOptions(environment, null),
+                stream);
+        for (int i = 0; i < terms.length; i++) {
             Term t = tok.nextToken();
             assertThat(t, terms[i]);
         }

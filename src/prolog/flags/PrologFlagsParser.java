@@ -6,27 +6,22 @@ package prolog.flags;
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
 import prolog.constants.PrologNumber;
-import prolog.exceptions.FutureFlagKeyError;
 import prolog.exceptions.FutureFlagPermissionError;
 import prolog.exceptions.FutureTypeError;
 import prolog.expressions.Term;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 
 /**
  * Class that helps modify a flags object from a list of flags. These structures are expected to be created
  * as part of the bootstrap.
  */
-public class FlagsParser extends ParserBase<PrologFlags, PrologFlagEntry> {
-    private final Map<Atomic, PrologFlagEntry> flags = new HashMap<>();
+public class PrologFlagsParser extends ReadableParser<PrologFlags> {
 
     /**
      * Create a new parser for PrologFlags. This is used to create the global parser.
      */
-    FlagsParser() {
+    PrologFlagsParser() {
     }
 
     /**
@@ -34,71 +29,8 @@ public class FlagsParser extends ParserBase<PrologFlags, PrologFlagEntry> {
      *
      * @param source Source parser
      */
-    FlagsParser(FlagsParser source) {
-        for (Map.Entry<Atomic, PrologFlagEntry> entry : source.flags.entrySet()) {
-            flags.put(entry.getKey(), new PrologFlagEntry(entry.getValue()));
-        }
-    }
-
-    /**
-     * Provides the consumer for flags scenario.
-     *
-     * @param key Flag key
-     * @return consumer
-     */
-    @Override
-    protected BiConsumer<PrologFlags, Term> getConsumer(Atomic key) {
-        PrologFlagEntry entry = flags.get(key);
-        if (entry != null) {
-            return entry.getOnUpdate();
-        } else {
-            return null; // not found
-        }
-    }
-
-    /**
-     * Create a new key entry.
-     *
-     * @param key      Key name
-     * @param onUpdate Function to update value
-     * @return entry to allow further modification, see {@link PrologFlagEntry}.
-     */
-    @Override
-    protected PrologFlagEntry createKey(Atomic key, BiConsumer<PrologFlags, Term> onUpdate) {
-        PrologFlagEntry entry = new PrologFlagEntry(key, onUpdate);
-        flags.put(key, entry);
-        return entry;
-    }
-
-    /**
-     * Retrieve existing value (even if value is changed through another means)
-     *
-     * @param obj Instance of PrologFlags
-     * @param key Flag name
-     * @return Existing value
-     */
-    public Term get(PrologFlags obj, Atomic key) {
-        PrologFlagEntry entry = flags.get(key);
-        if (entry != null && entry.getOnRead() != null) {
-            return entry.getOnRead().apply(obj);
-        }
-        throw new FutureFlagKeyError(key);
-    }
-
-    /**
-     * Change value
-     *
-     * @param obj   Instance of PrologFlags
-     * @param key   Flag name
-     * @param value New value
-     */
-    public void set(PrologFlags obj, Atomic key, Term value) {
-        BiConsumer<PrologFlags, Term> consumer = getConsumer(key);
-        if (consumer != null) {
-            consumer.accept(obj, value);
-        } else {
-            throw new FutureFlagKeyError(key);
-        }
+    PrologFlagsParser(PrologFlagsParser source) {
+        super(source);
     }
 
     /**
@@ -110,7 +42,7 @@ public class FlagsParser extends ParserBase<PrologFlags, PrologFlagEntry> {
      * @param options Set of options controlling create
      */
     public void create(final PrologFlags obj, final Atomic key, final Term value, final CreateFlagOptions options) {
-        PrologFlagEntry entry = flags.computeIfAbsent(key, PrologFlagEntry::new);
+        ReadableFlagEntry<PrologFlags> entry = flags.computeIfAbsent(key, ReadableFlagEntry::new);
         if (entry.getOnUpdate() != null && options.keep) {
             // do not modify if it exists
             return;

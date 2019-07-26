@@ -87,6 +87,17 @@ public class PrologDomainError extends PrologError {
     }
 
     /**
+     * Stream property is invalid
+     *
+     * @param environment Execution environment.
+     * @param target      Term with error
+     * @return Domain error (not thrown)
+     */
+    public static PrologDomainError streamProperty(Environment environment, Term target) {
+        return error(environment, Interned.STREAM_PROPERTY_DOMAIN, target);
+    }
+
+    /**
      * Stream file name is invalid
      *
      * @param environment Execution environment.

@@ -7,7 +7,6 @@ import prolog.execution.Environment;
 import prolog.flags.WriteOptions;
 
 import java.io.IOException;
-import java.io.Writer;
 
 /**
  * State engine and other context for writing a term in a structured parsable way. In particular it manages a
@@ -16,30 +15,20 @@ import java.io.Writer;
 public final class WriteContext {
     private final Environment environment;
     private final WriteOptions options;
-    private final Writer writer;
+    private final PrologOutputStream outputStream;
     private Safety safety = Safety.SAFE;
 
     /**
      * Create a context given an environment and a Prolog stream.
      *
-     * @param environment Execution environment.
-     * @param options     Formatting options.
-     * @param stream      Write stream.
+     * @param environment  Execution environment.
+     * @param options      Formatting options.
+     * @param outputStream Output substream
      */
-    public WriteContext(Environment environment, WriteOptions options, PrologWriteStream stream) {
+    public WriteContext(Environment environment, WriteOptions options, PrologOutputStream outputStream) {
         this.environment = environment;
         this.options = options;
-        this.writer = stream.javaWriter();
-    }
-
-    /**
-     * Create a context given an environment and a Prolog stream. Default options.
-     *
-     * @param environment Execution environment.
-     * @param stream      Write stream.
-     */
-    public WriteContext(Environment environment, PrologWriteStream stream) {
-        this(environment, new WriteOptions(environment, null), stream);
+        this.outputStream = outputStream;
     }
 
     /**
@@ -57,10 +46,10 @@ public final class WriteContext {
     }
 
     /**
-     * @return Java writer
+     * @return output stream
      */
-    public Writer writer() {
-        return writer;
+    public PrologOutputStream output() {
+        return outputStream;
     }
 
     /**
@@ -70,7 +59,7 @@ public final class WriteContext {
      * @throws IOException if IO error
      */
     public void write(String text) throws IOException {
-        writer.write(text);
+        outputStream.write(text);
     }
 
     /**

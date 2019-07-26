@@ -8,14 +8,18 @@ import org.junit.rules.TemporaryFolder;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 import prolog.flags.ReadOptions;
+import prolog.flags.StreamProperties;
 import prolog.test.Given;
 import prolog.test.PrologTest;
+import prolog.test.StreamUtils;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 
 import static org.junit.Assert.assertThat;
 import static prolog.test.Matchers.*;
@@ -51,8 +55,8 @@ public class ConsultTest {
     private void checkLog(Matcher<? super Term> m) throws IOException {
         Term term;
         Environment environment = new Environment();
-        try(PrologReadStream reader = new PrologReadStreamImpl(logFile.toPath())) {
-            term = reader.read(environment, new ReadOptions(environment, null));
+        try(LogicalStream stream = StreamUtils.logicalFileStream(logFile.toPath(), StandardOpenOption.READ)) {
+            term = stream.read(environment, null, new ReadOptions(environment, null));
         }
         assertThat(term, m);
     }

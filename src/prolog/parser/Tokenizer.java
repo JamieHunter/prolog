@@ -10,10 +10,10 @@ import prolog.exceptions.PrologError;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 import prolog.flags.ReadOptions;
-import prolog.io.PrologReadStream;
+import prolog.io.Position;
+import prolog.io.PrologInputStream;
 import prolog.variables.UnboundVariable;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -30,13 +30,11 @@ import java.util.regex.Pattern;
  */
 public final class Tokenizer extends TokenRegex {
 
-    private static final int MAX_LINE_SIZE = 1024; // Arbitrary.
-
     private final Environment environment;
     private final ReadOptions options;
-    private final PrologReadStream prologStream; // For better error messages
-    private final BufferedReader javaStream; // Java reader
+    private final PrologInputStream inputStream;
     private final Map<String, UnboundVariable> variableMap = new HashMap<>();
+    private final Position mark = new Position();
 
     // used for core pattern
     static final String WS_TAG = "ws";
@@ -104,25 +102,14 @@ public final class Tokenizer extends TokenRegex {
     /**
      * Build tokenizer for environment reading from a prolog stream.
      *
-     * @param environment  Execution environment.
-     * @param options      Options to control tokenization and general parsing.
-     * @param prologStream Prolog stream
+     * @param environment Execution environment.
+     * @param options     Options to control tokenization and general parsing.
+     * @param inputStream Input substream
      */
-    public Tokenizer(Environment environment, ReadOptions options, PrologReadStream prologStream) {
+    public Tokenizer(Environment environment, ReadOptions options, PrologInputStream inputStream) {
         this.environment = environment;
         this.options = options;
-        this.prologStream = prologStream;
-        this.javaStream = prologStream.javaReader();
-    }
-
-    /**
-     * Build tokenizer for environment reading from a prolog stream, default options
-     *
-     * @param environment  Execution environment.
-     * @param prologStream Prolog stream
-     */
-    public Tokenizer(Environment environment, PrologReadStream prologStream) {
-        this(environment, new ReadOptions(environment, null), prologStream);
+        this.inputStream = inputStream;
     }
 
     /**
@@ -200,7 +187,7 @@ public final class Tokenizer extends TokenRegex {
      * @throws IOException IO Error
      */
     void mark() throws IOException {
-        javaStream.mark(MAX_LINE_SIZE + 16);
+        inputStream.getPosition(mark);
     }
 
     /**
@@ -223,8 +210,10 @@ public final class Tokenizer extends TokenRegex {
      * @throws IOException IO Exception
      */
     void consume(int chars) throws IOException {
-        javaStream.reset();
-        javaStream.skip(chars);
+        if (!inputStream.restorePosition(mark)) {
+            throw new UnsupportedOperationException("NYI - how to handle this?");
+        }
+        inputStream.advance(chars); // assume we can advance this many chars, if we can't we're at EOF anyway.
         mark();
     }
 
@@ -235,7 +224,7 @@ public final class Tokenizer extends TokenRegex {
      * @throws IOException IO Exception
      */
     String readLine() throws IOException {
-        return javaStream.readLine();
+        return inputStream.readLine();
     }
 
     /**
@@ -247,8 +236,8 @@ public final class Tokenizer extends TokenRegex {
     public boolean isNext(char test) {
         try {
             mark();
-            int c = javaStream.read();
-            javaStream.reset();
+            int c = inputStream.read();
+            inputStream.restorePosition(mark);
             return c == test;
         } catch (IOException ioe) {
             throw PrologError.systemError(environment, ioe);
@@ -263,12 +252,12 @@ public final class Tokenizer extends TokenRegex {
         try {
             for (; ; ) {
                 mark();
-                int c = javaStream.read();
+                int c = inputStream.read();
                 if (c < 0 || c == '\n') {
                     return;
                 }
                 if (c != ' ' && c != '\r' && c != '\t') {
-                    javaStream.reset();
+                    inputStream.restorePosition(mark);
                     break;
                 }
             }

@@ -7,32 +7,27 @@ import java.io.Closeable;
 import java.io.IOException;
 
 /**
- * Base class for Prolog streams.
+ * Common operations for both input and output streams.
  */
-public abstract class PrologStream implements Closeable {
-    private final String sourceSinkName;
+public interface PrologStream extends Closeable {
 
     /**
-     * Stream with associated source or sink name.
+     * Fill position structure with known position information
      *
-     * @param sourceSinkName Name of file or other source/sink indicator
+     * @param position known position information
+     * @throws IOException on IO Error
      */
-    public PrologStream(String sourceSinkName) {
-        this.sourceSinkName = sourceSinkName;
+    default void getPosition(Position position) throws IOException {
     }
 
     /**
-     * Retrieve source/sink name associated with this stream.
-     * @return name
+     * Seek to position (absolute)
+     *
+     * @param position target position information
+     * @return true if position set
+     * @throws IOException on IO Error
      */
-    public String getSourceSinkName() {
-        return sourceSinkName;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() throws IOException {
+    default boolean restorePosition(Position position) throws IOException {
+        return false;
     }
 }

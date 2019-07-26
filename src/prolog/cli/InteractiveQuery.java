@@ -3,17 +3,13 @@
 //
 package prolog.cli;
 
+import prolog.bootstrap.DefaultIoBinding;
 import prolog.exceptions.PrologError;
 import prolog.execution.Environment;
 import prolog.execution.ExecutionState;
 import prolog.execution.Query;
-import prolog.io.PrologReadInteractiveStream;
-import prolog.io.PrologReadStream;
-import prolog.io.PrologWriteStdoutStream;
-import prolog.io.PrologWriteStream;
+import prolog.io.LogicalStream;
 import prolog.io.Prompt;
-import prolog.io.StructureWriter;
-import prolog.io.WriteContext;
 import prolog.variables.BoundVariable;
 
 import java.io.IOException;
@@ -23,8 +19,8 @@ import java.util.Map;
  * Execute an interactive query.
  */
 public class InteractiveQuery extends Query {
-    private static final PrologWriteStream OUT = PrologWriteStdoutStream.STREAM;
-    private static final PrologReadStream IN = PrologReadInteractiveStream.STREAM;
+    private static final LogicalStream OUT = DefaultIoBinding.USER_OUTPUT;
+    private static final LogicalStream IN = DefaultIoBinding.USER_INPUT;
 
     InteractiveQuery(Environment environment) {
         super(environment);
@@ -40,27 +36,26 @@ public class InteractiveQuery extends Query {
         try {
             Map<String, BoundVariable> sortedVars = context.retrieveVariableMap();
             if (sortedVars.isEmpty()) {
-                OUT.write("yes.\n");
+                OUT.write(environment, null, "yes.\n");
                 OUT.flush();
                 return ExecutionState.SUCCESS;
             }
             boolean nl = false;
-            WriteContext context = new WriteContext(environment, OUT);
             for (Map.Entry<String, BoundVariable> e : sortedVars.entrySet()) {
                 if (nl) {
-                    OUT.write("\n");
+                    OUT.write(environment, null, "\n");
                 }
-                reportVar(context, e.getKey(), e.getValue());
+                reportVar(e.getKey(), e.getValue());
                 nl = true;
             }
-            OUT.write(" ");
+            OUT.write(environment, null, " ");
             OUT.flush();
             String text = readLine();
             if (text.equals(";")) {
                 OUT.flush();
                 return ExecutionState.BACKTRACK;
             } else {
-                OUT.write("yes.\n");
+                OUT.write(environment, null, "yes.\n");
                 OUT.flush();
                 return ExecutionState.SUCCESS;
             }
@@ -76,21 +71,20 @@ public class InteractiveQuery extends Query {
      * @throws IOException on IO error
      */
     private String readLine() throws IOException {
-        IN.setPrompt(Prompt.NONE);
-        return IN.javaReader().readLine();
+        IN.setPrompt(environment, null, Prompt.NONE);
+        return IN.readLine(environment, null, null);
     }
 
     /**
      * Report a single variable
      *
-     * @param context Write context
-     * @param name    Name of variable
-     * @param value   Value of variable
+     * @param name  Name of variable
+     * @param value Value of variable
      * @throws IOException IO Exception if any
      */
-    private void reportVar(WriteContext context, String name, BoundVariable value) throws IOException {
-        OUT.write(" " + name + " <- ");
-        new StructureWriter(context, value.value(environment)).write();
+    private void reportVar(String name, BoundVariable value) throws IOException {
+        OUT.write(environment, null, " " + name + " <- ");
+        OUT.write(environment, null, value.value(environment), null);
     }
 
     /**
@@ -99,7 +93,7 @@ public class InteractiveQuery extends Query {
     @Override
     protected void onFailed() {
         try {
-            OUT.write("no.\n");
+            OUT.write(environment, null, "no.\n");
             OUT.flush();
         } catch (IOException ioe) {
             throw PrologError.systemError(environment, ioe);

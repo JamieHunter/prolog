@@ -16,28 +16,34 @@ import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.Backtrack;
+import prolog.execution.CompileContext;
 import prolog.execution.Environment;
+import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.flags.OpenOptions;
-import prolog.flags.ReadOptions;
-import prolog.flags.WriteOptions;
-import prolog.io.IoBinding;
-import prolog.io.PrologReadInteractiveStream;
-import prolog.io.PrologReadStream;
-import prolog.io.PrologReadStreamImpl;
-import prolog.io.PrologWriteStdoutStream;
-import prolog.io.PrologWriteStream;
-import prolog.io.PrologWriteStreamImpl;
-import prolog.io.StructureWriter;
-import prolog.io.WriteContext;
+import prolog.flags.StreamProperties;
+import prolog.io.LogicalStream;
+import prolog.io.PrologInputStream;
+import prolog.io.PrologOutputStream;
+import prolog.io.PrologStream;
+import prolog.io.RandomAccessStream;
 import prolog.unification.Unifier;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.HashSet;
+import java.util.Set;
+
+import static java.nio.file.Files.newInputStream;
+import static java.nio.file.Files.newOutputStream;
 
 /**
  * File is referenced by {@link Library} to parse all annotations.
@@ -48,9 +54,9 @@ public final class Io {
         // Static methods/fields only
     }
 
-    public static final PrologAtom USER_INPUT_STREAM = Interned.internAtom("user_input");
-    public static final PrologAtom USER_OUTPUT_STREAM = Interned.internAtom("user_output");
+    // Universal EOF atom
     public static final PrologAtom END_OF_FILE = Interned.internAtom("end_of_file");
+    // Stream modes
     public static final PrologAtom OPEN_APPEND = Interned.internAtom("append");
     public static final PrologAtom OPEN_READ = Interned.internAtom("read");
     public static final PrologAtom OPEN_WRITE = Interned.internAtom("write");
@@ -91,10 +97,12 @@ public final class Io {
      */
     @Predicate("set_input")
     public static void setInput(Environment environment, Term streamIdent) {
-        IoBinding binding = lookupStream(environment, streamIdent);
-        PrologReadStream reader = getReader(environment, streamIdent, binding);
-        IoBinding oldBinding = environment.setReader(binding);
-        environment.pushBacktrack(new RestoreReader(environment, oldBinding));
+        LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        // verify and prepare stream, return value ignored
+        logicalStream.getInputStream(environment, (Atomic) streamIdent);
+        LogicalStream oldInputStream = environment.setInputStream(logicalStream);
+        // TODO, this may be wrong
+        environment.pushBacktrack(new RestoreInput(environment, oldInputStream));
     }
 
     /**
@@ -105,8 +113,8 @@ public final class Io {
      */
     @Predicate("current_input")
     public static void currentInput(Environment environment, Term streamIdent) {
-        IoBinding readerBinding = environment.getReader();
-        Unifier.unify(environment.getLocalContext(), streamIdent, readerBinding.getName());
+        LogicalStream currentInputStream = environment.getInputStream();
+        Unifier.unify(environment.getLocalContext(), streamIdent, currentInputStream.getId());
     }
 
     /**
@@ -117,17 +125,12 @@ public final class Io {
      */
     @Predicate("set_output")
     public static void setOutput(Environment environment, Term streamIdent) {
-        IoBinding binding = lookupStream(environment, streamIdent);
-        PrologWriteStream writer = getWriter(environment, streamIdent, binding);
-        if (binding == null) {
-            throw PrologDomainError.streamOrAlias(environment, streamIdent);
-        }
-        if (binding.getWrite() == null) {
-            throw PrologPermissionError.error(environment, "output", "stream", streamIdent,
-                    "Stream is not opened for writing");
-        }
-        IoBinding oldBinding = environment.setWriter(binding);
-        environment.pushBacktrack(new RestoreWriter(environment, oldBinding));
+        LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        // verify and prepare stream, return value ignored
+        logicalStream.getOutputStream(environment, (Atomic) streamIdent);
+        LogicalStream oldOutputStream = environment.setOutputStream(logicalStream);
+        // TODO, this may be wrong
+        environment.pushBacktrack(new RestoreOutput(environment, oldOutputStream));
     }
 
     /**
@@ -138,8 +141,8 @@ public final class Io {
      */
     @Predicate("current_output")
     public static void currentOutput(Environment environment, Term streamIdent) {
-        IoBinding writerBinding = environment.getWriter();
-        Unifier.unify(environment.getLocalContext(), streamIdent, writerBinding.getName());
+        LogicalStream currentOutputStream = environment.getOutputStream();
+        Unifier.unify(environment.getLocalContext(), streamIdent, currentOutputStream.getId());
     }
 
     /**
@@ -150,17 +153,133 @@ public final class Io {
      */
     @Predicate("close")
     public static void close(Environment environment, Term streamIdent) {
-        IoBinding binding = lookupStream(environment, streamIdent);
-        if (binding == null) {
-            return;
-        }
-        environment.addStream(binding.getName(), null);
-        environment.pushBacktrack(new RestoreStreamBinding(environment, binding.getName(), binding));
+        LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        // Remove only from primary stream table
+        // TODO: Do we remove aliases too?
+        environment.addStream(logicalStream.getId(), null);
         try {
-            binding.close();
+            logicalStream.close();
         } catch (IOException ioe) {
             throw closeError(ioe, environment);
         }
+    }
+
+    /**
+     * Query one of the streams properties.
+     *
+     * @param environment    Execution Environment
+     * @param streamIdent    Stream to query property from
+     * @param propertyStruct A structure indicating requested property. Structure need not be grounded.
+     */
+    @Predicate("stream_property")
+    public static void streamProperty(Environment environment, Term streamIdent, Term propertyStruct) {
+        LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        // some possible optimization here if propertyStruct known at compile time
+        if (!(propertyStruct instanceof CompoundTerm)) {
+            throw PrologTypeError.compoundExpected(environment, propertyStruct);
+        }
+        CompoundTerm compoundProperty = (CompoundTerm) propertyStruct;
+        if (compoundProperty.arity() != 1) {
+            throw PrologDomainError.streamProperty(environment, compoundProperty);
+        }
+        Atomic propertyName = compoundProperty.functor();
+        Term unifyValue = compoundProperty.get(0);
+        StreamProperties properties = new StreamProperties(environment, logicalStream);
+        Term actualValue = properties.get(propertyName);
+        Unifier.unify(environment.getLocalContext(), unifyValue, actualValue);
+    }
+
+    /**
+     * Modify a stream property.
+     *
+     * @param environment    Execution Environment
+     * @param streamIdent    Stream to update property of
+     * @param propertyStruct A structure indicating requested property. Structure is not grounded.
+     */
+    @Predicate("set_stream")
+    public static void setStream(Environment environment, Term streamIdent, Term propertyStruct) {
+        LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        // some possible optimization here if propertyStruct known at compile time
+        if (!(propertyStruct instanceof CompoundTerm)) {
+            throw PrologTypeError.compoundExpected(environment, propertyStruct);
+        }
+        CompoundTerm compoundProperty = (CompoundTerm) propertyStruct;
+        if (compoundProperty.arity() != 1) {
+            throw PrologDomainError.streamProperty(environment, compoundProperty);
+        }
+        Atomic propertyName = compoundProperty.functor();
+        Term propertyValue = compoundProperty.get(0);
+        StreamProperties properties = new StreamProperties(environment, logicalStream);
+        properties.set(propertyName, propertyValue);
+    }
+
+    /**
+     * Query some properties of stream, or enumerate all streams with properties of stream, or find matching stream.
+     * That is, this operates over all streams.
+     *
+     * @param compiling Compiling context
+     * @param term      Structure current_stream(Object, Mode, Stream)
+     */
+    @Predicate(value = "current_stream", arity = 3)
+    public static void currentStream(CompileContext compiling, CompoundTerm term) {
+        // E.g. current_stream(?Object, ?Mode, ?Stream)
+        // Can be used to enumerate all streams
+        throw new UnsupportedOperationException("NYI");
+    }
+
+    /**
+     * Check stream exists - backtrack if it does not.
+     *
+     * @param environment Execution Environment
+     * @param streamIdent Stream to query property from
+     */
+    @Predicate("is_stream")
+    public static void isStream(Environment environment, Term streamIdent) {
+        LogicalStream logicalStream = lookupStreamUnsafe(environment, streamIdent);
+        if (logicalStream == null) {
+            environment.backtrack();
+        }
+    }
+
+    /**
+     * Restore absolute position of stream
+     *
+     * @param environment Execution environment
+     * @param stream      Stream to modify
+     * @param position    Opaque position
+     */
+    @Predicate("set_stream_position")
+    public static void setStreamPosition(Environment environment, Term stream, Term position) {
+        // Restore position on a stream
+        throw new UnsupportedOperationException("NYI");
+    }
+
+    /**
+     * Retrieve detailed positioning information of stream
+     *
+     * @param environment  Execution environment
+     * @param positionTerm Opaque positioning term
+     * @param method       Information desired
+     * @param data         Position information
+     */
+    @Predicate("stream_position_data")
+    public static void streamPositionData(Environment environment, Term positionTerm, Term method, Term data) {
+        // Obtain position of a stream (compare with seek)
+        throw new UnsupportedOperationException("NYI");
+    }
+
+    /**
+     * Change position, allowing for relative positioning
+     *
+     * @param environment Execution environment
+     * @param stream      Stream to reposition
+     * @param offset      Desired position per method
+     * @param method      Method to use to reposition
+     * @param location    New absolute position
+     */
+    @Predicate("seek")
+    public static void seek(Environment environment, Term stream, Term offset, Term method, Term location) {
+        throw new UnsupportedOperationException("NYI");
     }
 
     /**
@@ -171,9 +290,8 @@ public final class Io {
      */
     @Predicate("get_char")
     public static void getChar(Environment environment, Term term) {
-        IoBinding io = environment.getReader();
-        PrologReadStream stream = io.getRead();
-        Atomic value = stream.getChar(environment);
+        LogicalStream logicalStream = environment.getInputStream();
+        Atomic value = logicalStream.getChar(environment, null);
         Unifier.unify(environment.getLocalContext(), term, value);
     }
 
@@ -185,25 +303,8 @@ public final class Io {
      */
     @Predicate("put_char")
     public static void putChar(Environment environment, Term term) {
-        if (!term.isInstantiated()) {
-            environment.backtrack();
-            return;
-        }
-        String text;
-        if (term.isInteger()) {
-            text = String.valueOf((char) PrologInteger.from(term).get().intValue());
-        } else if (term.isAtom()) {
-            text = PrologAtom.from(term).get();
-        } else {
-            throw PrologTypeError.characterExpected(environment, term);
-        }
-        IoBinding io = environment.getWriter();
-        PrologWriteStream stream = io.getWrite();
-        try {
-            stream.write(text);
-        } catch (IOException ioe) {
-            throw writeError(ioe, environment);
-        }
+        LogicalStream logicalStream = environment.getOutputStream();
+        logicalStream.putChar(environment, null, term);
     }
 
     /**
@@ -214,10 +315,8 @@ public final class Io {
      */
     @Predicate("read")
     public static void read(Environment environment, Term term) {
-        IoBinding io = environment.getReader();
-        PrologReadStream stream = io.getRead();
-        Term value = stream.read(environment, new ReadOptions(environment, null));
-        Unifier.unify(environment.getLocalContext(), term, value);
+        LogicalStream logicalStream = environment.getInputStream();
+        logicalStream.read(environment, null, term, null);
     }
 
     /**
@@ -229,9 +328,8 @@ public final class Io {
      */
     @Predicate("read")
     public static void read(Environment environment, Term streamIdent, Term term) {
-        PrologReadStream stream = getReader(environment, streamIdent, null);
-        Term value = stream.read(environment, new ReadOptions(environment, null));
-        Unifier.unify(environment.getLocalContext(), term, value);
+        LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        logicalStream.read(environment, (Atomic) streamIdent, term, null);
     }
 
     /**
@@ -243,10 +341,8 @@ public final class Io {
      */
     @Predicate("read_term")
     public static void readTerm(Environment environment, Term term, Term options) {
-        IoBinding io = environment.getReader();
-        PrologReadStream stream = io.getRead();
-        Term value = stream.read(environment, new ReadOptions(environment, options));
-        Unifier.unify(environment.getLocalContext(), term, value);
+        LogicalStream logicalStream = environment.getInputStream();
+        logicalStream.read(environment, null, term, options);
     }
 
     /**
@@ -259,9 +355,8 @@ public final class Io {
      */
     @Predicate("read_term")
     public static void readTerm(Environment environment, Term streamIdent, Term term, Term options) {
-        PrologReadStream stream = getReader(environment, streamIdent, null);
-        Term value = stream.read(environment, new ReadOptions(environment, options));
-        Unifier.unify(environment.getLocalContext(), term, value);
+        LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        logicalStream.read(environment, (Atomic) streamIdent, term, options);
     }
 
     /**
@@ -272,9 +367,8 @@ public final class Io {
      */
     @Predicate("write")
     public static void write(Environment environment, Term term) {
-        IoBinding io = environment.getWriter();
-        PrologWriteStream stream = io.getWrite();
-        write(environment, null, stream, term);
+        LogicalStream logicalStream = environment.getOutputStream();
+        logicalStream.write(environment, null, term, null);
     }
 
     /**
@@ -286,8 +380,8 @@ public final class Io {
      */
     @Predicate("write")
     public static void write(Environment environment, Term streamIdent, Term term) {
-        PrologWriteStream stream = getWriter(environment, streamIdent, null);
-        write(environment, null, stream, term);
+        LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        logicalStream.write(environment, (Atomic) streamIdent, term, null);
     }
 
     /**
@@ -299,9 +393,8 @@ public final class Io {
      */
     @Predicate("write_term")
     public static void writeTerm(Environment environment, Term term, Term options) {
-        IoBinding io = environment.getWriter();
-        PrologWriteStream stream = io.getWrite();
-        write(environment, options, stream, term);
+        LogicalStream logicalStream = environment.getOutputStream();
+        logicalStream.write(environment, null, term, options);
     }
 
     /**
@@ -314,8 +407,8 @@ public final class Io {
      */
     @Predicate("write_term")
     public static void writeTerm(Environment environment, Term streamIdent, Term term, Term options) {
-        PrologWriteStream stream = getWriter(environment, streamIdent, null);
-        write(environment, options, stream, term);
+        LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        logicalStream.write(environment, (Atomic) streamIdent, term, options);
     }
 
     /**
@@ -325,13 +418,8 @@ public final class Io {
      */
     @Predicate("nl")
     public static void nl(Environment environment) {
-        IoBinding io = environment.getWriter();
-        PrologWriteStream stream = io.getWrite();
-        try {
-            stream.write("\n");
-        } catch (IOException ioe) {
-            throw writeError(ioe, environment);
-        }
+        LogicalStream logicalStream = environment.getOutputStream();
+        logicalStream.nl(environment, null);
     }
 
     /**
@@ -342,12 +430,8 @@ public final class Io {
      */
     @Predicate("nl")
     public static void nl(Environment environment, Term streamIdent) {
-        PrologWriteStream stream = getWriter(environment, streamIdent, null);
-        try {
-            stream.write("\n");
-        } catch (IOException ioe) {
-            throw writeError(ioe, environment);
-        }
+        LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        logicalStream.nl(environment, (Atomic) streamIdent);
     }
 
     // ====================================================================
@@ -364,7 +448,7 @@ public final class Io {
      * @param fileName    File being opened
      * @return error to throw
      */
-    public static PrologError openError(IOException cause, Environment environment, Term fileName) {
+    private static PrologError openError(IOException cause, Environment environment, Term fileName) {
         if (cause instanceof FileNotFoundException) {
             return PrologExistenceError.error(environment,
                     Interned.SOURCE_SINK_DOMAIN, fileName, "File not found", cause);
@@ -375,102 +459,94 @@ public final class Io {
     }
 
     /**
-     * Translates a read error
-     *
-     * @param cause       IO exception
-     * @param environment Execution environment
-     * @return error to throw
-     */
-    public static PrologError readError(Throwable cause, Environment environment) {
-        return PrologError.systemError(environment, cause);
-    }
-
-    /**
-     * Translates a write error
-     *
-     * @param cause       IO exception
-     * @param environment Execution environment
-     * @return error to throw
-     */
-    public static PrologError writeError(Throwable cause, Environment environment) {
-        return PrologError.systemError(environment, cause);
-    }
-
-    /**
      * Translates a close error
      *
      * @param cause       IO exception
      * @param environment Execution environment
      * @return error to throw
      */
-    public static PrologError closeError(Throwable cause, Environment environment) {
+    private static PrologError closeError(Throwable cause, Environment environment) {
         return PrologError.systemError(environment, cause);
     }
 
     /**
-     * Open file, returning a binding
+     * Open file, returning a stream
      *
-     * @param environment Execution environment
-     * @param optionsTerm Open options
-     * @param fileName    File to be opened
-     * @param mode        Mode to open file
-     * @param streamAlias Desired stream alias
-     * @return IoBinding
+     * @param environment  Execution environment
+     * @param optionsTerm  Open options
+     * @param fileName     File to be opened
+     * @param mode         Mode to open file
+     * @param streamTarget Variable, or desired stream alias
      */
-    public static IoBinding openHelper(Environment environment, Term optionsTerm, Term fileName, Term mode, Term streamAlias) {
+    private static void openHelper(Environment environment, Term optionsTerm, Term fileName, Term mode, Term streamTarget) {
         OpenOptions options = new OpenOptions(environment, optionsTerm);
+        StreamProperties.OpenMode openMode;
         // TODO: consider options above for the open mode below
-        OpenOption[] op;
+        Set<OpenOption> op = new HashSet<OpenOption>();
         if (mode == OPEN_READ) {
-            op = new OpenOption[0];
+            op.add(StandardOpenOption.READ);
+            openMode = StreamProperties.OpenMode.ATOM_read;
         } else if (mode == OPEN_WRITE) {
-            op = new OpenOption[]{StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING};
+            op.add(StandardOpenOption.WRITE);
+            op.add(StandardOpenOption.CREATE);
+            op.add(StandardOpenOption.TRUNCATE_EXISTING);
+            openMode = StreamProperties.OpenMode.ATOM_write;
         } else if (mode == OPEN_UPDATE) {
-            op = new OpenOption[]{StandardOpenOption.WRITE, StandardOpenOption.CREATE};
+            op.add(StandardOpenOption.WRITE);
+            op.add(StandardOpenOption.CREATE);
+            openMode = StreamProperties.OpenMode.ATOM_update;
         } else if (mode == OPEN_APPEND) {
-            op = new OpenOption[]{StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND};
+            op.add(StandardOpenOption.WRITE);
+            op.add(StandardOpenOption.CREATE);
+            op.add(StandardOpenOption.APPEND);
+            openMode = StreamProperties.OpenMode.ATOM_append;
         } else {
             throw PrologDomainError.ioMode(environment, mode);
         }
 
+        OpenOption[] ops = op.toArray(new OpenOption[0]);
+
         Path path = parsePath(environment, fileName);
-        Atomic name = null;
-        if (streamAlias.isInstantiated()) {
-            if (!(streamAlias.isAtom())) {
-                throw PrologTypeError.atomExpected(environment, streamAlias);
+        PrologAtom aliasName = null;
+        if (streamTarget.isInstantiated()) {
+            if (!(streamTarget.isAtom())) {
+                throw PrologTypeError.atomExpected(environment, streamTarget);
             }
-            name = (Atomic) streamAlias;
+            aliasName = (PrologAtom) streamTarget;
         }
 
-        IoBinding binding;
-        PrologReadStream reader = null;
-        PrologWriteStream writer = null;
+        LogicalStream binding;
+        RandomAccessStream fileStream;
 
         try {
-            if (op.length == 0) {
-                if (path == null) {
-                    reader = PrologReadInteractiveStream.STREAM;
-                } else {
-                    reader = new PrologReadStreamImpl(path);
-                }
-            } else {
-                if (path == null) {
-                    writer = PrologWriteStdoutStream.STREAM;
-                } else {
-                    writer = new PrologWriteStreamImpl(path, op);
-                }
-            }
+            fileStream = new RandomAccessStream(FileChannel.open(path, ops));
         } catch (IOException ioe) {
             throw openError(ioe, environment, fileName);
         }
-        if (name == null) {
-            name = IoBinding.unique();
-            Unifier.unify(environment.getLocalContext(), streamAlias, name);
+        PrologInputStream input = mode == OPEN_READ ? fileStream : null;
+        PrologOutputStream output = mode != OPEN_READ ? fileStream : null;
+        PrologInteger id = LogicalStream.unique();
+        if (aliasName == null) {
+            Unifier.unify(environment.getLocalContext(), streamTarget, id);
         }
-        binding = new IoBinding(name, reader, writer);
-        IoBinding oldBinding = environment.addStream(name, binding);
-        environment.pushBacktrack(new RestoreStreamBinding(environment, name, oldBinding));
-        return binding;
+        binding = new LogicalStream(id, input, output, openMode);
+        binding.setBufferMode(options.buffer);
+        binding.setType(options.type);
+        binding.setCloseOnAbort(options.closeOnAbort);
+        //binding.setCloseOnExec(options.closeOnExec);
+        binding.setEncoding(options.encoding.orElse(options.type == StreamProperties.Type.ATOM_text
+                ? StreamProperties.Encoding.ATOM_utf8 : StreamProperties.Encoding.ATOM_octet));
+        binding.setEofAction(options.eofAction);
+        binding.setFileName(fileName);
+        binding.setIsTTY(false);
+        environment.addStream(binding.getId(), binding);
+        // TODO: BOM
+
+        // Two different ways of specifying an alias
+        if (aliasName != null) {
+            environment.addStreamAlias(aliasName, binding);
+        }
+        options.alias.ifPresent(prologAtom -> environment.addStreamAlias(prologAtom, binding));
     }
 
     /**
@@ -493,139 +569,88 @@ public final class Io {
     }
 
     /**
-     * Helper, find stream by name
+     * Helper, find stream by name, may return null
      *
      * @param streamIdent name of stream
-     * @return stream via binding
+     * @return stream via binding or null if not found
      */
-    public static IoBinding lookupStream(Environment environment, Term streamIdent) {
+    private static LogicalStream lookupStreamUnsafe(Environment environment, Term streamIdent) {
         if (!streamIdent.isInstantiated()) {
             throw PrologInstantiationError.error(environment, streamIdent);
         }
         if (!(streamIdent instanceof Atomic)) {
             throw PrologDomainError.streamOrAlias(environment, streamIdent);
         }
-        IoBinding binding = environment.lookupStream((Atomic) streamIdent);
-        if (binding == null) {
+        return environment.lookupStream((Atomic) streamIdent);
+    }
+
+    /**
+     * Helper, find stream by name. Error thrown if stream not found
+     *
+     * @param streamIdent name of stream
+     * @return stream via binding
+     */
+    public static LogicalStream lookupStream(Environment environment, Term streamIdent) {
+        LogicalStream logicalStream = lookupStreamUnsafe(environment, streamIdent);
+        if (logicalStream == null) {
             throw PrologDomainError.streamOrAlias(environment, streamIdent);
         }
-        return binding;
+        return logicalStream;
     }
 
     /**
-     * Retrieve reader from environment.
-     *
-     * @param environment Execution environment
-     * @param streamIdent Stream identifier
-     * @param binding     Binding if known else null
-     * @return Read stream
-     */
-    public static PrologReadStream getReader(Environment environment, Term streamIdent, IoBinding binding) {
-        if (binding == null) {
-            binding = lookupStream(environment, streamIdent);
-        }
-        if (binding.getRead() == null) {
-            throw PrologPermissionError.error(environment, "input", "stream", streamIdent,
-                    "Stream is not opened for reading");
-        }
-        return binding.getRead();
-    }
-
-    /**
-     * Retrieve writer from environment.
-     *
-     * @param environment Execution environment
-     * @param streamIdent Stream identifier
-     * @param binding     Binding if known else null
-     * @return Write stream
-     */
-    public static PrologWriteStream getWriter(Environment environment, Term streamIdent, IoBinding binding) {
-        if (binding == null) {
-            binding = lookupStream(environment, streamIdent);
-        }
-        if (binding.getWrite() == null) {
-            throw PrologPermissionError.error(environment, "output", "stream", streamIdent,
-                    "Stream is not opened for writing");
-        }
-        return binding.getWrite();
-    }
-
-    /**
-     * Write term to stream
-     *
-     * @param environment Execution environment
-     * @param optionsTerm Write options
-     * @param stream      Stream to write to
-     * @param term        Term to format and write
-     */
-    private static void write(Environment environment, Term optionsTerm, PrologWriteStream stream, Term term) {
-        if (!term.isInstantiated()) {
-            throw PrologInstantiationError.error(environment, term);
-        }
-        WriteOptions options = new WriteOptions(environment, optionsTerm);
-        WriteContext context = new WriteContext(environment, options, stream);
-        StructureWriter writer = new StructureWriter(context, term);
-        try {
-            writer.write();
-        } catch (IOException ioe) {
-            throw writeError(ioe, environment);
-        }
-    }
-
-    /**
-     * if the new binding has same name as old stream binding, the name is occluded.
-     * This restores the occluded name on backtrack
+     * Undoes an alias on backtrack
      */
     private static class RestoreStreamBinding implements Backtrack {
         private final Environment environment;
-        private final Atomic name;
-        private final IoBinding binding;
+        private final PrologAtom alias;
+        private final LogicalStream binding;
 
-        public RestoreStreamBinding(Environment environment, Atomic name, IoBinding binding) {
+        RestoreStreamBinding(Environment environment, PrologAtom alias, LogicalStream binding) {
             this.environment = environment;
-            this.name = name;
+            this.alias = alias;
             this.binding = binding;
         }
 
         @Override
         public void undo() {
-            environment.addStream(name, binding);
+            environment.addStreamAlias(alias, binding);
         }
     }
 
     /**
      * Restores the previous input stream
      */
-    private static class RestoreReader implements Backtrack {
+    private static class RestoreInput implements Backtrack {
         private final Environment environment;
-        private final IoBinding binding;
+        private final LogicalStream binding;
 
-        public RestoreReader(Environment environment, IoBinding binding) {
+        RestoreInput(Environment environment, LogicalStream binding) {
             this.environment = environment;
             this.binding = binding;
         }
 
         @Override
         public void undo() {
-            environment.setReader(binding);
+            environment.setInputStream(binding);
         }
     }
 
     /**
      * Restores the previous output stream
      */
-    private static class RestoreWriter implements Backtrack {
+    private static class RestoreOutput implements Backtrack {
         private final Environment environment;
-        private final IoBinding binding;
+        private final LogicalStream binding;
 
-        public RestoreWriter(Environment environment, IoBinding binding) {
+        RestoreOutput(Environment environment, LogicalStream binding) {
             this.environment = environment;
             this.binding = binding;
         }
 
         @Override
         public void undo() {
-            environment.setWriter(binding);
+            environment.setOutputStream(binding);
         }
     }
 }

@@ -10,8 +10,10 @@ import prolog.bootstrap.Interned;
 import prolog.execution.OperatorEntry;
 import prolog.expressions.Term;
 import prolog.expressions.TermListImpl;
+import prolog.flags.ReadOptions;
 import prolog.parser.ExpressionReader;
 import prolog.parser.Tokenizer;
+import prolog.test.StreamUtils;
 
 import java.io.IOException;
 
@@ -36,8 +38,8 @@ public class StructureWriterTest {
     }
 
     private Term read(String text) {
-        PrologReadStream stream = new PrologReadStringStream(text);
-        Tokenizer tok = new Tokenizer(environment, stream);
+        PrologInputStream stream = StreamUtils.bufferedString(text);
+        Tokenizer tok = new Tokenizer(environment, new ReadOptions(environment, null), stream);
         return new ExpressionReader(tok).read();
     }
 

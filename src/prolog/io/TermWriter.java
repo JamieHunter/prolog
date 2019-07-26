@@ -7,7 +7,6 @@ import prolog.expressions.Term;
 import prolog.parser.TokenRegex;
 
 import java.io.IOException;
-import java.io.Writer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,7 +17,7 @@ import java.util.regex.Pattern;
 public abstract class TermWriter<T extends Term> extends TokenRegex {
     protected final WriteContext context;
     protected final T term;
-    protected final Writer writer;
+    protected final PrologOutputStream output;
 
     /**
      * Create writer utility.
@@ -28,7 +27,7 @@ public abstract class TermWriter<T extends Term> extends TokenRegex {
     protected TermWriter(WriteContext context, T term) {
         this.context = context;
         this.term = term;
-        this.writer = context.writer();
+        this.output = context.output();
     }
 
     /**
@@ -63,61 +62,61 @@ public abstract class TermWriter<T extends Term> extends TokenRegex {
      */
     public void writeQuoted(char quote, String text) throws IOException {
         context.beginQuoted();
-        writer.write(quote);
+        output.write(quote);
         Matcher m = STRING_SPLITTER.matcher(text);
         for(;m.lookingAt();m.region(m.end(), m.regionEnd())) {
             String x = m.group(PRINTABLE_TAG);
             if (x != null) {
-                writer.write(x);
+                output.write(x);
                 continue;
             }
             x = m.group(QUOTE_TAG);
             if (x != null) {
                 if (x.charAt(0) == quote) {
-                    writer.write(x + x);
+                    output.write(x + x);
                 } else {
-                    writer.write(x);
+                    output.write(x);
                 }
                 continue;
             }
             x = m.group(BACKSLASH_TAG);
             if (x != null) {
-                writer.write("\\\\");
+                output.write("\\\\");
             }
             x = m.group(ALL_TAG);
             if (x != null) {
                 switch(x.charAt(0)) {
                     case '\002':
-                        writer.write("\\a");
+                        output.write("\\a");
                         break;
                     case '\b':
-                        writer.write("\\b");
+                        output.write("\\b");
                         break;
                     case '\n':
-                        writer.write("\\n");
+                        output.write("\\n");
                         break;
                     case '\f':
-                        writer.write("\\f");
+                        output.write("\\f");
                         break;
                     case '\r':
-                        writer.write("\\r");
+                        output.write("\\r");
                         break;
                     case '\t':
-                        writer.write("\\t");
+                        output.write("\\t");
                         break;
                     case '\013':
-                        writer.write("\\v");
+                        output.write("\\v");
                         break;
                     default:
                         if (x.charAt(0) < 0x20) {
-                            writer.write(String.format("\\%03o\\", (int)x.charAt(0)));
+                            output.write(String.format("\\%03o\\", (int)x.charAt(0)));
                         } else {
-                            writer.write(String.format("\\x%x\\", (int)x.charAt(0)));
+                            output.write(String.format("\\x%x\\", (int)x.charAt(0)));
                         }
                         break;
                 }
             }
         }
-        writer.write(quote);
+        output.write(quote);
     }
 }

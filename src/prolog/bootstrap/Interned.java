@@ -20,6 +20,7 @@ public final class Interned {
     private Interned() {
         // Utility
     }
+
     // must be first!
     private static final HashMap<String, PrologAtom> internedAtoms = new HashMap<>();
 
@@ -70,6 +71,7 @@ public final class Interned {
     public static final PrologAtom NOT_LESS_THAN_ZERO_DOMAIN = internAtom("not_less_than_zero");
     public static final PrologAtom OUT_OF_RANGE_DOMAIN = internAtom("out_of_range");
     public static final PrologAtom STREAM_OR_ALIAS_DOMAIN = internAtom("stream_or_alias");
+    public static final PrologAtom STREAM_PROPERTY_DOMAIN = internAtom("stream_property");
     public static final PrologAtom SOURCE_SINK_DOMAIN = internAtom("source_sink");
     public static final PrologAtom IO_MODE_DOMAIN = internAtom("io_mode");
     public static final PrologAtom OPERATOR_PRIORITY_DOMAIN = internAtom("operator_priority");
@@ -102,6 +104,7 @@ public final class Interned {
 
     /**
      * Retrieve all interned atoms for copying to an Environment.
+     *
      * @return Map of atoms.
      */
     public static Map<String, PrologAtom> getInterned() {

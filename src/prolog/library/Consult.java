@@ -5,9 +5,10 @@ package prolog.library;
 
 import prolog.bootstrap.DemandLoad;
 import prolog.bootstrap.Predicate;
+import prolog.constants.Atomic;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
-import prolog.io.PrologReadStream;
+import prolog.io.LogicalStream;
 import prolog.io.Prompt;
 import prolog.predicates.Predication;
 
@@ -26,24 +27,24 @@ public final class Consult {
      * Primes interactive prompt to indicate interactive consult.
      *
      * @param environment Execution environment
-     * @param streamName  Single term specifying stream.
+     * @param streamIdent Single term specifying stream.
      */
     @Predicate("$consult_prompt")
-    public static void consultPrompt(Environment environment, Term streamName) {
-        PrologReadStream stream = Io.getReader(environment, streamName, null);
-        stream.setPrompt(Prompt.CONSULT);
+    public static void consultPrompt(Environment environment, Term streamIdent) {
+        LogicalStream logicalStream = Io.lookupStream(environment, streamIdent);
+        logicalStream.setPrompt(environment, (Atomic) streamIdent, Prompt.CONSULT);
     }
 
     /**
      * Ends interactive prompt.
      *
      * @param environment Execution environment
-     * @param streamName  Single term specifying stream.
+     * @param streamIdent Single term specifying stream.
      */
     @Predicate("$no_prompt")
-    public static void noPrompt(Environment environment, Term streamName) {
-        PrologReadStream stream = Io.getReader(environment, streamName, null);
-        stream.setPrompt(Prompt.NONE);
+    public static void noPrompt(Environment environment, Term streamIdent) {
+        LogicalStream logicalStream = Io.lookupStream(environment, streamIdent);
+        logicalStream.setPrompt(environment, (Atomic) streamIdent, Prompt.NONE);
     }
 
     /**

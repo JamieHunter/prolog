@@ -12,9 +12,9 @@ import prolog.execution.Query;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.flags.ReadOptions;
-import prolog.io.PrologReadStream;
-import prolog.io.PrologReadStringStream;
+import prolog.io.LogicalStream;
 import prolog.library.Dictionary;
+import prolog.test.StreamUtils;
 import prolog.test.Then;
 import prolog.variables.BoundVariable;
 
@@ -47,8 +47,8 @@ public class ThenImpl implements Then {
         state.reset();
         query.reset();
         lastExec = null;
-        PrologReadStream reader = new PrologReadStringStream(text);
-        Term term = reader.read(state.environment, new ReadOptions(state.environment, null));
+        LogicalStream stream = StreamUtils.logical(StreamUtils.prologString(text));
+        Term term = stream.read(state.environment, null, new ReadOptions(state.environment, null));
         if (CompoundTerm.termIsA(term, Interned.QUERY_FUNCTOR, 1)) {
             CompoundTerm clause = (CompoundTerm) term;
             query.compile(clause.get(0));

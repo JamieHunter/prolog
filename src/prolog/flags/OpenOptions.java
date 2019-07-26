@@ -4,6 +4,7 @@
 package prolog.flags;
 
 import prolog.constants.Atomic;
+import prolog.constants.PrologAtom;
 import prolog.exceptions.FutureFlagError;
 import prolog.exceptions.PrologDomainError;
 import prolog.execution.Environment;
@@ -25,24 +26,24 @@ public class OpenOptions implements Flags {
     static {
         // TODO: These are all placeholders and not yet parsed
         parser.atomFlag(internAtom("alias"), (o, v) -> o.alias = Optional.of(v));
-        parser.enumFlag(internAtom("type"), Type.class, (o, v) -> o.type = v);
+        parser.enumFlag(internAtom("type"), StreamProperties.Type.class, (o, v) -> o.type = v);
         parser.booleanFlag(internAtom("bom"), (o, v) -> o.bom = Optional.of(v));
-        parser.enumFlag(internAtom("buffer"), Buffering.class, (o, v) -> o.buffer = v);
+        parser.enumFlag(internAtom("buffer"), StreamProperties.Buffering.class, (o, v) -> o.buffer = v);
         parser.booleanFlag(internAtom("close_on_abort"), (o, v) -> o.closeOnAbort = v);
-        parser.enumFlags(internAtom("create"), Create.class, (o, v) -> o.create = v);
-        parser.enumFlag(internAtom("encoding"), Encoding.class, (o, v) -> o.encoding = Optional.of(v));
-        parser.enumFlag(internAtom("eof_action"), EofAction.class, (o, v) -> o.eofAction = v);
+        parser.enumFlags(internAtom("create"), StreamProperties.Create.class, (o, v) -> o.create = v);
+        parser.enumFlag(internAtom("encoding"), StreamProperties.Encoding.class, (o, v) -> o.encoding = Optional.of(v));
+        parser.enumFlag(internAtom("eof_action"), StreamProperties.EofAction.class, (o, v) -> o.eofAction = v);
         parser.booleanFlag(internAtom("reposition"), (o, v) -> o.reposition = Optional.of(v));
     }
 
     /**
      * Specify an alias to use in addition to the file handle
      */
-    public Optional<Atomic> alias = Optional.empty();
+    public Optional<PrologAtom> alias = Optional.empty();
     /**
      * Specify text vs binary
      */
-    public Type type = Type.ATOM_text;
+    public StreamProperties.Type type = StreamProperties.Type.ATOM_text;
     /**
      * Specify if bom should be checked
      */
@@ -50,7 +51,7 @@ public class OpenOptions implements Flags {
     /**
      * Specify type of buffering
      */
-    public Buffering buffer = Buffering.ATOM_full;
+    public StreamProperties.Buffering buffer = StreamProperties.Buffering.ATOM_full;
     /**
      * Specify abort behavior
      */
@@ -58,15 +59,15 @@ public class OpenOptions implements Flags {
     /**
      * Specify create behavior
      */
-    public Set<Create> create = Collections.emptySet();
+    public Set<StreamProperties.Create> create = Collections.emptySet();
     /**
      * Specify file encoding, default depends on file type
      */
-    public Optional<Encoding> encoding = Optional.empty();
+    public Optional<StreamProperties.Encoding> encoding = Optional.empty();
     /**
      * Specify EOF behavior
      */
-    public EofAction eofAction = EofAction.ATOM_eof_code;
+    public StreamProperties.EofAction eofAction = StreamProperties.EofAction.ATOM_eof_code;
     /**
      * Specify if respositioning is requested
      */
@@ -86,38 +87,4 @@ public class OpenOptions implements Flags {
         }
     }
 
-    public enum Buffering {
-        ATOM_full,
-        ATOM_line,
-        ATOM_false
-    }
-
-    private enum Create {
-        ATOM_read,
-        ATOM_write,
-        ATOM_execute,
-        ATOM_default,
-        ATOM_all
-    }
-
-    private enum Encoding {
-        ATOM_utf8,
-        ATOM_octet,
-        ATOM_ascii,
-        ATOM_iso_latin_1,
-        ATOM_text,
-        ATOM_unicode_be,
-        ATOM_unicode_le
-    }
-
-    private enum EofAction {
-        ATOM_eof_code,
-        ATOM_error,
-        ATOM_reset
-    }
-
-    private enum Type {
-        ATOM_text,
-        ATOM_binary
-    }
 }

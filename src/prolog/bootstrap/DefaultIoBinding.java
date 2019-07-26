@@ -3,12 +3,14 @@
 //
 package prolog.bootstrap;
 
-import prolog.constants.Atomic;
-import prolog.io.IoBinding;
-import prolog.io.PrologReadInteractiveStream;
-import prolog.io.PrologWriteStdoutStream;
-import prolog.library.Io;
+import prolog.constants.PrologAtom;
+import prolog.constants.PrologInteger;
+import prolog.flags.StreamProperties;
+import prolog.io.LogicalStream;
+import prolog.io.SequentialInputStream;
+import prolog.io.SequentialOutputStream;
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,33 +21,89 @@ import java.util.Map;
 public class DefaultIoBinding {
 
     /**
+     * Name of well defined input stream
+     */
+    public static final PrologAtom USER_INPUT_STREAM = Interned.internAtom("user_input");
+    /**
+     * Name of well defined output stream
+     */
+    public static final PrologAtom USER_OUTPUT_STREAM = Interned.internAtom("user_output");
+    /**
+     * Name of well defined error output stream
+     */
+    public static final PrologAtom USER_ERROR_STREAM = Interned.internAtom("user_error");
+
+    /**
      * Well defined user input stream.
      */
-    public static final IoBinding USER_INPUT = new IoBinding(Io.USER_INPUT_STREAM,
-            PrologReadInteractiveStream.STREAM, null);
+    public static final LogicalStream USER_INPUT = new LogicalStream(
+            new PrologInteger(BigInteger.valueOf(0)),
+            new SequentialInputStream(System.in),
+            null,
+            StreamProperties.OpenMode.ATOM_read
+    );
     /**
      * Well defined user output stream.
      */
-    public static final IoBinding USER_OUTPUT = new IoBinding(Io.USER_OUTPUT_STREAM,
-            null, PrologWriteStdoutStream.STREAM);
+    public static final LogicalStream USER_OUTPUT = new LogicalStream(
+            new PrologInteger(BigInteger.valueOf(1)),
+            null,
+            new SequentialOutputStream(System.out),
+            StreamProperties.OpenMode.ATOM_write
+    );
+    /**
+     * Well defined user error output stream.
+     */
+    public static final LogicalStream USER_ERROR = new LogicalStream(
+            new PrologInteger(BigInteger.valueOf(2)),
+            null,
+            new SequentialOutputStream(System.err),
+            StreamProperties.OpenMode.ATOM_write);
 
-
-    private static final Map<Atomic, IoBinding> systemStreams = new HashMap<>();
+    private static final Map<PrologInteger, LogicalStream> initialStreams = new HashMap<>();
+    private static final Map<PrologAtom, LogicalStream> initialAliases = new HashMap<>();
 
     //
-    // Well defined stream names.
+    // Well defined streams.
     //
     static {
-        systemStreams.put(USER_INPUT.getName(), USER_INPUT);
-        systemStreams.put(USER_OUTPUT.getName(), USER_OUTPUT);
+        USER_INPUT.addAlias(USER_INPUT_STREAM);
+        USER_INPUT.setFileName(Interned.internAtom("(stdin)"));
+        USER_INPUT.setBufferMode(StreamProperties.Buffering.ATOM_line);
+        USER_OUTPUT.addAlias(USER_OUTPUT_STREAM);
+        USER_OUTPUT.setFileName(Interned.internAtom("(stdout)"));
+        USER_INPUT.setBufferMode(StreamProperties.Buffering.ATOM_line);
+        USER_ERROR.addAlias(USER_ERROR_STREAM);
+        USER_ERROR.setFileName(Interned.internAtom("(stderr)"));
+        USER_INPUT.setBufferMode(StreamProperties.Buffering.ATOM_false);
+        StreamProperties.NewLineMode newlineMode = StreamProperties.NewLineMode.ATOM_detect;
+        for (LogicalStream stream : new LogicalStream[]{USER_INPUT, USER_OUTPUT, USER_ERROR}) {
+            stream.setIsTTY(true);
+            stream.setType(StreamProperties.Type.ATOM_text);
+            stream.setEncoding(StreamProperties.Encoding.ATOM_utf8);
+            stream.setNewLineMode(newlineMode);
+            stream.setCloseOnExec(false);
+            stream.setCloseOnAbort(false);
+            initialStreams.put(stream.getId(), stream);
+            initialAliases.put((PrologAtom) stream.getAlias(), stream);
+        }
     }
 
     /**
      * Retrieve all well defined streams.
      *
-     * @return Map of streams.
+     * @return Map of streams by ID.
      */
-    public static Map<? extends Atomic, ? extends IoBinding> getSystem() {
-        return Collections.unmodifiableMap(systemStreams);
+    public static Map<? extends PrologInteger, ? extends LogicalStream> getById() {
+        return Collections.unmodifiableMap(initialStreams);
+    }
+
+    /**
+     * Retrieve all well defined streams.
+     *
+     * @return Map of streams by name.
+     */
+    public static Map<? extends PrologAtom, ? extends LogicalStream> getByAlias() {
+        return Collections.unmodifiableMap(initialAliases);
     }
 }

@@ -14,9 +14,9 @@ import prolog.execution.Environment;
 import prolog.execution.OperatorEntry;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.flags.WriteOptions;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -46,7 +46,7 @@ public class StructureWriter extends TermWriter<Term> {
 
     private void write(OpCompare opComp, int flags, Term term) throws IOException {
         if (term instanceof CompoundTerm) {
-            writeCompound(opComp, flags, (CompoundTerm)term);
+            writeCompound(opComp, flags, (CompoundTerm) term);
         } else {
             term.write(context);
         }
@@ -124,7 +124,7 @@ public class StructureWriter extends TermWriter<Term> {
         context.beginSafe();
         context.write("(");
         write(comma, COMMA_UNSAFE, term.get(0));
-        for(int i =1; i < arity; i++) {
+        for (int i = 1; i < arity; i++) {
             context.beginSafe();
             context.write(", ");
             write(comma, COMMA_UNSAFE, term.get(i));
@@ -143,8 +143,8 @@ public class StructureWriter extends TermWriter<Term> {
         Term tail = term;
         boolean stringish = true;
         StringBuilder builder = new StringBuilder();
-        while(CompoundTerm.termIsA(tail, Interned.LIST_FUNCTOR, 2)) {
-            CompoundTerm comp = (CompoundTerm)tail;
+        while (CompoundTerm.termIsA(tail, Interned.LIST_FUNCTOR, 2)) {
+            CompoundTerm comp = (CompoundTerm) tail;
             Term item = comp.get(0);
             tail = comp.get(1);
             if (stringish) {
@@ -176,7 +176,7 @@ public class StructureWriter extends TermWriter<Term> {
         context.write("[");
         Iterator<Term> iter = list.iterator();
         write(comma, COMMA_UNSAFE, iter.next());
-        while(iter.hasNext()) {
+        while (iter.hasNext()) {
             context.beginSafe();
             context.write(", ");
             write(comma, COMMA_UNSAFE, iter.next());
@@ -193,6 +193,7 @@ public class StructureWriter extends TermWriter<Term> {
 
     private class OpCompare {
         final OperatorEntry parent;
+
         OpCompare(OperatorEntry entry) {
             this.parent = entry;
         }
@@ -202,6 +203,7 @@ public class StructureWriter extends TermWriter<Term> {
         }
 
     }
+
     private class LeftCompare extends OpCompare {
 
         LeftCompare(OperatorEntry entry) {
@@ -226,6 +228,7 @@ public class StructureWriter extends TermWriter<Term> {
             return true;
         }
     }
+
     private class RightCompare extends OpCompare {
 
         RightCompare(OperatorEntry entry) {
@@ -253,19 +256,22 @@ public class StructureWriter extends TermWriter<Term> {
 
     /**
      * Convert a term to a formatted/structured string.
+     *
      * @param environment Execution environment
-     * @param term Term to convert
+     * @param term        Term to convert
      * @return String form
      */
     public static String toString(Environment environment, Term term) {
-        java.io.StringWriter writer = new StringWriter();
-        try (PrologWriteStringStream stream = new PrologWriteStringStream(writer)) {
-            WriteContext context = new WriteContext(environment, stream);
+        try (StringOutputStream output = new StringOutputStream()) {
+            WriteContext context = new WriteContext(
+                    environment,
+                    new WriteOptions(environment, null),
+                    output);
             StructureWriter structWriter = new StructureWriter(context, term);
             structWriter.write();
+            return output.toString();
         } catch (IOException e) {
             throw new InternalError(e.getMessage(), e);
         }
-        return writer.toString();
     }
 }
