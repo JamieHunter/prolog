@@ -22,18 +22,14 @@ import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.flags.OpenOptions;
 import prolog.flags.StreamProperties;
+import prolog.io.FileReadWriteStreams;
 import prolog.io.LogicalStream;
 import prolog.io.PrologInputStream;
 import prolog.io.PrologOutputStream;
-import prolog.io.PrologStream;
-import prolog.io.RandomAccessStream;
 import prolog.unification.Unifier;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -41,9 +37,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
-
-import static java.nio.file.Files.newInputStream;
-import static java.nio.file.Files.newOutputStream;
 
 /**
  * File is referenced by {@link Library} to parse all annotations.
@@ -516,10 +509,10 @@ public final class Io {
         }
 
         LogicalStream binding;
-        RandomAccessStream fileStream;
+        FileReadWriteStreams fileStream;
 
         try {
-            fileStream = new RandomAccessStream(FileChannel.open(path, ops));
+            fileStream = new FileReadWriteStreams(FileChannel.open(path, ops));
         } catch (IOException ioe) {
             throw openError(ioe, environment, fileName);
         }

@@ -6,14 +6,13 @@ import prolog.io.InputDecoderFilter;
 import prolog.io.LogicalStream;
 import prolog.io.PrologInputStream;
 import prolog.io.PrologOutputStream;
-import prolog.io.RandomAccessStream;
+import prolog.io.FileReadWriteStreams;
 import prolog.io.SequentialInputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -50,12 +49,12 @@ public final class StreamUtils {
         return new LogicalStream(LogicalStream.unique(), null, stream, StreamProperties.OpenMode.ATOM_write);
     }
 
-    public static RandomAccessStream fileStream(Path path, OpenOption... options) throws IOException {
-        return new RandomAccessStream(FileChannel.open(path, options));
+    public static FileReadWriteStreams fileStream(Path path, OpenOption... options) throws IOException {
+        return new FileReadWriteStreams(FileChannel.open(path, options));
     }
 
     public static LogicalStream logicalFileStream(Path path, OpenOption... options) throws IOException {
-        RandomAccessStream stream = fileStream(path, options);
+        FileReadWriteStreams stream = fileStream(path, options);
         return new LogicalStream(LogicalStream.unique(), stream, stream, StreamProperties.OpenMode.ATOM_update);
     }
 }
