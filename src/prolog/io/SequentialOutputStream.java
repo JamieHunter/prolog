@@ -49,6 +49,14 @@ public class SequentialOutputStream implements PrologOutputStream {
      * {@inheritDoc}
      */
     @Override
+    public void flush() throws IOException {
+        stream.flush();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void close() throws IOException {
         stream.close();
     }
