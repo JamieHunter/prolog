@@ -22,6 +22,7 @@ import prolog.predicates.DemandLoadPredicate;
 import prolog.predicates.MissingPredicate;
 import prolog.predicates.PredicateDefinition;
 import prolog.predicates.Predication;
+import prolog.predicates.VarArgDefinition;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,6 +40,8 @@ public class Environment {
     private final HashMap<String, PrologAtom> atomTable = new HashMap<>();
     // table of predicates for this instance
     private final HashMap<Predication, PredicateDefinition> dictionary = new HashMap<>();
+    // table of variable argument predicates for this instance
+    private final HashMap<Atomic, VarArgDefinition> varArgDictionary = new HashMap<>();
     // table of functions functions
     private final HashMap<Predication, StackFunction> functions = new HashMap<>();
     // tables of operators for this instance
@@ -84,6 +87,7 @@ public class Environment {
     public Environment() {
         // Bootstap
         dictionary.putAll(Builtins.getPredicates());
+        varArgDictionary.putAll(Builtins.getVarArgPredicates());
         functions.putAll(Builtins.getFunctions());
         infixPostfixOperatorTable.putAll(Operators.getInfixPostfix());
         prefixOperatorTable.putAll(Operators.getPrefix());
@@ -420,10 +424,25 @@ public class Environment {
     public PredicateDefinition lookupPredicate(Predication predication) {
         PredicateDefinition entry = dictionary.get(predication);
         if (entry == null) {
-            return MissingPredicate.MISSING_PREDICATE;
-        } else {
-            return entry;
+            entry = lookupVarArgPredicate(predication);
         }
+        if (entry == null) {
+            entry = MissingPredicate.MISSING_PREDICATE;
+        }
+        return entry;
+    }
+
+    /**
+     * Look up a variable-argument predicate if one exists
+     * @param predication Predication to look up
+     * @return variable-argument predicate, or null
+     */
+    private PredicateDefinition lookupVarArgPredicate(Predication predication) {
+        VarArgDefinition varArg = varArgDictionary.get(predication.functor());
+        if (varArg == null) {
+            return null;
+        }
+        return varArg.lookup(predication);
     }
 
     /**
@@ -458,7 +477,21 @@ public class Environment {
      * @return predicate definition
      */
     public PredicateDefinition autoCreateDictionaryEntry(Predication predication) {
-        return dictionary.computeIfAbsent(predication, ClauseSearchPredicate::new);
+        return dictionary.computeIfAbsent(predication, this::autoPredicate);
+    }
+
+    /**
+     * Used when there is a predicate miss. Either use a variable-argument predicate, or create an empty predicate
+     * entry. Note that a "miss" will result in the predicate being auto-populated into the predicate table.
+     * @param predication Predication to "auto create"
+     * @return variable-argument predicate, or new predicate
+     */
+    private PredicateDefinition autoPredicate(Predication predication) {
+        PredicateDefinition defn = lookupVarArgPredicate(predication);
+        if (defn == null) {
+            defn = new ClauseSearchPredicate();
+        }
+        return defn;
     }
 
     /**

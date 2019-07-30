@@ -40,4 +40,9 @@ public @interface Predicate {
      * @return Arity if specified (-1 to infer).
      */
     int arity() default -1;
+
+    /**
+     * @return Vararg if specified (true if enabled).
+     */
+    boolean vararg() default false;
 }

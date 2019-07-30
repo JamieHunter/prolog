@@ -365,6 +365,19 @@ public final class Io {
     }
 
     /**
+     * Writes a term to current output stream
+     *
+     * @param environment Execution environment
+     * @param term        term to write
+     */
+    @Predicate("writeln")
+    public static void writeln(Environment environment, Term term) {
+        LogicalStream logicalStream = environment.getOutputStream();
+        logicalStream.write(environment, null, term, null);
+        logicalStream.nl(environment, null);
+    }
+
+    /**
      * Writes a term to specified output stream
      *
      * @param environment Execution environment
@@ -375,6 +388,20 @@ public final class Io {
     public static void write(Environment environment, Term streamIdent, Term term) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
         logicalStream.write(environment, (Atomic) streamIdent, term, null);
+    }
+
+    /**
+     * Writes a term to specified output stream
+     *
+     * @param environment Execution environment
+     * @param streamIdent Stream to write
+     * @param term        term to write
+     */
+    @Predicate("writeln")
+    public static void writeln(Environment environment, Term streamIdent, Term term) {
+        LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        logicalStream.write(environment, (Atomic) streamIdent, term, null);
+        logicalStream.nl(environment, null);
     }
 
     /**

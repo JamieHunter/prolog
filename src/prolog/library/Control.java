@@ -5,19 +5,24 @@ package prolog.library;
 
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Predicate;
+import prolog.exceptions.FutureTypeError;
+import prolog.exceptions.PrologTypeError;
 import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
+import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.instructions.ExecBlock;
 import prolog.instructions.ExecCall;
 import prolog.instructions.ExecDisjunction;
 import prolog.instructions.ExecIfThenElse;
+import prolog.instructions.ExecIgnore;
 import prolog.instructions.ExecOnce;
 import prolog.instructions.ExecRepeat;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * File is referenced by {@link Library} to parse all annotations.
@@ -151,6 +156,48 @@ public final class Control {
     }
 
     /**
+     * Apply is similar to call, but appends a list of arguments to the goal
+     *
+     * @param compiling Compiling context
+     * @param term      Call term.
+     */
+    @Predicate(value = "apply", arity = 2)
+    public static void apply(CompileContext compiling, CompoundTerm term) {
+        Term callTerm = term.get(0);
+        Term argTerm = term.get(1);
+        // This is similar to call/2 but the parameters passed as a list, handling of both
+        // get deferred - this will "break" if the compound term call() is used
+        // TODO: Type validation
+        compiling.add(new ExecCall(compiling.environment(), callTerm, argTerm));
+    }
+
+    /**
+     * Cross between call and apply
+     *
+     * @param compiling Compiling context
+     * @param term      Call term.
+     */
+    @Predicate(value = "call", arity = 2, vararg = true)
+    public static void call2(CompileContext compiling, CompoundTerm term) {
+        Term functorTerm = term.get(0);
+        Term [] members = new Term[term.arity()];
+        for(int i=1; i < term.arity();i++) {
+            members[i] = term.get(i);
+        }
+        if (functorTerm.isAtom()) {
+            // this is a variation of call/1
+            members[0] = functorTerm;
+            compiling.add(new ExecCall(compiling.environment(), new CompoundTermImpl(members)));
+        } else {
+            // this needs deferred handling, and is similar to apply
+            members[0] = term.functor();
+            Term argTerm = new CompoundTermImpl(members);
+            // call(X,Y) maps to term X and compound call(Y)
+            compiling.add(new ExecCall(compiling.environment(), functorTerm, new CompoundTermImpl(members)));
+        }
+    }
+
+    /**
      * Not provable.
      *
      * @param compiling Compilation context
@@ -179,5 +226,17 @@ public final class Control {
     public static void once(CompileContext compiling, CompoundTerm term) {
         Term callTerm = term.get(0);
         compiling.add(new ExecOnce(compiling.environment(), callTerm));
+    }
+
+    /**
+     * Variation of call but always succeeds
+     *
+     * @param compiling Compilation context
+     * @param term      The predicate to call
+     */
+    @Predicate(value = "ignore", arity = 1)
+    public static void ignore(CompileContext compiling, CompoundTerm term) {
+        Term callTerm = term.get(0);
+        compiling.add(new ExecIgnore(compiling.environment(), callTerm));
     }
 }

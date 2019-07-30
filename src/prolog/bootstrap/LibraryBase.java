@@ -175,7 +175,7 @@ public class LibraryBase {
                 throw new InternalError(String.format("%s: Arity must be specified", describe(method, names)));
             }
             // Validation done, create a lambda from the method
-            handleCompileMethod(names, predicate.arity(), method);
+            handleCompileMethod(names, predicate.arity(), predicate.vararg(), method);
         } else if (isParamType(paramTypes[0], Environment.class)) {
             // Execution style is method(Environment,Term,...)
             // method(Environment) is ok here, but a singleton Instruction would be more efficient.
@@ -193,6 +193,9 @@ public class LibraryBase {
             if (predicate.arity() >= 0 && predicate.arity() != arity) {
                 throw new InternalError(String.format("%s: Lambda mismatch", describe(method, names)));
             }
+            if (predicate.vararg()) {
+                throw new InternalError(String.format("%s: Vararg not supported", describe(method, names)));
+            }
             // Validation done, create a lambda from the method
             handleExecutionMethod(names, arity, method);
         }
@@ -205,7 +208,7 @@ public class LibraryBase {
      * @param arity  Arity of predicate
      * @param method Reflected method
      */
-    private void handleCompileMethod(String[] names, int arity, Method method) {
+    private void handleCompileMethod(String[] names, int arity, boolean vararg, Method method) {
         // One definition can be shared by all predicates.
         BuiltInPredicate defn =
                 new BuiltinPredicateCompiles(
@@ -215,6 +218,11 @@ public class LibraryBase {
                 );
         for (String name : names) {
             Builtins.define(predicate(name, arity), defn);
+        }
+        if (vararg) {
+            for (String name : names) {
+                Builtins.defineVarArg(predicate(name, arity), defn);
+            }
         }
     }
 
@@ -288,6 +296,9 @@ public class LibraryBase {
         int arity = predicate.arity();
         if (arity > 0) {
             throw new InternalError(String.format("%s: Arity > 0 not permitted", describe(field, names)));
+        }
+        if (predicate.vararg()) {
+            throw new InternalError(String.format("%s: Vararg not permitted", describe(field, names)));
         }
         arity = 0; // ignore negative arity
         Object value = getSingleton(arity, field, names);

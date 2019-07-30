@@ -46,6 +46,7 @@ public final class Interned {
     public static final PrologAtom SLASH_ATOM = internAtom("/");
     public static final PrologAtom IF_FUNCTOR = internAtom("->");
     public static final PrologAtom UNKNOWN_ATOM = internAtom("unknown");
+    public static final PrologAtom CALL_FUNCTOR = internAtom("call");
     public static final PrologAtom ERROR_FUNCTOR = internAtom("error");
     public static final PrologAtom CONTEXT_FUNCTOR = internAtom("context");
     public static final PrologAtom SYSTEM_ERROR_FUNCTOR = internAtom("system_error");

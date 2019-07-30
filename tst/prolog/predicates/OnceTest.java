@@ -51,7 +51,7 @@ public class OnceTest {
     }
 
     @Test
-    public void testCallWithVar() {
+    public void testOnceWithVar() {
         given().when("?- X=old(Y), once(X).")
                 .assertSuccess()
                 .variable("Y", isAtom("john"));

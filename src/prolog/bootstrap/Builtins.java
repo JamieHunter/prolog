@@ -3,6 +3,7 @@
 //
 package prolog.bootstrap;
 
+import prolog.constants.Atomic;
 import prolog.constants.PrologAtom;
 import prolog.execution.Instruction;
 import prolog.functions.StackFunction;
@@ -12,6 +13,7 @@ import prolog.predicates.ClauseSearchPredicate;
 import prolog.predicates.DemandLoadPredicate;
 import prolog.predicates.PredicateDefinition;
 import prolog.predicates.Predication;
+import prolog.predicates.VarArgDefinition;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +30,7 @@ public class Builtins {
 
     // Must be initialized before calling consult()
     private static final HashMap<Predication, PredicateDefinition> builtins = new HashMap<>();
+    private static final HashMap<Atomic, VarArgDefinition> builtinVarArgs = new HashMap<>();
     private static final HashMap<Predication, StackFunction> functions = new HashMap<>();
 
     //
@@ -70,6 +73,17 @@ public class Builtins {
      */
     public static <T extends PredicateDefinition> T define(Predication predication, T definition) {
         builtins.put(predication, definition);
+        return definition;
+    }
+
+    /**
+     * Create a global var-arg predicate from a predication.
+     *
+     * @param predication Name/arity of predicate
+     * @param definition  Definition of predicate
+     */
+    public static <T extends PredicateDefinition> T defineVarArg(Predication predication, T definition) {
+        builtinVarArgs.put(predication.functor(), new VarArgDefinition(predication, definition));
         return definition;
     }
 
@@ -123,6 +137,15 @@ public class Builtins {
      */
     public static Map<? extends Predication, ? extends PredicateDefinition> getPredicates() {
         return Collections.unmodifiableMap(builtins);
+    }
+
+    /**
+     * Called from Environment, retrieves a copy of builtin predicates.
+     *
+     * @return Builtin predicates
+     */
+    public static Map<? extends Atomic, ? extends VarArgDefinition> getVarArgPredicates() {
+        return Collections.unmodifiableMap(builtinVarArgs);
     }
 
     /**
