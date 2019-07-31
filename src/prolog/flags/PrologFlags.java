@@ -10,6 +10,7 @@ import prolog.expressions.Term;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static prolog.bootstrap.Interned.internAtom;
 
@@ -33,6 +34,8 @@ public class PrologFlags implements FlagsWithEnvironment {
                 readBoolean(o -> o.characterEscapes).protect();
         global.booleanFlag(internAtom("debug"), (o, v) -> o.debug = v).
                 readBoolean(o -> o.debug).protect();
+        global.enumFlag(internAtom("encoding"), StreamProperties.Encoding.class, (o, v) -> o.encoding = v).
+                readEnum(StreamProperties.Encoding.class, o -> o.encoding).protect();
     }
 
     private final Environment environment;
@@ -57,6 +60,10 @@ public class PrologFlags implements FlagsWithEnvironment {
      * Mode to make prolog more debuggable
      */
     public boolean debug = false;
+    /**
+     * Default file encoding
+     */
+    public StreamProperties.Encoding encoding = StreamProperties.Encoding.ATOM_utf8;
 
     // Flags created via create_prolog_flag
     private final Map<Atomic, Term> otherFlags = new HashMap<>();

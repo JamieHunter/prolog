@@ -24,7 +24,9 @@ public class Flags {
         }
         PrologFlags flags = environment.getFlags();
         Term actual = flags.get((Atomic)key);
-        Unifier.unify(environment.getLocalContext(), value, actual);
+        if (!Unifier.unify(environment.getLocalContext(), value, actual)) {
+            environment.backtrack();
+        }
     }
 
     @Predicate("set_prolog_flag")

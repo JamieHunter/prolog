@@ -19,6 +19,7 @@ import prolog.io.LogicalStream;
 import prolog.predicates.BuiltInPredicate;
 import prolog.predicates.ClauseSearchPredicate;
 import prolog.predicates.DemandLoadPredicate;
+import prolog.predicates.LoadGroup;
 import prolog.predicates.MissingPredicate;
 import prolog.predicates.PredicateDefinition;
 import prolog.predicates.Predication;
@@ -26,6 +27,7 @@ import prolog.predicates.VarArgDefinition;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.ListIterator;
@@ -50,6 +52,8 @@ public class Environment {
     // io, ID mappings
     private final HashMap<PrologInteger, LogicalStream> streamById = new HashMap<>();
     private final HashMap<PrologAtom, LogicalStream> streamByAlias = new HashMap<>();
+    // load group mappings
+    private final HashMap<String, LoadGroup> loadGroups = new HashMap<>();
     // stacks
     private final LinkedList<InstructionPointer> callStack = new LinkedList<>();
     private final LinkedList<Backtrack> backtrackStack = new LinkedList<>();
@@ -82,6 +86,8 @@ public class Environment {
     private final PrologFlags flags = new PrologFlags(this);
     // how to handle a cut
     private CutPoint cutPoint = localContext;
+    // current load group
+    private LoadGroup loadGroup;
 
     /**
      * Construct a new environment.
@@ -97,6 +103,8 @@ public class Environment {
         streamByAlias.putAll(DefaultIoBinding.getByAlias());
         // Add atoms last to ensure that all interned atoms are added
         atomTable.putAll(Interned.getInterned());
+        // By default, all definitions are associated with this special load group
+        changeLoadGroup(new LoadGroup.Interactive());
     }
 
     /**
@@ -722,6 +730,33 @@ public class Environment {
         }
         entry.setCode(code);
         entry.setPrecedence(precedence);
+    }
+
+    /**
+     * Retrieve active load group
+     * @return load group
+     */
+    public LoadGroup getLoadGroup() {
+        return loadGroup;
+    }
+
+    /**
+     * Get load group by id
+     * @param id Load group identifier
+     * @return load group, or empty
+     */
+    public LoadGroup getLoadGroup(String id) {
+        return loadGroups.get(id);
+    }
+
+    /**
+     * Change load group. Group is inserted into table, replacing
+     * any previous group of that name
+     * @param group New load group
+     */
+    public void changeLoadGroup(LoadGroup group) {
+        loadGroups.put(group.getId(), group);
+        loadGroup = group;
     }
 
     /**

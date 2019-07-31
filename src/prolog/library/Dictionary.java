@@ -191,6 +191,9 @@ public final class Dictionary {
         // create library entry prior to compiling
         ClauseSearchPredicate dictionaryEntry =
                 environment.createDictionaryEntry(predication);
+        // this causes the reconsult type semantics when consulting
+        dictionaryEntry.changeLoadGroup(environment.getLoadGroup());
+
         // compile body
         CompileContext compiling = new CompileContext(environment);
         body.compile(compiling);
@@ -198,6 +201,5 @@ public final class Dictionary {
         // add clause to library
         ClauseEntry entry = new ClauseEntry((CompoundTerm)head, body, unifier, compiled);
         add.accept(dictionaryEntry, entry);
-
     }
 }

@@ -6,7 +6,10 @@ package prolog.predicates;
 import prolog.execution.CompileContext;
 import prolog.expressions.CompoundTerm;
 import prolog.instructions.ExecRunClause;
+import prolog.utility.LinkNode;
 import prolog.utility.TrackableList;
+
+import java.util.ListIterator;
 
 /**
  * A set of user-defined clauses that need to be searched
@@ -17,6 +20,7 @@ public class ClauseSearchPredicate extends PredicateDefinition {
     private final TrackableList<ClauseEntry> clauses = new TrackableList<>();
     private static final ClauseEntry[] ELEMENT_ARRAY_TYPE = new ClauseEntry[0];
     private boolean isDynamic = false;
+    private LoadGroup loadGroup = null;
 
     /**
      * Create a new predicate
@@ -49,6 +53,21 @@ public class ClauseSearchPredicate extends PredicateDefinition {
     @Override
     public boolean isDynamic() {
         return isDynamic;
+    }
+
+
+    public void changeLoadGroup(LoadGroup loadGroup) {
+        if (isDynamic) {
+            return; // does not apply
+        }
+        if (this.loadGroup != loadGroup) {
+            ListIterator<ClauseEntry> it = clauses.listIterator();
+            while(it.hasNext()) {
+                it.next();
+                it.remove();
+            }
+        }
+        this.loadGroup = loadGroup;
     }
 
     /**

@@ -15,6 +15,7 @@ public class FlagSets extends LibraryBase {
         consult(ReadOptions.class);
         consult(WriteOptions.class);
         consult(CreateFlagOptions.class);
+        consult(AbsoluteFileNameOptions.class);
         consult(PrologFlags.class);
     }
 }

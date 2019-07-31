@@ -18,10 +18,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static prolog.test.Matchers.*;
 
 public class ConsultTest {
@@ -82,14 +86,17 @@ public class ConsultTest {
     public void testSingleFileConsult() throws IOException {
         String path = createFile(testFolder.newFile(),
                 "a(1).",
-                "a(2) :- false."
+                "a(2) :- false.",
+                "a(3) :- true."
                 );
         given().when("?- consult('"+path+"').")
                 .assertSuccess()
                 .andWhen("?- a(1).")
                 .assertSuccess()
                 .andWhen("?- a(2).")
-                .assertFailed();
+                .assertFailed()
+                .andWhen("?- a(3).") // a(3) in same file as a(1), compare with testConsultList
+                .assertSuccess();
     }
 
     @Test
@@ -107,23 +114,64 @@ public class ConsultTest {
     @Test
     public void testConsultList() throws IOException {
         String path1 = createFile(testFolder.newFile(),
+                "x(1).",
                 "a(1).",
-                "?- expectLog('a')."
+                ":- expectLog('a')."
         );
         String path2 = createFile(testFolder.newFile(),
-                "a(2).",
-                "?- expectLog('b')."
+                "x(2).",
+                "b(2).",
+                ":- expectLog('b')."
         );
         String path3 = createFile(testFolder.newFile(),
-                "a(3).",
-                "?- expectLog('c')."
+                "x(3).",
+                "c(3).",
+                ":- expectLog('c')."
         );
         given().when("?- ['"+path1+"','"+path2+"','"+path3+"'].")
                 .assertSuccess()
-                .andWhen("?- a(1), a(2), a(3).")
-                .assertSuccess()
                 .andWhen("?- expectLog('.').")
-                .assertSuccess();
+                .assertSuccess()
+                .andWhen("?- a(1), b(2), c(3).")
+                .assertSuccess()
+                .andWhen("?- x(1).")
+                .assertFailed() // x/1 overwritten
+                .andWhen("?- x(2).")
+                .assertFailed() // x/1 overwritten
+                .andWhen("?- x(3).")
+                .assertSuccess() // x/1 final version
+                ;
+
         checkLog(isAtom("abc"));
+    }
+
+    @Test
+    public void testEnsureLoaded() throws IOException {
+        String path1 = createFile(testFolder.newFile(),
+                "a(1).",
+                "a(2)."
+        );
+        String path2 = createFile(testFolder.newFile(),
+                "a(3)."
+        );
+        // also test the ".pl" extension renaming
+        String pathOut = testFolder.newFile().toString() + ".pl";
+        Files.copy(Paths.get(path1), Paths.get(pathOut)); // first version
+        given().when("?- ensure_loaded('"+path1+"').")
+                .assertSuccess()
+                .andWhen("?- a(1), a(2).")
+                .assertSuccess()
+                .andWhen(w -> {
+                    try {
+                        Files.copy(Paths.get(path2), Paths.get(pathOut), StandardCopyOption.REPLACE_EXISTING);
+                    } catch(IOException ioe) {
+                        fail(ioe.getMessage());
+                    }
+                })
+                .andWhen("?- a(1), a(2).")
+                .assertSuccess() // did not override these
+                .andWhen("?- a(3).")
+                .assertFailed() // did not load new file
+        ;
     }
 }

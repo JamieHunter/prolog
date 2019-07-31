@@ -21,7 +21,7 @@ select_option(Op, [], [], D) :-
     ! , nonvar(Op),
     ignore((Op =.. [_, D])) .
 select_option(Op, [H|T], X, D) :-
-    !, nonvar(Op),
+    !, nonvar(Op), nonvar(H),
     '$option'(Op, H) ->
         select_option(Op, T, X, D), ! ;
         select_option(Op, T, Q, D), X=[H|Q], ! .

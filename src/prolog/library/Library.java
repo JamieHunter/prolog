@@ -15,6 +15,7 @@ public final class Library extends LibraryBase {
         consult(Arithmetic.class);
         consult(CompareImpl.class);
         consult(Apply.class);
+        consult(Time.class);
         consult(Consult.class);
         consult(Control.class);
         consult(Dictionary.class);

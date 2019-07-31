@@ -610,7 +610,9 @@ public class LogicalStream implements Closeable {
      */
     public void read(Environment environment, Atomic streamId, Term target, Term optionsTerm) {
         Term value = read(environment, streamId, new ReadOptions(environment, optionsTerm));
-        Unifier.unify(environment.getLocalContext(), target, value);
+        if (!Unifier.unify(environment.getLocalContext(), target, value)) {
+            environment.backtrack();
+        }
     }
 
     /**

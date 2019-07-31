@@ -6,11 +6,34 @@ package prolog.library;
 import prolog.bootstrap.DemandLoad;
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
+import prolog.constants.PrologAtom;
+import prolog.constants.PrologFloat;
+import prolog.constants.PrologInteger;
+import prolog.constants.PrologNumber;
+import prolog.constants.PrologString;
+import prolog.exceptions.PrologDomainError;
+import prolog.exceptions.PrologInstantiationError;
+import prolog.exceptions.PrologTypeError;
 import prolog.execution.Environment;
+import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.instructions.ExecRetractClause;
 import prolog.io.LogicalStream;
 import prolog.io.Prompt;
+import prolog.predicates.ClauseEntry;
+import prolog.predicates.ClauseSearchPredicate;
+import prolog.predicates.LoadGroup;
+import prolog.predicates.PredicateDefinition;
 import prolog.predicates.Predication;
+import prolog.unification.Unifier;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.ListIterator;
 
 import static prolog.bootstrap.Builtins.predicate;
 
@@ -29,8 +52,8 @@ public final class Consult {
      * @param environment Execution environment
      * @param streamIdent Single term specifying stream.
      */
-    @Predicate("$consult_prompt")
-    public static void consultPrompt(Environment environment, Term streamIdent) {
+    @Predicate("$set_prompt_consult")
+    public static void setPromptConsult(Environment environment, Term streamIdent) {
         LogicalStream logicalStream = Io.lookupStream(environment, streamIdent);
         logicalStream.setPrompt(environment, (Atomic) streamIdent, Prompt.CONSULT);
     }
@@ -41,10 +64,69 @@ public final class Consult {
      * @param environment Execution environment
      * @param streamIdent Single term specifying stream.
      */
-    @Predicate("$no_prompt")
-    public static void noPrompt(Environment environment, Term streamIdent) {
+    @Predicate("$set_prompt_none")
+    public static void setPromptNone(Environment environment, Term streamIdent) {
         LogicalStream logicalStream = Io.lookupStream(environment, streamIdent);
         logicalStream.setPrompt(environment, (Atomic) streamIdent, Prompt.NONE);
+    }
+
+    /**
+     * Given a load group identifier, determines if a load group by that identifier exists. If so,
+     * unify the date/time. If not, fail.
+     * @param environment Execution environment
+     * @param idTerm Id of group
+     * @param timeTerm Target of Date/Time (unified)
+     */
+    @Predicate("$get_load_group_time")
+    public static void getLoadGroupExists(Environment environment, Term idTerm, Term timeTerm) {
+        String id = convertId(environment, idTerm);
+        LoadGroup group = environment.getLoadGroup(id);
+        if (group == null) {
+            environment.backtrack();
+            return;
+        }
+        PrologFloat time = group.getTime();
+        if (!Unifier.unify(environment.getLocalContext(), timeTerm, time)) {
+            environment.backtrack();
+        }
+    }
+
+    /**
+     * Create a new load group and establish as current
+     *
+     * @param environment Execution environment
+     * @param idTerm Id of new group
+     * @param timeTerm Time of new group if instantiated
+     * @param priorGroupTerm Unified with prior group for later restore
+     */
+    @Predicate("$begin_load_group")
+    public static void beginLoadGroup(Environment environment, Term idTerm, Term timeTerm, Term priorGroupTerm) {
+        String id = convertId(environment, idTerm);
+        PrologFloat time = convertTime(environment, timeTerm);
+        LoadGroup priorGroup = environment.getLoadGroup();
+        PrologAtom priorIdAtom = environment.getAtom(priorGroup.getId());
+        if (!Unifier.unify(environment.getLocalContext(), priorGroupTerm, priorIdAtom)) {
+            environment.backtrack();
+            return;
+        }
+        environment.changeLoadGroup(new LoadGroup(id, time));
+    }
+
+    /**
+     * Select and restore a previously known load group
+     *
+     * @param environment Execution environment
+     * @param idTerm Id of prior group
+     */
+    @Predicate("$restore_load_group")
+    public static void setLoadGroup(Environment environment, Term idTerm) {
+        String id = convertId(environment, idTerm);
+        LoadGroup group = environment.getLoadGroup(id);
+        if (group == null) {
+            environment.backtrack();
+            return;
+        }
+        environment.changeLoadGroup(group);
     }
 
     /**
@@ -52,8 +134,53 @@ public final class Consult {
      */
     @DemandLoad("consult.pl")
     public static Predication consult[] = {
+            // parent for all loading predicates except include
+            // note there are a lot of options to this predicate
+            predicate("load_files", 2),
+            predicate("load_files", 1),
+            // equivalent of load_files(File, []) except for handling special file user
             predicate("consult", 1),
+            // consult list of files
             predicate(".", 2),
-            predicate("load_files", 2)
+            // equivalent to load_files(File, [if(not_loaded)])
+            predicate("ensure_loaded", 1)
     };
+
+    // ====================================================================
+    // Helper methods
+    // ====================================================================
+
+    /**
+     * Verify and retrieve identifier
+     *
+     * @param id Id parameter
+     * @return validated id
+     */
+    private static String convertId(Environment environment, Term id) {
+        String pathName;
+        if (id.isAtom()) {
+            return ((PrologAtom) (id.value(environment))).name();
+        } else if (id.isString()) {
+            return ((PrologString) (id.value(environment))).get();
+        } else {
+            throw PrologTypeError.atomExpected(environment, id);
+        }
+    }
+
+    /**
+     * Verify and retrieve time. If time is unbound, current time is used
+     *
+     * @param time Time parameter
+     * @return validated time
+     */
+    private static PrologFloat convertTime(Environment environment, Term time) {
+        if (!time.isInstantiated()) {
+            return Time.now();
+        }
+        if (!(time instanceof PrologNumber)) {
+            throw PrologTypeError.numberExpected(environment, time);
+        }
+        return ((PrologNumber)time).toPrologFloat();
+    }
+
 }

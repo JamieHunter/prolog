@@ -20,6 +20,7 @@ import prolog.variables.BoundVariable;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static org.junit.Assert.*;
 
@@ -120,6 +121,13 @@ public class ThenImpl implements Then {
     public Then backtrackDepth(Matcher<? super Integer> m) {
         assertThat(state.backtrackDepth, m);
         return this;
+    }
+
+    @Override
+    public Then andWhen(Consumer<Then> lambda) {
+        ThenImpl next = new ThenImpl(state);
+        lambda.accept(next);
+        return next;
     }
 
     @Override

@@ -7,6 +7,8 @@ import prolog.bootstrap.Interned;
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtom;
+import prolog.constants.PrologEmptyList;
+import prolog.constants.PrologFloat;
 import prolog.constants.PrologInteger;
 import prolog.constants.PrologString;
 import prolog.exceptions.PrologDomainError;
@@ -20,21 +22,28 @@ import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.expressions.TermList;
+import prolog.expressions.TermListImpl;
+import prolog.flags.AbsoluteFileNameOptions;
 import prolog.flags.OpenOptions;
 import prolog.flags.StreamProperties;
 import prolog.io.FileReadWriteStreams;
 import prolog.io.LogicalStream;
 import prolog.io.PrologInputStream;
 import prolog.io.PrologOutputStream;
+import prolog.io.PrologStream;
 import prolog.unification.Unifier;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -107,7 +116,9 @@ public final class Io {
     @Predicate("current_input")
     public static void currentInput(Environment environment, Term streamIdent) {
         LogicalStream currentInputStream = environment.getInputStream();
-        Unifier.unify(environment.getLocalContext(), streamIdent, currentInputStream.getId());
+        if (!Unifier.unify(environment.getLocalContext(), streamIdent, currentInputStream.getId())) {
+            environment.backtrack();
+        }
     }
 
     /**
@@ -135,7 +146,9 @@ public final class Io {
     @Predicate("current_output")
     public static void currentOutput(Environment environment, Term streamIdent) {
         LogicalStream currentOutputStream = environment.getOutputStream();
-        Unifier.unify(environment.getLocalContext(), streamIdent, currentOutputStream.getId());
+        if (!Unifier.unify(environment.getLocalContext(), streamIdent, currentOutputStream.getId())) {
+            environment.backtrack();
+        }
     }
 
     /**
@@ -179,7 +192,9 @@ public final class Io {
         Term unifyValue = compoundProperty.get(0);
         StreamProperties properties = new StreamProperties(environment, logicalStream);
         Term actualValue = properties.get(propertyName);
-        Unifier.unify(environment.getLocalContext(), unifyValue, actualValue);
+        if (!Unifier.unify(environment.getLocalContext(), unifyValue, actualValue)) {
+            environment.backtrack();
+        }
     }
 
     /**
@@ -285,7 +300,9 @@ public final class Io {
     public static void getChar(Environment environment, Term term) {
         LogicalStream logicalStream = environment.getInputStream();
         Atomic value = logicalStream.getChar(environment, null);
-        Unifier.unify(environment.getLocalContext(), term, value);
+        if (!Unifier.unify(environment.getLocalContext(), term, value)) {
+            environment.backtrack();
+        }
     }
 
     /**
@@ -454,6 +471,44 @@ public final class Io {
         logicalStream.nl(environment, (Atomic) streamIdent);
     }
 
+    /**
+     * Retrieve last modification time of file
+     * @param environment Execution environment
+     * @param fileName Name of file
+     * @param timeTerm Unified with time of file
+     */
+    @Predicate("time_file")
+    public static void timeFile(Environment environment, Term fileName, Term timeTerm) {
+        Path path = parsePath(environment, fileName);
+        PrologFloat time = Time.toPrologTime(path.toFile().lastModified());
+        if (!Unifier.unify(environment.getLocalContext(), timeTerm, time)) {
+            environment.backtrack();
+        }
+    }
+
+    @Predicate("absolute_file_name")
+    public static void absoluteFileName(Environment environment, Term fileSpec, Term fileName) {
+        Path path = absoluteFileName(environment, fileSpec, new AbsoluteFileNameOptions(environment, null));
+        unifyFilePath(environment, path, fileName);
+    }
+
+    @Predicate("absolute_file_name")
+    public static void absoluteFileName(Environment environment, Term fileSpec, Term fileName, Term options) {
+        Path path = absoluteFileName(environment, fileSpec, new AbsoluteFileNameOptions(environment, options));
+        unifyFilePath(environment, path, fileName);
+    }
+
+    @Predicate("expand_file_name")
+    public static void expandFileName(Environment environment, Term fileSpec, Term expansion) {
+
+        Path path = parsePathBasic(environment, fileSpec);
+        // TODO: Interpret expansion meta-characters
+        TermList expanded = new TermListImpl(Arrays.asList(fileSpec), PrologEmptyList.EMPTY_LIST);
+        if (!Unifier.unify(environment.getLocalContext(), expansion, expanded)) {
+            environment.backtrack();
+        }
+    }
+
     // ====================================================================
     // Helper methods
     // ====================================================================
@@ -547,7 +602,10 @@ public final class Io {
         PrologOutputStream output = mode != OPEN_READ ? fileStream : null;
         PrologInteger id = LogicalStream.unique();
         if (aliasName == null) {
-            Unifier.unify(environment.getLocalContext(), streamTarget, id);
+            if (!Unifier.unify(environment.getLocalContext(), streamTarget, id)) {
+                environment.backtrack();
+                return;
+            }
         }
         binding = new LogicalStream(id, input, output, openMode);
         binding.setBufferMode(options.buffer);
@@ -576,7 +634,7 @@ public final class Io {
      * @param fileName    Term representing file name
      * @return Path to open
      */
-    private static Path parsePath(Environment environment, Term fileName) {
+    private static Path parsePathBasic(Environment environment, Term fileName) {
         String pathName;
         if (fileName.isAtom()) {
             pathName = ((PrologAtom) (fileName.value(environment))).name();
@@ -585,7 +643,19 @@ public final class Io {
         } else {
             throw PrologDomainError.sourceSink(environment, fileName);
         }
-        return environment.getCWD().resolve(Paths.get(pathName)).normalize();
+        return Paths.get(pathName);
+    }
+
+    /**
+     * Convert a path parameter into an actual Path, not taking into account environment CWD.
+     *
+     * @param environment Execution environment
+     * @param fileName    Term representing file name
+     * @return Path to open
+     */
+    private static Path parsePath(Environment environment, Term fileName) {
+        Path basic = parsePathBasic(environment, fileName);
+        return environment.getCWD().resolve(basic).normalize();
     }
 
     /**
@@ -616,6 +686,54 @@ public final class Io {
             throw PrologDomainError.streamOrAlias(environment, streamIdent);
         }
         return logicalStream;
+    }
+
+    /**
+     *
+     * @param environment Execution environment
+     * @param fileSpec File to convert
+     * @param options Options to use for conversion
+     * @return path in absolute form
+     */
+    public static Path absoluteFileName(Environment environment, Term fileSpec, AbsoluteFileNameOptions options) {
+        if (CompoundTerm.termIsA(fileSpec, Interned.LIBRARY_FUNCTOR, 1)) {
+            throw new UnsupportedOperationException("library(X) not yet handled");
+        }
+        Path path = parsePath(environment, fileSpec);
+        try {
+            path = path.toRealPath();
+        } catch (IOException e) {
+            throw PrologError.systemError(environment, e);
+        }
+        for(String ext : options.extensions) {
+            Path test = path.getParent().resolve(path.getFileName().toString() + ext);
+            try {
+                BasicFileAttributes attribs = Files.readAttributes(test, BasicFileAttributes.class);
+                if (options.type == AbsoluteFileNameOptions.FileType.ATOM_directory) {
+
+                    if (attribs.isDirectory()) {
+                        return test;
+                    }
+                } else {
+                    if (attribs.isRegularFile()) {
+                        return test;
+                    }
+                }
+            } catch (IOException e) {
+                // ignore this test
+            }
+        }
+        return path;
+    }
+
+    public static boolean unifyFilePath(Environment environment, Path path, Term fileNameTerm) {
+        PrologString fileName = new PrologString(path.toString());
+        if (Unifier.unify(environment.getLocalContext(), fileNameTerm, fileName)) {
+            return true;
+        } else {
+            environment.backtrack();
+            return false;
+        }
     }
 
     /**

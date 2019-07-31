@@ -46,6 +46,7 @@ public final class Interned {
     public static final PrologAtom PLUS_ATOM = internAtom("+");
     public static final PrologAtom SLASH_ATOM = internAtom("/");
     public static final PrologAtom IF_FUNCTOR = internAtom("->");
+    public static final PrologAtom LIBRARY_FUNCTOR = internAtom("library");
     public static final PrologAtom UNKNOWN_ATOM = internAtom("unknown");
     public static final PrologAtom CALL_FUNCTOR = internAtom("call");
     public static final PrologAtom ERROR_FUNCTOR = internAtom("error");

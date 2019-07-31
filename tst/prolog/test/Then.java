@@ -6,6 +6,8 @@ package prolog.test;
 import org.hamcrest.Matcher;
 import prolog.expressions.Term;
 
+import java.util.function.Consumer;
+
 public interface Then {
     /**
      * Verify a variable is as expected. What mostly meaningful for successful queries, it also has meaning
@@ -64,6 +66,13 @@ public interface Then {
      * @return self
      */
     Then andWhen(String text);
+
+    /**
+     * For additional setup
+     * @param lambda Lambda function to further state
+     * @return state also passed into lambda
+     */
+    Then andWhen(Consumer<Then> lambda);
 
     /**
      * Another solution, same test.
