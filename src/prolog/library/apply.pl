@@ -100,8 +100,7 @@ foldl(Goal, [H|T], V0, V) :-
 scanl(Goal, [], V, [V]) :- !.
 scanl(Goal, [H|T], V0, [V0|Vt]) :-
     call(Goal, H, V0, Vh), !,
-    scanl(Goal, T, Vh, Vt), !
-    % TODO: currently not working (interpreter bug?)
+    scanl(Goal, T, Vh, Vt)
     .
 
 

@@ -35,9 +35,12 @@ public final class UnifyCompoundTail implements UnifyStep {
             // expected to be tail
             return UnifyIterator.FAILED;
         }
-        if (other.instantiate(compound)) {
-            // the tail was bound to a variable, consider the unification complete
-            return UnifyIterator.COMPLETED;
+        if (!other.isInstantiated()) {
+            // the tail was bound to a variable, make sure compound is resolved before instantiation
+            CompoundTerm resolved = compound.resolve(context);
+            if (other.instantiate(resolved)) {
+                return UnifyIterator.COMPLETED;
+            }
         }
         if (other instanceof CompoundTerm) {
             return ((CompoundTerm) other).getUnifyIterator();

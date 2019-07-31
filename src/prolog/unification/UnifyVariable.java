@@ -30,10 +30,19 @@ public final class UnifyVariable implements UnifyStep {
     @Override
     public UnifyIterator invoke(LocalContext context, UnifyIterator it) {
         Term other = it.next();
-        Term bound = variable.resolve(context);
-        if (bound.instantiate(other)) {
-            return it;
-        } else if (Unifier.unify(context, bound, other)) {
+        Term resolvedThis = variable.resolve(context);
+        if (!other.isInstantiated()) {
+            if (other.instantiate(resolvedThis)) {
+                return it;
+            }
+        }
+        if(!resolvedThis.isInstantiated()) {
+            Term resolvedOther = other.resolve(context);
+            if (resolvedThis.instantiate(resolvedOther)) {
+                return it;
+            }
+        }
+        if (Unifier.unify(context, resolvedThis, other)) {
             return it;
         } else {
             return UnifyIterator.FAILED;

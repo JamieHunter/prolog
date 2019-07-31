@@ -176,4 +176,39 @@ public class UnifyTest {
                 .variable("Z", isAtom("b"))
                 .variable("X", isAtom("b"));
     }
+
+    @Test
+    public void testCoreferenceListBinding() {
+        // Sanity test before the real test below
+        PrologTest.given()
+                .when("?- X=a, [X]=Q.")
+                .assertSuccess()
+                .variable("X", isAtom("a"))
+                .variable("Q", isList(isAtom("a")));
+        // This *should* be the same as (X=a, [X]=Q)
+        // Test caught a bug where [X] was not resolved at time it was bound to Q
+        PrologTest.given()
+                .when("f(X, [X]).")
+                .andWhen("?- f(a, Q).")
+                .assertSuccess()
+                .variable("Q", isList(isAtom("a")));
+        // Other interesting variations
+        PrologTest.given()
+                .when("f(X, b(X)).")
+                .andWhen("?- f(a, Q).")
+                .assertSuccess()
+                .variable("Q", isCompoundTerm("b", isAtom("a")));
+        PrologTest.given()
+                .when("f(X, b(X), Q, Q).")
+                .andWhen("?- f(a, Z, Z, P).")
+                .assertSuccess()
+                .variable("P", isCompoundTerm("b", isAtom("a")))
+                .variable("Z", isCompoundTerm("b", isAtom("a")));
+        PrologTest.given()
+                .when("f(Q, Q, b(X), X).")
+                .andWhen("?- f(P, Z, Z, a).")
+                .assertSuccess()
+                .variable("P", isCompoundTerm("b", isAtom("a")))
+                .variable("Z", isCompoundTerm("b", isAtom("a")));
+    }
 }

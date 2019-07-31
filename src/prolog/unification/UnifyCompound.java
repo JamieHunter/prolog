@@ -32,8 +32,12 @@ public final class UnifyCompound implements UnifyStep {
     @Override
     public UnifyIterator invoke(LocalContext context, UnifyIterator it) {
         Term other = it.next();
-        if (other.instantiate(nested)) {
-            return it;
+        if (!other.isInstantiated()) {
+            // other was a variable, make sure structure of nested is resolved before instantiation
+            CompoundTerm resolved = nested.resolve(context);
+            if (other.instantiate(resolved)) {
+                return it;
+            }
         }
         if (unifier.unify(context, other)) {
             return it;

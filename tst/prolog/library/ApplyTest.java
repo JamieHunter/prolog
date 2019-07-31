@@ -166,7 +166,6 @@ public class ApplyTest {
     }
 
     @Test
-    @Ignore("scanl is currently broken")
     public void testScanL4() {
         // scanl expects a goal/predicate of form goal(+Left, +Right, -Result)
         given()
