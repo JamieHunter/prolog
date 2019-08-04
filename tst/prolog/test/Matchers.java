@@ -100,7 +100,8 @@ public final class Matchers {
                 return false;
             }
             if (!(o instanceof PrologInteger)) {
-                mismatch.appendText("not an integer");
+                mismatch.appendText("not an integer ");
+                mismatch.appendValue(o);
                 return false;
             }
             PrologInteger value = (PrologInteger)o;
@@ -408,7 +409,7 @@ public final class Matchers {
                         mismatch.appendText(", ");
                     }
                     mismatch.appendText("list:" + (iter + 1) + " ");
-                    members[iter].describeMismatch(iter, mismatch);
+                    members[iter].describeMismatch(item, mismatch);
                     success = false;
                 }
             }

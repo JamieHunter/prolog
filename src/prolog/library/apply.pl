@@ -89,8 +89,25 @@ foldl(Goal, [H|T], V0, V) :-
     foldl(Goal, T, Vh, V).
 
 % foldl/5
+
+foldl(Goal, [], [], V, V) :- !.
+foldl(Goal, [H1|T1], [H2|T2], V0, V) :-
+    call(Goal, H1, H2, V0, Vh), !,
+    foldl(Goal, T1, T2, Vh, V).
+
 % foldl/6
+
+foldl(Goal, [], [], [], V, V) :- !.
+foldl(Goal, [H1|T1], [H2|T2], [H3|T3], V0, V) :-
+    call(Goal, H1, H2, H3, V0, Vh), !,
+    foldl(Goal, T1, T2, T3, Vh, V).
+
 % foldl/7
+
+foldl(Goal, [], [], [], [], V, V) :- !.
+foldl(Goal, [H1|T1], [H2|T2], [H3|T3], [H4|T4], V0, V) :-
+    call(Goal, H1, H2, H3, H4, V0, Vh), !,
+    foldl(Goal, T1, T2, T3, T4, Vh, V).
 
 %
 % scanl/4
@@ -103,7 +120,26 @@ scanl(Goal, [H|T], V0, [V0|Vt]) :-
     scanl(Goal, T, Vh, Vt)
     .
 
-
 % scanl/5
+
+scanl(Goal, [], [], V, [V]) :- !.
+scanl(Goal, [H1|T1], [H2|T2], V0, [V0|Vt]) :-
+    call(Goal, H1, H2, V0, Vh), !,
+    scanl(Goal, T1, T2, Vh, Vt)
+    .
+
 % scanl/6
+
+scanl(Goal, [], [], [], V, [V]) :- !.
+scanl(Goal, [H1|T1], [H2|T2], [H3|T3], V0, [V0|Vt]) :-
+    call(Goal, H1, H2, H3, V0, Vh), !,
+    scanl(Goal, T1, T2, T3, Vh, Vt)
+    .
+
 % scanl/7
+
+scanl(Goal, [], [], [], [], V, [V]) :- !.
+scanl(Goal, [H1|T1], [H2|T2], [H3|T3], [H4|T4], V0, [V0|Vt]) :-
+    call(Goal, H1, H2, H3, H4, V0, Vh), !,
+    scanl(Goal, T1, T2, T3, T4, Vh, Vt)
+    .
