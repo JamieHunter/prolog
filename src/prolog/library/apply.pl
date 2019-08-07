@@ -1,3 +1,6 @@
+% Author: Jamie Hunter, 2019
+% Refer to LICENSE.TXT for copyright and license information
+%
 % Apply predicates across lists etc
 % This is used by consult, and is a primitive demand-load library
 % All of these use the call/2 (etc) variant of apply/2

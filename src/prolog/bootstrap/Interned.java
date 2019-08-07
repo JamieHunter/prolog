@@ -34,6 +34,7 @@ public final class Interned {
     public static final PrologAtom COMMA_FUNCTOR = internAtom(",");
     public static final PrologAtom SEMICOLON_FUNCTOR = internAtom(";");
     public static final PrologAtom BAR_FUNCTOR = internAtom("|");
+    public static final PrologAtom EQUALS_FUNCTOR = internAtom("=");
     public static final PrologAtom EMPTY_BRACES_ATOM = internAtom("{}");
     public static final PrologAtom OPEN_BRACKET = internAtom("(");
     public static final PrologAtom CLOSE_BRACKET = internAtom(")");

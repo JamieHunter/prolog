@@ -12,6 +12,7 @@ import prolog.exceptions.FutureFlagPermissionError;
 import prolog.exceptions.FutureFlagValueError;
 import prolog.exceptions.FutureTypeError;
 import prolog.expressions.CompoundTerm;
+import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.library.Lists;
 
@@ -51,11 +52,25 @@ public abstract class ParserBase<T extends Flags, R> {
     protected void setFlagFromStruct(T obj, Term flag) {
         if (flag instanceof CompoundTerm) {
             CompoundTerm compoundTerm = (CompoundTerm) flag;
-            if (compoundTerm.arity() != 1) {
-                throw new FutureFlagKeyError(flag);
+            Atomic key;
+            Term value;
+            if (CompoundTerm.termIsA(compoundTerm, Interned.EQUALS_FUNCTOR, 2)) {
+                // alternative syntax supported by some prolog variants
+                // key=value, which is translated to '='(key, value)
+                Term keyTerm = compoundTerm.get(0);
+                if (!keyTerm.isAtomic()) {
+                    throw new FutureFlagKeyError(flag); // report as '='(key,value) as key is not Atomic
+                }
+                key = (Atomic)keyTerm;
+                value = compoundTerm.get(1);
+                flag = compoundTerm = new CompoundTermImpl(key, value); // improve error reporting below
+            } else {
+                if (compoundTerm.arity() != 1) {
+                    throw new FutureFlagKeyError(flag);
+                }
+                key = compoundTerm.functor();
+                value = compoundTerm.get(0);
             }
-            Atomic key = compoundTerm.functor();
-            Term value = compoundTerm.get(0);
             BiConsumer<T, Term> consumer = getConsumer(key);
             if (consumer == null) {
                 // unknown flag

@@ -3,7 +3,6 @@
 //
 package prolog.flags;
 
-import prolog.constants.Atomic;
 import prolog.constants.PrologAtom;
 import prolog.exceptions.FutureFlagError;
 import prolog.exceptions.PrologDomainError;

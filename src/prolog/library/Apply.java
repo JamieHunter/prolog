@@ -1,3 +1,6 @@
+// Author: Jamie Hunter, 2019
+// Refer to LICENSE.TXT for copyright and license information
+//
 package prolog.library;
 
 import prolog.bootstrap.DemandLoad;
