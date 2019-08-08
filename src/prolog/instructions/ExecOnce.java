@@ -4,7 +4,6 @@
 package prolog.instructions;
 
 import prolog.execution.Environment;
-import prolog.execution.LocalContext;
 import prolog.expressions.Term;
 
 /**
@@ -23,23 +22,23 @@ public class ExecOnce extends ExecCall {
     @Override
     protected void preCall() {
         // protective cut-scope for the expression being called
-        LocalContext context = environment.getLocalContext();
-        environment.callIP(new EndOnceScope(context));
+        environment.callIP(new EndOnceScope(environment));
     }
 
     /**
-     * Version of {@link prolog.instructions.ExecCall.RestoreCutDepth} IP to cut decision points at end of successful
+     * Version of {@link ConstrainedCutPoint} IP to cut decision points at end of successful
      * call on return.
      */
-    private static class EndOnceScope extends RestoreCutDepth {
+    private static class EndOnceScope extends ConstrainedCutPoint {
 
-        EndOnceScope(LocalContext context) {
-            super(context);
+        EndOnceScope(Environment environment) {
+            super(environment);
+            //markDecisionPoint();
         }
 
         @Override
         public void next() {
-            context.environment().cutDecisionPoints();
+            cut();
             super.next();
         }
     }

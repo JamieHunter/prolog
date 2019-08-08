@@ -11,23 +11,24 @@ import java.util.ListIterator;
  */
 public abstract class DecisionPoint implements Backtrack {
 
-    private final InstructionPointer [] stack;
+    private final InstructionPointer[] stack;
     protected final Environment environment;
     protected final LocalContext decisionContext;
     protected final CatchPoint catchPoint;
-    private final int cutDepth;
+    protected final CutPoint cutPoint;
 
     /**
      * Create a new decision point associated with the environment. At time decision point is created, the local context,
      * the catch point, the cut depth and the call stack are all snapshot and reused on each iteration of the decision
      * point.
+     *
      * @param environment Execution environment
      */
     protected DecisionPoint(Environment environment) {
         this.environment = environment;
         this.decisionContext = environment.getLocalContext();
         this.catchPoint = environment.getCatchPoint();
-        this.cutDepth =decisionContext.getCutDepth();
+        this.cutPoint = environment.getCutPoint();
         this.stack = environment.constructStack();
     }
 
@@ -35,7 +36,7 @@ public abstract class DecisionPoint implements Backtrack {
      * Restore state to that at the time the decision point was first executed.
      */
     protected void restore() {
-        decisionContext.setCutDepth(cutDepth);
+        environment.setCutPoint(cutPoint);
         environment.setCatchPoint(catchPoint);
         environment.setLocalContext(decisionContext);
         environment.restoreStack(stack);
@@ -57,6 +58,7 @@ public abstract class DecisionPoint implements Backtrack {
 
     /**
      * Cut removes the decision point.
+     *
      * @param iter cut iterator
      */
     @Override

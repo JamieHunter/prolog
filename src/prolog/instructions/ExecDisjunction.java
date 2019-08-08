@@ -55,7 +55,7 @@ public class ExecDisjunction implements Instruction {
                 if (iter != alternates.length) {
                     // insert decision point, and identify another solution exists
                     // this applies until there is a cut
-                    decisionContext.pushDecision(this);
+                    environment.pushDecisionPoint(this);
                 }
                 instr.invoke(environment);
             }

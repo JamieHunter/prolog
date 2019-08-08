@@ -110,7 +110,7 @@ public class ExecRetractClause implements Instruction {
             ClauseEntry entry = clauses[index++];
             if (index != clauses.length) {
                 // Backtracking will try another clause
-                decisionContext.pushDecision(this);
+                environment.pushDecisionPoint(this);
             }
             LocalContext context = environment.newLocalContext();
             Term boundBody = bodyUnifier == null ? null : entry.getBody().resolve(context);

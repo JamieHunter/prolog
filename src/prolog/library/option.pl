@@ -17,8 +17,11 @@
 % See also exlude/3 and partition/4
 % This is base for all other variants
 %
-select_option(Op, [], [], D) :- ! , nonvar(Op), ignore((Op =.. [_, D])) .
+select_option(Op, [], [], D) :-
+    ! , nonvar(Op),
+    ignore((Op =.. [_, D])) .
 select_option(Op, [H|T], X, D) :-
+    !, nonvar(Op),
     '$option'(Op, H) ->
         select_option(Op, T, X, D), ! ;
         select_option(Op, T, Q, D), X=[H|Q], ! .

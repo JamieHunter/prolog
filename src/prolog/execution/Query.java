@@ -24,8 +24,9 @@ public class Query {
      */
     public Query(Environment environment) {
         this.environment = environment;
-        this.context = environment.newLocalContext(
-                new Predication(Interned.QUERY_FUNCTOR, 1)
+        this.context = new LocalContext(environment,
+                new Predication(Interned.QUERY_FUNCTOR, 1),
+                CutPoint.TERMINAL
         );
     }
 
@@ -46,6 +47,7 @@ public class Query {
     public void compile(Term term) {
         environment.reset();
         environment.setLocalContext(context); // establish for purpose of compiling and exceptions
+        environment.setCutPoint(context); // related cut point
         CompileContext compiling = new CompileContext(environment);
         term.compile(compiling);
         precompiled = new ExecDefer(compiling.toInstruction());
@@ -69,6 +71,7 @@ public class Query {
     public void reset() {
         environment.reset();
         environment.setLocalContext(context);
+        environment.setCutPoint(context);
         precompiled.invoke(environment);
     }
 

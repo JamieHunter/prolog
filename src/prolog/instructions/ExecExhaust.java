@@ -62,7 +62,7 @@ public final class ExecExhaust implements Instruction {
          * Begin first iteration.
          */
         void begin() {
-            decisionContext.pushDecision(this);
+            environment.pushDecisionPoint(this);
             environment.callIP(repeat);
             block.invoke(environment);
         }

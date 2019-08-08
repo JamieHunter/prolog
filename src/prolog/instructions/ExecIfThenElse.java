@@ -47,28 +47,27 @@ public class ExecIfThenElse extends ExecCall {
         //
         LocalContext context = environment.getLocalContext();
         // A return IP will handle forward progress for the then case
-        environment.callIP(new OnForward(context));
+        environment.callIP(new OnForward(environment));
         // A decision point before the "cut" will handle backtracking for the else case
-        context.pushDecision(new OnBacktrack(environment));
+        environment.pushDecisionPoint(new OnBacktrack(environment));
         // protective cut-scope for the condition expression being called
-        environment.callIP(new RestoreCutDepth(context));
+        environment.callIP(new ConstrainedCutPoint(environment));
     }
 
     /**
-     * Version of {@link prolog.instructions.ExecCall.RestoreCutDepth} that calls success callback.
+     * Version of {@link ConstrainedCutPoint} that calls success callback.
      */
-    private class OnForward extends RestoreCutDepth {
+    private class OnForward extends ConstrainedCutPoint {
 
-        OnForward(LocalContext context) {
-            super(context);
+        OnForward(Environment environment) {
+            super(environment);
         }
 
         @Override
         public void next() {
-            Environment environment = context.environment();
             // remove the ConfirmNotProvable decision point
             // Effectively "once", but also prevents the inversion of fail to success
-            environment.cutDecisionPoints();
+            cut();
             super.next();
             onSuccess.invoke(environment);
         }

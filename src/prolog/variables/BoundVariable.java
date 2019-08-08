@@ -75,22 +75,28 @@ public class BoundVariable extends VariableBase {
      */
     @Override
     protected void pushBacktrack() {
-        context.pushContextBacktrack(new Backtrack() {
-            /** {@inheritDoc} */
-            @Override
-            public void undo() {
-                // Undo is trivial.
-                value = null;
-            }
-
-            /** {@inheritDoc} */
-            @Override
-            public void cut(ListIterator<Backtrack> iter) {
-                if (context.isDeterministic()) {
-                    // The entry can be erased, with consideration needed for co-reference variables
-                    iter.remove();
+        if (!context.isDeterministic()) {
+            environment().pushBacktrack(new Backtrack() {
+                /**
+                 * {@inheritDoc}
+                 */
+                @Override
+                public void undo() {
+                    // Undo is trivial.
+                    value = null;
                 }
-            }
-        });
+
+                /**
+                 * {@inheritDoc}
+                 */
+                @Override
+                public void cut(ListIterator<Backtrack> iter) {
+                    if (context.isDeterministic()) {
+                        // The entry can be erased, with consideration needed for co-reference variables
+                        iter.remove();
+                    }
+                }
+            });
+        }
     }
 }

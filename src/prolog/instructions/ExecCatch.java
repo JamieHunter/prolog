@@ -4,6 +4,7 @@
 package prolog.instructions;
 
 import prolog.execution.CatchPoint;
+import prolog.execution.CutPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.InstructionPointer;
@@ -40,7 +41,7 @@ public class ExecCatch extends ExecCall {
      * @return IP
      */
     @Override
-    protected RestoreCutDepth prepareCall() {
+    protected ConstrainedCutPoint prepareCall() {
         LocalContext context = environment.getLocalContext();
         CatchHandler handler = new CatchHandler();
         environment.setCatchPoint(handler);
@@ -49,14 +50,14 @@ public class ExecCatch extends ExecCall {
 
     /**
      * An "IP" that restores catch scope as well as all other behaviors of
-     * RestoreCutDepth. This can be optimized away per call semantics.
+     * ConstrainedCutPoint. This can be optimized away per call semantics.
      */
-    private static class EndThrowScope extends RestoreCutDepth {
+    private static class EndThrowScope extends ConstrainedCutPoint {
 
         final CatchHandler handler;
 
         EndThrowScope(LocalContext context, CatchHandler handler) {
-            super(context);
+            super(context.environment());
             this.handler = handler;
         }
 
@@ -74,6 +75,7 @@ public class ExecCatch extends ExecCall {
 
         private final InstructionPointer[] stack;
         final LocalContext catchContext;
+        final CutPoint cut;
         final CatchPoint parent;
         final int dataStackDepth;
         final int backtrackDepth;
@@ -82,6 +84,7 @@ public class ExecCatch extends ExecCall {
             // Capture state that needs to be restored
             this.catchContext = environment.getLocalContext();
             this.parent = environment.getCatchPoint();
+            this.cut = environment.getCutPoint();
             this.backtrackDepth = environment.getBacktrackDepth();
             // if Java exception occurred, data stack may be invalid
             this.dataStackDepth = environment.getDataStackDepth();
@@ -108,6 +111,7 @@ public class ExecCatch extends ExecCall {
             // forced backtrack to here - has to be done prior to unify
             environment.trimBacktrackStackToDepth(backtrackDepth);
             environment.setLocalContext(catchContext); // context for this catch
+            environment.setCutPoint(cut); // restore related cut point / deterministic state
             if (!unifier.unify(catchContext, thrown)) {
                 // unify failed, drop to next handler
                 return false;

@@ -97,7 +97,7 @@ public class ExecFindClause implements Instruction {
             ClauseEntry entry = clauses[index++];
             if (index != clauses.length) {
                 // Backtracking will try another clause
-                decisionContext.pushDecision(this);
+                environment.pushDecisionPoint(this);
             }
             LocalContext context = environment.newLocalContext();
             Term boundBody = entry.getBody().resolve(context);

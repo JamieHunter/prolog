@@ -3,10 +3,12 @@
 //
 package prolog.instructions;
 
+import prolog.execution.CutPoint;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.InstructionPointer;
+import prolog.execution.LocalContext;
 import prolog.execution.RestoresLocalContext;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
@@ -74,12 +76,13 @@ public class ExecRunClause implements Instruction {
     /**
      * Main clause iterator with state. This is kept on the backtracking stack.
      */
-    private static class ClauseIterator extends DecisionPoint {
+    private static class ClauseIterator extends DecisionPoint implements CutPoint {
 
         final Term term;
         final Predication key;
         final ClauseEntry[] clauses;
         int index = 0;
+        int cutDepth;
 
         private ClauseIterator(Environment environment, Predication key, ClauseEntry[] clauses, Term boundTerm) {
             super(environment);
@@ -92,10 +95,9 @@ public class ExecRunClause implements Instruction {
          * Executed when clause has partially completed
          */
         void handleEndOfClause() {
-            // Make sure to transition deterministic to not-deterministic as needed
-            decisionContext.restoreCutDepth(environment.getLocalContext().getCutDepth());
             environment.setLocalContext(decisionContext);
             environment.setCatchPoint(catchPoint);
+            environment.setCutPoint(cutPoint);
             environment.restoreIP();
         }
 
@@ -110,12 +112,16 @@ public class ExecRunClause implements Instruction {
             }
             // Next clause
             ClauseEntry entry = clauses[index++];
-            if (index != clauses.length) {
-                decisionContext.pushDecision(this);
-            }
             // Local context to use for execution of this clause
-            environment.setLocalContext(
-                    environment.newLocalContext(key));
+            LocalContext newContext = environment.newLocalContext(key); // chains cut-point from newContext to active
+            environment.setLocalContext(newContext);
+            if (index != clauses.length) {
+                cutDepth = environment.getBacktrackDepth(); // might be reduced scope vs parent cut scope
+                environment.pushDecisionPoint(this); // updates parent cut scope as needed
+                environment.setCutPoint(this); // this object will handle cut for newContext
+            } else {
+                environment.setCutPoint(newContext); // tail-call style cut handling
+            }
             // Tail-call detection
             if (environment.getIP() instanceof RestoresLocalContext) {
                 // Eliminate below call. We know context and scope will be restored
@@ -127,7 +133,7 @@ public class ExecRunClause implements Instruction {
 
             // First attempt to unify
             Unifier unifier = entry.getUnifier();
-            if (unifier.unify(environment.getLocalContext(), term)) {
+            if (unifier.unify(newContext, term)) {
                 // Once unified, now execute, assume forward
                 environment.forward();
                 entry.getInstruction().invoke(environment); // this will push ClauseEnd onto stack
@@ -135,6 +141,26 @@ public class ExecRunClause implements Instruction {
                 // failed to unify, keep backtracking (will re-enter this function)
                 environment.backtrack();
             }
+        }
+
+        @Override
+        public void cut() {
+            LocalContext context = environment.getLocalContext();
+            context.cut(); // cut local context first (marks this as deterministic)
+            environment.cutBacktrackStack(cutDepth); // remove this decision point
+            environment.setCutPoint(context); // future cut only needs to work on context
+        }
+
+        @Override
+        public void markDecisionPoint(int depth) {
+            // delegate to localContext
+            environment.getLocalContext().markDecisionPoint(depth);
+        }
+
+        @Override
+        public boolean isDeterministic() {
+            // delegate to localContext
+            return environment.getLocalContext().isDeterministic();
         }
     }
 }

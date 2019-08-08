@@ -77,9 +77,11 @@ public class Environment {
     // Variable ID allocator
     private long nextVariableId = 10;
     // local localContext used for variable binding
-    private LocalContext localContext = new LocalContext(this, Predication.UNDEFINED);
+    private LocalContext localContext = new LocalContext(this, Predication.UNDEFINED, CutPoint.TERMINAL);
     // global flags
     private final PrologFlags flags = new PrologFlags(this);
+    // how to handle a cut
+    private CutPoint cutPoint = localContext;
 
     /**
      * Construct a new environment.
@@ -103,7 +105,7 @@ public class Environment {
      * @return new local context
      */
     public LocalContext newLocalContext(Predication predication) {
-        return new LocalContext(this, predication);
+        return new LocalContext(this, predication, cutPoint);
     }
 
     /**
@@ -276,37 +278,77 @@ public class Environment {
     }
 
     /**
-     * Perform a cut. The local context identifies the limit of the cut. The backtrack stack is iterated with an
-     * attempt to erase as many backtrack entries as possible (particularly decision points).
+     * Perform a cut. Behavior is delegated.
      */
     public void cutDecisionPoints() {
-        int depth = getLocalContext().getCutDepth(); // depth of scope prior to cut
-        if (depth != LocalContext.DETERMINISTIC) {
-            // the local context will be considered deterministic, set this now so
-            // conditional cuts can operate
-            getLocalContext().setCutDepth(LocalContext.DETERMINISTIC);
-            //
-            // Determine how far back we can rewind backtracking
-            //
-            int delta = backtrackStack.size() - depth;
-            //
-            // Attempt to reduce the stack
-            //
-            ListIterator<Backtrack> iter = backtrackStack.listIterator();
-            while (delta-- > 0) {
-                iter.next().cut(iter);
-            }
+        cutPoint.cut();
+    }
+
+    /**
+     * Retrieve current cutPoint
+     *
+     * @return cutpoint
+     */
+    public CutPoint getCutPoint() {
+        return cutPoint;
+    }
+
+    /**
+     * Change cutpoint
+     *
+     * @param newCutPoint new cutpoint handler
+     */
+    public void setCutPoint(CutPoint newCutPoint) {
+        cutPoint = newCutPoint;
+    }
+
+    /**
+     * Primitive helper of cut
+     *
+     * @param targetDepth new target depth of backtrack stack
+     */
+    public int cutBacktrackStack(int targetDepth) {
+        //
+        // Determine how far back we can rewind backtracking
+        //
+        int delta = backtrackStack.size() - targetDepth;
+        //
+        // Attempt to reduce the stack
+        //
+        ListIterator<Backtrack> iter = backtrackStack.listIterator();
+        while (delta-- > 0) {
+            iter.next().cut(iter);
         }
+        return backtrackStack.size();
     }
 
     /**
      * Save a backtracking entry point. This will be executed on
-     * backtracking.
+     * backtracking. No updates are made to any CutPoints
      *
      * @param backtrack Backtracking state/callback
      */
     public void pushBacktrack(Backtrack backtrack) {
         backtrackStack.push(backtrack);
+    }
+
+    /**
+     * Add a decision point.
+     *
+     * @param decisionPoint New decision point
+     */
+    public void pushDecisionPoint(DecisionPoint decisionPoint) {
+        cutPoint.markDecisionPoint(backtrackStack.size());
+        pushBacktrack(decisionPoint);
+    }
+
+    /**
+     * Conditionally add a backtrack
+     */
+    public void pushBacktrackIfNotDeterministic(Backtrack backtrack) {
+        if (!cutPoint.isDeterministic()) {
+            pushBacktrack(backtrack);
+        }
     }
 
     /**
@@ -434,6 +476,7 @@ public class Environment {
 
     /**
      * Look up a variable-argument predicate if one exists
+     *
      * @param predication Predication to look up
      * @return variable-argument predicate, or null
      */
@@ -483,6 +526,7 @@ public class Environment {
     /**
      * Used when there is a predicate miss. Either use a variable-argument predicate, or create an empty predicate
      * entry. Note that a "miss" will result in the predicate being auto-populated into the predicate table.
+     *
      * @param predication Predication to "auto create"
      * @return variable-argument predicate, or new predicate
      */

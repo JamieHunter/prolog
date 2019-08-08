@@ -25,24 +25,24 @@ public class ExecIgnore extends ExecCall {
     protected void preCall() {
         // protective cut-scope for the expression being called
         LocalContext context = environment.getLocalContext();
-        environment.callIP(new EndIgnoreScope(context));
+        environment.callIP(new EndIgnoreScope(environment));
         // A decision point before the "cut" will handle backtracking to effect an ignore
-        context.pushDecision(new OnBacktrack(environment));
+        environment.pushDecisionPoint(new OnBacktrack(environment));
     }
 
     /**
-     * Version of {@link RestoreCutDepth} IP to cut decision points at end of successful
+     * Version of {@link ConstrainedCutPoint} IP to cut decision points at end of successful
      * call on return.
      */
-    private static class EndIgnoreScope extends RestoreCutDepth {
+    private static class EndIgnoreScope extends ConstrainedCutPoint {
 
-        EndIgnoreScope(LocalContext context) {
-            super(context);
+        EndIgnoreScope(Environment environment) {
+            super(environment);
         }
 
         @Override
         public void next() {
-            context.environment().cutDecisionPoints();
+            cut();
             super.next();
         }
     }

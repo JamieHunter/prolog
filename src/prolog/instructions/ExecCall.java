@@ -5,14 +5,13 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
-import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
+import prolog.execution.BasicCutPoint;
 import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.InstructionPointer;
-import prolog.execution.LocalContext;
 import prolog.execution.RestoresLocalContext;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
@@ -85,19 +84,19 @@ public class ExecCall implements Instruction {
         Atomic functor;
         List<Term> members = new ArrayList<>();
         if (bound instanceof CompoundTerm) {
-            CompoundTerm compBound = (CompoundTerm)bound;
+            CompoundTerm compBound = (CompoundTerm) bound;
             functor = compBound.functor();
-            for(int i = 0; i < compBound.arity(); i++) {
+            for (int i = 0; i < compBound.arity(); i++) {
                 members.add(compBound.get(i));
             }
         } else if (bound.isAtom()) {
-            functor = (Atomic)bound;
+            functor = (Atomic) bound;
         } else {
             throw PrologTypeError.callableExpected(environment, bound);
         }
         if (CompoundTerm.termIsA(args, Interned.CALL_FUNCTOR)) {
-            CompoundTerm callArg = (CompoundTerm)args;
-            for(int i = 0; i < callArg.arity(); i++) {
+            CompoundTerm callArg = (CompoundTerm) args;
+            for (int i = 0; i < callArg.arity(); i++) {
                 members.add(callArg.get(i));
             }
         } else if (CompoundTerm.termIsA(args, Interned.LIST_FUNCTOR)) {
@@ -144,7 +143,7 @@ public class ExecCall implements Instruction {
      * Called prior to setting up return address / cutScope. By default this adds a cut-constraining scope.
      */
     protected void preCall() {
-        RestoreCutDepth ip = prepareCall(); // with side-effects
+        ConstrainedCutPoint ip = prepareCall(); // with side-effects
         if (environment.getIP() instanceof RestoresLocalContext) {
             // Tail-call elimination: Eliminate the "callIP" below, side effects still hold
         } else {
@@ -156,30 +155,30 @@ public class ExecCall implements Instruction {
     /**
      * Build a context with side-effects.
      *
-     * @return instance of RestoreCutDepth
+     * @return instance of ConstrainedCutPoint
      */
-    protected RestoreCutDepth prepareCall() {
-        LocalContext context = environment.getLocalContext();
-        return new RestoreCutDepth(context);
+    protected ConstrainedCutPoint prepareCall() {
+        return new ConstrainedCutPoint(environment);
     }
 
     /**
-     * IP that restores cut point on "return"
+     * This class acts as a localized cut-point, and an IP that restores the original cut point
      */
-    protected static class RestoreCutDepth implements InstructionPointer {
-        final LocalContext context;
-        final int depth;
+    protected static class ConstrainedCutPoint extends BasicCutPoint implements InstructionPointer {
+        ConstrainedCutPoint(Environment environment) {
+            super(environment, environment.getCutPoint());
+            environment.setCutPoint(this);
+        }
 
-        RestoreCutDepth(LocalContext context) {
-            this.context = context;
-            this.depth = context.reduceCutDepth();
+        @Override
+        public boolean isDeterministic() {
+            return super.isDeterministic() && parent.isDeterministic();
         }
 
         @Override
         public void next() {
-            context.restoreCutDepth(depth);
-            // drop "RestoreCutDepth"
-            context.environment().restoreIP();
+            environment.setCutPoint(parent);
+            environment.restoreIP();
         }
 
         @Override
