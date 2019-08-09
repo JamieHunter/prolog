@@ -3,6 +3,8 @@
 //
 package prolog.instructions;
 
+import prolog.bootstrap.Interned;
+import prolog.exceptions.PrologExistenceError;
 import prolog.execution.CutPoint;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
@@ -12,6 +14,7 @@ import prolog.execution.LocalContext;
 import prolog.execution.RestoresLocalContext;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.flags.PrologFlags;
 import prolog.predicates.ClauseEntry;
 import prolog.predicates.ClauseSearchPredicate;
 import prolog.predicates.Predication;
@@ -43,9 +46,25 @@ public class ExecRunClause implements Instruction {
      */
     @Override
     public void invoke(Environment environment) {
+        ClauseEntry [] clauses = predicate.getClauses();
+        if (clauses.length == 0 && !predicate.isDynamic()) {
+            Predication pred = new Predication(term.functor(), term.arity());
+            switch(environment.getFlags().unknown) {
+                case ATOM_fail:
+                    environment.backtrack();
+                    return;
+                case ATOM_warning:
+                    System.err.format("Undefined predicate %s\n", pred.toString());
+                    environment.backtrack();
+                    return;
+                default:
+                    throw PrologExistenceError.error(environment,
+                            Interned.PROCEDURE, pred.term(), "Predicate not defined", null);
+            }
+        }
         // Clauses are snapshot at time of call.
         ClauseIterator iter =
-                new ClauseIterator(environment, predication, predicate.getClauses(), term.resolve(environment.getLocalContext()));
+                new ClauseIterator(environment, predication, clauses, term.resolve(environment.getLocalContext()));
         iter.next();
     }
 

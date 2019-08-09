@@ -12,15 +12,16 @@ public class IgnoreTest {
         return PrologTest.given("old(X) :- age(X,Y), Y > 30, assertz(isold(X)) .")
                 .and("age(john, 63).")
                 .and("age(sam, 50).")
-                .and("age(peter, 13).");
+                .and("age(peter, 13).")
+                .and("?- set_prolog_flag(unknown, fail).");
 
     }
 
     @Test
     public void testIgnoreSuccess() {
-        given().when("?- ignore(old(john)).")
+        given().when("?- old(john).")
                 .assertSuccess()
-                .andWhen("?- ignore(john).")
+                .andWhen("?- ignore(old(john)).")
                 .assertSuccess();
         given().when("?- old(peter).")
                 .assertFailed(); // for reference

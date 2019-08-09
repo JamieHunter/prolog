@@ -42,9 +42,16 @@ load_files(X) :- load_files(X, []).
     select_option(encoding(Encoding), Op1, Op2, DefEncoding),
     RemOp = [modified(Modified)|Op2],
     '$load_condition'(AbsFile, RemOp) ->
+        % TODO: Controlled by flags
+        write('Loading '),
+        writeln(AbsFile),
+        % Actual open/load
         open(AbsFile, read, Stream, [encoding(Encoding)]),
         '$load_stream_in_group'(AbsFile, RemOp, Stream),
-        close(Stream).
+        close(Stream),
+        % TODO: Controlled by flags
+        write('Finished loading '),
+        writeln(AbsFile).
 
 % Perform conditional checks on stream being loaded
 '$load_condition'(Id, Op) :-

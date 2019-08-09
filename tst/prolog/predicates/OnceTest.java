@@ -12,7 +12,8 @@ public class OnceTest {
         return PrologTest.given("old(X) :- age(X,Y), Y > 30, assertz(isold(X)) .")
                 .and("age(john, 63).")
                 .and("age(sam, 50).")
-                .and("age(peter, 13).");
+                .and("age(peter, 13).")
+                .and("?- set_prolog_flag(unknown, fail).");
 
     }
 

@@ -700,11 +700,7 @@ public final class Io {
             throw new UnsupportedOperationException("library(X) not yet handled");
         }
         Path path = parsePath(environment, fileSpec);
-        try {
-            path = path.toRealPath();
-        } catch (IOException e) {
-            throw PrologError.systemError(environment, e);
-        }
+        Path usePath = null;
         for(String ext : options.extensions) {
             Path test = path.getParent().resolve(path.getFileName().toString() + ext);
             try {
@@ -712,18 +708,28 @@ public final class Io {
                 if (options.type == AbsoluteFileNameOptions.FileType.ATOM_directory) {
 
                     if (attribs.isDirectory()) {
-                        return test;
+                        usePath = test.toRealPath();
+                        break;
                     }
                 } else {
                     if (attribs.isRegularFile()) {
-                        return test;
+                        usePath = test.toRealPath();
+                        break;
                     }
                 }
             } catch (IOException e) {
                 // ignore this test
             }
         }
-        return path;
+        if (usePath == null) {
+            try {
+                usePath = path.toRealPath();
+            } catch (IOException e) {
+                // TODO: this can be improved
+                usePath = path;
+            }
+        }
+        return usePath;
     }
 
     public static boolean unifyFilePath(Environment environment, Path path, Term fileNameTerm) {

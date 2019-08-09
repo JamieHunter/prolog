@@ -25,4 +25,9 @@ public abstract class PredicateDefinition {
      * @return true if dynamic inserts allowed.
      */
     abstract public boolean isDynamic();
+
+    /**
+     * @return true if multifile behavior enabled.
+     */
+    abstract public boolean isMultifile();
 }

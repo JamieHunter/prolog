@@ -124,6 +124,38 @@ public final class Dictionary {
         compiling.add(new ExecFindClause(head, body));
     }
 
+    /**
+     * Mark a predication as dynamic
+     * @param environment Execution environment
+     * @param predicationTerm Specifier
+     */
+    @Predicate("dynamic")
+    public static void dynamic(Environment environment, Term predicationTerm) {
+        ClauseSearchPredicate predicate = lookupFromPredication(environment, predicationTerm);
+        predicate.setDynamic(true);
+    }
+
+    /**
+     * Mark a predication as multi-file (inhibit consult from deleting definitions)
+     * @param environment Execution environment
+     * @param predicationTerm Specifier
+     */
+    @Predicate("multifile")
+    public static void multifile(Environment environment, Term predicationTerm) {
+        ClauseSearchPredicate predicate = lookupFromPredication(environment, predicationTerm);
+        predicate.setMultifile(true);
+    }
+
+    /**
+     * Mark a predication that definitions might be discontiguous
+     * @param environment Execution environment
+     * @param predicationTerm Specifier
+     */
+    @Predicate("discontiguous")
+    public static void discontiguous(Environment environment, Term predicationTerm) {
+        ClauseSearchPredicate predicate = lookupFromPredication(environment, predicationTerm);
+        // TODO: currently not used
+    }
 
     // ==============================================
     // Helpers
@@ -201,5 +233,25 @@ public final class Dictionary {
         // add clause to library
         ClauseEntry entry = new ClauseEntry((CompoundTerm)head, body, unifier, compiled);
         add.accept(dictionaryEntry, entry);
+    }
+
+    private static ClauseSearchPredicate lookupFromPredication(Environment environment, Term predicationTerm) {
+        if (!CompoundTerm.termIsA(predicationTerm, Interned.SLASH_ATOM, 2)) {
+            // TODO: better error?
+            throw PrologTypeError.compoundExpected(environment, predicationTerm);
+        }
+        CompoundTerm predicationCompound = (CompoundTerm)predicationTerm;
+        Term functor = predicationCompound.get(0);
+        Term arity = predicationCompound.get(1);
+        PrologAtom functorAtom = PrologAtom.from(functor);
+        PrologInteger arityInt = PrologInteger.from(arity);
+        Predication predication = new Predication(functorAtom, arityInt.get().intValue());
+        // create library entry if needed
+        PredicateDefinition entry = environment.autoCreateDictionaryEntry(predication);
+        if (!(entry instanceof ClauseSearchPredicate)) {
+            throw PrologPermissionError.error(environment, "modify", "static_procedure", predication.term(),
+                    "Cannot make procedure dynamic");
+        }
+        return (ClauseSearchPredicate)entry;
     }
 }

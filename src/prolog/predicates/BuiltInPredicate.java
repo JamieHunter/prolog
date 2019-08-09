@@ -14,4 +14,11 @@ public abstract class BuiltInPredicate extends PredicateDefinition {
     public boolean isDynamic() {
         return false;
     }
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isMultifile() {
+        return false;
+    }
 }

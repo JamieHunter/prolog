@@ -64,6 +64,7 @@ public class DictionaryTest {
                 .and("a(2).")
                 .and("b(1).")
                 .and("b(2).")
+                .and("?- set_prolog_flag(unknown, fail).")
                 .when("?- a(1).")
                 .assertSuccess()
                 .andWhen("?- a(3).")

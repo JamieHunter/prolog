@@ -36,6 +36,8 @@ public class PrologFlags implements FlagsWithEnvironment {
                 readBoolean(o -> o.debug).protect();
         global.enumFlag(internAtom("encoding"), StreamProperties.Encoding.class, (o, v) -> o.encoding = v).
                 readEnum(StreamProperties.Encoding.class, o -> o.encoding).protect();
+        global.enumFlag(internAtom("unknown"), Unknown.class, (o, v) -> o.unknown = v).
+                readEnum(Unknown.class, o -> o.unknown).protect();
     }
 
     private final Environment environment;
@@ -64,6 +66,10 @@ public class PrologFlags implements FlagsWithEnvironment {
      * Default file encoding
      */
     public StreamProperties.Encoding encoding = StreamProperties.Encoding.ATOM_utf8;
+    /**
+     * What to do if a predicate is not found
+     */
+    public Unknown unknown = Unknown.ATOM_error;
 
     // Flags created via create_prolog_flag
     private final Map<Atomic, Term> otherFlags = new HashMap<>();
@@ -142,5 +148,11 @@ public class PrologFlags implements FlagsWithEnvironment {
         ATOM_codes,
         ATOM_symbol_char,
         ATOM_string
+    }
+
+    public enum Unknown {
+        ATOM_fail,
+        ATOM_warning,
+        ATOM_error
     }
 }

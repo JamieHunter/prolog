@@ -20,6 +20,7 @@ public class ClauseSearchPredicate extends PredicateDefinition {
     private final TrackableList<ClauseEntry> clauses = new TrackableList<>();
     private static final ClauseEntry[] ELEMENT_ARRAY_TYPE = new ClauseEntry[0];
     private boolean isDynamic = false;
+    private boolean isMultifile = false;
     private LoadGroup loadGroup = null;
 
     /**
@@ -46,6 +47,15 @@ public class ClauseSearchPredicate extends PredicateDefinition {
     }
 
     /**
+     * Inhibit loadgroup semantics
+     *
+     * @param multifile Multifile flag
+     */
+    public void setMultifile(boolean multifile) {
+        this.isMultifile = multifile;
+    }
+
+    /**
      * True if dynamic inserts are enabled.
      *
      * @return flag
@@ -55,9 +65,19 @@ public class ClauseSearchPredicate extends PredicateDefinition {
         return isDynamic;
     }
 
+    /**
+     * True if multifile behavior is enabled.
+     *
+     * @return flag
+     */
+    @Override
+    public boolean isMultifile() {
+        return isMultifile;
+    }
+
 
     public void changeLoadGroup(LoadGroup loadGroup) {
-        if (isDynamic) {
+        if (isDynamic || isMultifile) {
             return; // does not apply
         }
         if (this.loadGroup != loadGroup) {

@@ -29,6 +29,14 @@ public class DemandLoadPredicate extends PredicateDefinition {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isMultifile() {
+        return false;
+    }
+
+    /**
      * During compile, actively replace demand-load predicate with clause-search predicate and load definitions from
      * source file.
      *

@@ -75,6 +75,7 @@ public final class Interned {
     public static final PrologAtom OUT_OF_RANGE_DOMAIN = internAtom("out_of_range");
     public static final PrologAtom STREAM_OR_ALIAS_DOMAIN = internAtom("stream_or_alias");
     public static final PrologAtom STREAM_PROPERTY_DOMAIN = internAtom("stream_property");
+    public static final PrologAtom PROCEDURE = internAtom("procedure");
     public static final PrologAtom SOURCE_SINK_DOMAIN = internAtom("source_sink");
     public static final PrologAtom IO_MODE_DOMAIN = internAtom("io_mode");
     public static final PrologAtom OPERATOR_PRIORITY_DOMAIN = internAtom("operator_priority");
