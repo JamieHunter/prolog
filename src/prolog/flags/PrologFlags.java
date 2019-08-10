@@ -32,6 +32,9 @@ public class PrologFlags implements FlagsWithEnvironment {
                 readInteger(o -> o.breakLevel).protect();
         global.booleanFlag(internAtom("character_escapes"), (o, v) -> o.characterEscapes = v).
                 readBoolean(o -> o.characterEscapes).protect();
+        global.booleanFlag(internAtom("char_conversion"),
+                (o, v) -> o.environment.getCharConverter().enableConversion(v)).
+                readBoolean(o -> o.environment.getCharConverter().isEnabled()).protect();
         global.booleanFlag(internAtom("debug"), (o, v) -> o.debug = v).
                 readBoolean(o -> o.debug).protect();
         global.enumFlag(internAtom("encoding"), StreamProperties.Encoding.class, (o, v) -> o.encoding = v).

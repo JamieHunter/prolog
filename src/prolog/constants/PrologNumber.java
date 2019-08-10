@@ -69,6 +69,15 @@ public interface PrologNumber extends Atomic {
     PrologNumber sign();
 
     /**
+     * Round this number to an integer
+     *
+     * @return round
+     */
+    default PrologInteger round() {
+        return toPrologInteger();
+    }
+
+    /**
      * Multiply this number with the other number
      *
      * @param right Other number

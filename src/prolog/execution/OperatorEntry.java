@@ -38,6 +38,13 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
     }
 
     /**
+     * @return functor name of this operator
+     */
+    public Atomic getFunctor() {
+        return this.functor;
+    }
+
+    /**
      * Change precedence
      *
      * @param precedence Operator precedence, lower precedence has a higher priority.
@@ -90,17 +97,32 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
     public enum Code {
         FX {
             @Override
+            public PrologAtom atom() {
+                return Interned.OP_FX;
+            }
+
+            @Override
             public boolean isPrefix() {
                 return true;
             }
         },
         XF {
             @Override
+            public PrologAtom atom() {
+                return Interned.OP_XF;
+            }
+
+            @Override
             public boolean isPostfix() {
                 return true;
             }
         },
         FY {
+            @Override
+            public PrologAtom atom() {
+                return Interned.OP_FY;
+            }
+
             @Override
             public boolean isPrefix() {
                 return true;
@@ -113,6 +135,11 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
         },
         YF {
             @Override
+            public PrologAtom atom() {
+                return Interned.OP_YF;
+            }
+
+            @Override
             public boolean isPostfix() {
                 return true;
             }
@@ -124,11 +151,21 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
         },
         XFX {
             @Override
+            public PrologAtom atom() {
+                return Interned.OP_XFX;
+            }
+
+            @Override
             public boolean isBinary() {
                 return true;
             }
         },
         YFX {
+            @Override
+            public PrologAtom atom() {
+                return Interned.OP_YFX;
+            }
+
             @Override
             Assoc associativity() {
                 return Assoc.LEFT;
@@ -141,6 +178,11 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
         },
         XFY {
             @Override
+            public PrologAtom atom() {
+                return Interned.OP_XFY;
+            }
+
+            @Override
             Assoc associativity() {
                 return Assoc.RIGHT;
             }
@@ -151,7 +193,14 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
             }
         },
         NONE {
+            @Override
+            public PrologAtom atom() {
+                return null;
+            }
+
         };
+
+        abstract public PrologAtom atom();
 
         /**
          * @return true if operator is prefix.
@@ -188,25 +237,23 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
      * @param code Atom describing operator
      * @return Internal operator code.
      */
-    public Code parseCode(Atomic code) {
-        if (code instanceof PrologAtom) {
-            String name = ((PrologAtom) code).name();
-            switch (name) {
-                case "fx":
-                    return Code.FX;
-                case "fy":
-                    return Code.FY;
-                case "xf":
-                    return Code.XF;
-                case "yf":
-                    return Code.YF;
-                case "xfx":
-                    return Code.XFX;
-                case "xfy":
-                    return Code.XFY;
-                case "yfx":
-                    return Code.YFX;
-            }
+    public static Code parseCode(PrologAtom code) {
+        String name = code.name();
+        switch (name) {
+            case "fx":
+                return Code.FX;
+            case "fy":
+                return Code.FY;
+            case "xf":
+                return Code.XF;
+            case "yf":
+                return Code.YF;
+            case "xfx":
+                return Code.XFX;
+            case "xfy":
+                return Code.XFY;
+            case "yfx":
+                return Code.YFX;
         }
         throw new FutureDomainError(Interned.OPERATOR_PRIORITY_DOMAIN, code);
     }
@@ -285,5 +332,4 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
             return 0; // consider any other combination incompatible
         }
     }
-
 }

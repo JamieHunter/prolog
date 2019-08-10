@@ -19,6 +19,7 @@ class TokenParseCoreState extends ActiveParsingState {
 
     TokenParseCoreState(Tokenizer tokenizer, String text) {
         super(tokenizer);
+        // TODO: Potential handling point for character conversion?
         matcher = Tokenizer.CORE_PATTERN.matcher(text);
     }
 

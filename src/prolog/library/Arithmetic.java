@@ -73,7 +73,16 @@ public final class Arithmetic {
      */
     @Function(value = "sign", arity = 1)
     public static final UnaryFunction SIGN = unary(PrologNumber::sign);
-
+    /**
+     * Convert number to floating point
+     */
+    @Function(value = "float", arity = 1)
+    public static final UnaryFunction FLOAT = unary(PrologNumber::toPrologFloat);
+    /**
+     * Convert number to integer
+     */
+    @Function(value = "round", arity = 1)
+    public static final UnaryFunction ROUND = unary(PrologNumber::round);
     //
     // ========================================================
     //

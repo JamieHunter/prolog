@@ -4,6 +4,7 @@
 package prolog.parser;
 
 import prolog.bootstrap.Interned;
+import prolog.bootstrap.Operators;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtom;
 import prolog.constants.PrologEOF;
@@ -224,6 +225,20 @@ public final class ExpressionReader {
                 // See isNext() method of tokenizer to help with this
             } else {
                 op = environment.getPrefixOperator((Atomic) term);
+                if (op == OperatorEntry.ARGUMENT) {
+                    op = environment.getInfixPostfixOperator((Atomic)term);
+                    if (op != OperatorEntry.ARGUMENT) {
+                        OperatorEntry lastOp = operators.peek();
+                        if (lastOp.getCode().isPrefix() &&
+                                (op == Operators.COMMA || lastOp.getPrecedence() < op.getPrecedence())) {
+                            // re-interpret last operator as non-operator
+                            operators.pop();
+                            state = State.OPERATOR;
+                        } else {
+                            op = OperatorEntry.ARGUMENT;
+                        }
+                    }
+                }
             }
         }
 

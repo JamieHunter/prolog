@@ -33,7 +33,7 @@ public class Operators {
         makeOperator(1050, OperatorEntry.Code.XFY, "->", "*->");
         COMMA = makeOperator(OperatorEntry.COMMA, OperatorEntry.Code.XFY, ",");
         makeOperator(990, OperatorEntry.Code.XFX, ":=");
-        makeOperator(900, OperatorEntry.Code.FY, "\\+", "not", "spy");
+        makeOperator(900, OperatorEntry.Code.FY, "\\+");
         makeOperator(700, OperatorEntry.Code.XFX,
                 "<", "=", "=..", "=@=", "\\=@=", "=:=", "=<", "==", "=\\=",
                 ">", ">=", "@<", "@=<", "@>", "@>=",
@@ -42,7 +42,7 @@ public class Operators {
         makeOperator(600, OperatorEntry.Code.XFY, ":");
         makeOperator(500, OperatorEntry.Code.YFX, "+", "-", "/\\", "\\/", "xor");
         makeOperator(500, OperatorEntry.Code.FX, "?");
-        makeOperator(400, OperatorEntry.Code.YFX, "*", "/", "//", "mod");
+        makeOperator(400, OperatorEntry.Code.YFX, "*", "/", "//", "mod", "<<", ">>");
         makeOperator(200, OperatorEntry.Code.XFX, "**");
         makeOperator(200, OperatorEntry.Code.XFY, "^");
         makeOperator(200, OperatorEntry.Code.FY, "+", "-", "\\");

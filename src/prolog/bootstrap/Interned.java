@@ -36,6 +36,7 @@ public final class Interned {
     public static final PrologAtom BAR_FUNCTOR = internAtom("|");
     public static final PrologAtom EQUALS_FUNCTOR = internAtom("=");
     public static final PrologAtom EMPTY_BRACES_ATOM = internAtom("{}");
+    public static final PrologAtom EMPTY_LIST_ATOM = internAtom("[]");
     public static final PrologAtom OPEN_BRACKET = internAtom("(");
     public static final PrologAtom CLOSE_BRACKET = internAtom(")");
     public static final PrologAtom OPEN_SQUARE_BRACKET = internAtom("[");
@@ -82,7 +83,13 @@ public final class Interned {
     public static final PrologAtom CHARACTER_CODE_LIST_DOMAIN = internAtom("character_code_list");
     public static final PrologAtom CHARACTER_CODE_REPRESENTATION = internAtom("character_code");
     public static final PrologAtom ZERO_DIVISOR_EVALUATION = internAtom("zero_divisor");
-
+    public static final PrologAtom OP_FX = internAtom("fx");
+    public static final PrologAtom OP_FY = internAtom("fy");
+    public static final PrologAtom OP_XF = internAtom("xf");
+    public static final PrologAtom OP_YF = internAtom("yf");
+    public static final PrologAtom OP_XFX = internAtom("xfx");
+    public static final PrologAtom OP_XFY = internAtom("xfy");
+    public static final PrologAtom OP_YFX = internAtom("yfx");
 
     //
     // Debugging aid. This is to catch errors when atoms are interned after they are used.

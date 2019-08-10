@@ -5,6 +5,8 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
+import prolog.exceptions.FuturePrologError;
+import prolog.exceptions.PrologError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.BasicCutPoint;
@@ -42,15 +44,20 @@ public class ExecCall implements Instruction {
         this.environment = environment;
         this.callTerm = callTerm;
         this.args = null;
+        Instruction precompiled = null;
         if (callTerm.isInstantiated()) {
-            // Create nested context to wrap in a cut-scope
+            // Attempt to compile.
+            // Note, if compiling cannot be performed, or it fails, don't fail here,
+            // by contract of Call, the failure is deferred until runtime.
             CompileContext compiling = new CompileContext(environment);
-            callTerm.compile(compiling);
-            precompiled = compiling.toInstruction();
-        } else {
-            // defer compiling until run-time.
-            precompiled = null;
+            try {
+                callTerm.compile(compiling);
+                precompiled = compiling.toInstruction();
+            } catch(PrologError|FuturePrologError e) {
+                // See sec78.pl catch_test(3)
+            }
         }
+        this.precompiled = precompiled;
     }
 
     /**

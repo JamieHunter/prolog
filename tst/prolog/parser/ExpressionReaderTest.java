@@ -176,4 +176,11 @@ public class ExpressionReaderTest {
                         isUnboundVariable("C")));
 
     }
+
+    @Test
+    public void testMixedOperator() {
+        // This is an expression that failed to parse in sec816.pl
+        expect("[-, '2','5'].",
+                isList(isAtom("-"), isAtom("2"), isAtom("5")));
+    }
 }

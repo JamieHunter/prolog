@@ -14,9 +14,13 @@ import prolog.constants.PrologString;
 import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
+import prolog.execution.CompileContext;
 import prolog.execution.Environment;
+import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.instructions.ExecCall;
+import prolog.instructions.ExecCallLocal;
 import prolog.instructions.ExecRetractClause;
 import prolog.io.LogicalStream;
 import prolog.io.Prompt;
@@ -130,6 +134,46 @@ public final class Consult {
     }
 
     /**
+     * Add goal to list of things to execute after text is loaded
+     * @param environment
+     * @param goal
+     */
+    @Predicate("initialization")
+    public static void initialization(Environment environment, Term goal) {
+        LoadGroup group = environment.getLoadGroup();
+        if (group.getId().length() > 0) {
+            group.addInitialization(goal);
+        }
+    }
+
+    /**
+     * Execute all the initialization goals
+     * @param environment Execution environment
+     * @param idTerm Id of load group
+     */
+    @Predicate("$do_initialization")
+    public static void doInitialization(Environment environment, Term idTerm) {
+        String id = convertId(environment, idTerm);
+        if (id.length() == 0) {
+            return;
+        }
+        LoadGroup group = environment.getLoadGroup(id);
+        List<Term> initialization = group.getInitialization();
+
+        // Compile all the terms as if they were provided as a single ':-' at the end of the script
+        CompileContext compiling = new CompileContext(environment);
+        ListIterator<Term> iter = initialization.listIterator();
+        while(iter.hasNext()) {
+            Term term = iter.next();
+            iter.remove();
+            term.compile(compiling);
+        }
+        Instruction sequence = compiling.toInstruction();
+        Instruction nested = new ExecCallLocal(environment, sequence);
+        nested.invoke(environment);
+    }
+
+    /**
      * List of predicates defined by the resource "consult.pl".
      */
     @DemandLoad("consult.pl")
@@ -143,7 +187,9 @@ public final class Consult {
             // consult list of files
             predicate(".", 2),
             // equivalent to load_files(File, [if(not_loaded)])
-            predicate("ensure_loaded", 1)
+            predicate("ensure_loaded", 1),
+            // inline insertion of file
+            predicate("include", 1)
     };
 
     // ====================================================================

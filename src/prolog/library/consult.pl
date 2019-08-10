@@ -30,7 +30,8 @@ load_files(X) :- load_files(X, []).
     nonvar(Stream),
     !,
     '$load_condition'(Id, RemOp) ->
-        '$load_stream_in_group'(Id, RemOp, Stream).
+        '$load_stream_in_group'(Id, RemOp, Stream),
+        '$do_initialization'(Id).
 
 % Process as a single file (convert file to a stream)
 '$load_file'(File, Op) :-
@@ -43,15 +44,12 @@ load_files(X) :- load_files(X, []).
     RemOp = [modified(Modified)|Op2],
     '$load_condition'(AbsFile, RemOp) ->
         % TODO: Controlled by flags
-        write('Loading '),
-        writeln(AbsFile),
         % Actual open/load
         open(AbsFile, read, Stream, [encoding(Encoding)]),
         '$load_stream_in_group'(AbsFile, RemOp, Stream),
         close(Stream),
         % TODO: Controlled by flags
-        write('Finished loading '),
-        writeln(AbsFile).
+        '$do_initialization'(AbsFile).
 
 % Perform conditional checks on stream being loaded
 '$load_condition'(Id, Op) :-
@@ -138,5 +136,14 @@ consult(F) :- !, load_files(F, [expand(true)]).
 
 % ensure loaded if not already loaded
 ensure_loaded(F) :- load_files(F, [if(not_loaded)]).
+
+% include file into this context, effectively an inline insert
+% TODO: error if called outside of a load_file
+include(F) :-
+    % Actual open/load
+    open(F, read, Stream),
+    '$load_stream'([], Stream),
+    close(Stream).
+
 
 % :- Make private ...

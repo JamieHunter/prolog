@@ -3,6 +3,8 @@
 //
 package prolog.constants;
 
+import prolog.exceptions.PrologDomainError;
+import prolog.exceptions.PrologTypeError;
 import prolog.execution.Environment;
 import prolog.expressions.Container;
 import prolog.expressions.Term;
@@ -50,5 +52,25 @@ public class PrologCharacter extends AtomicBase implements Container {
     @Override
     public void write(WriteContext context) throws IOException {
         value(context.environment()).write(context);
+    }
+
+    /**
+     * Convert to character from atom or integer
+     * @return Character
+     */
+    public static PrologCharacter from(Environment environment, Term source) {
+        if (source instanceof PrologCharacter) {
+            return (PrologCharacter)source;
+        }
+        if (source instanceof PrologAtom) {
+            String t = ((PrologAtom)source).name();
+            if (t.length() > 0) {
+                return new PrologCharacter(t.charAt(0));
+            }
+        }
+        if (source instanceof PrologInteger) {
+            return new PrologCharacter((char)((PrologInteger)source).get().intValue());
+        }
+        throw PrologTypeError.characterExpected(environment, source);
     }
 }

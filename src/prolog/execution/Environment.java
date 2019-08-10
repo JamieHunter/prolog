@@ -16,6 +16,7 @@ import prolog.expressions.Term;
 import prolog.flags.PrologFlags;
 import prolog.functions.StackFunction;
 import prolog.io.LogicalStream;
+import prolog.parser.CharConverter;
 import prolog.predicates.BuiltInPredicate;
 import prolog.predicates.ClauseSearchPredicate;
 import prolog.predicates.DemandLoadPredicate;
@@ -28,9 +29,11 @@ import prolog.predicates.VarArgDefinition;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.Map;
 
 /**
  * Runtime environment of Prolog. Note that in the current version, Environments are not thread safe. That is, only
@@ -38,6 +41,8 @@ import java.util.ListIterator;
  */
 public class Environment {
 
+    // character translation table
+    private final CharConverter charConverter = new CharConverter();
     // table of atoms for this instance
     private final HashMap<String, PrologAtom> atomTable = new HashMap<>();
     // table of predicates for this instance
@@ -599,6 +604,22 @@ public class Environment {
     }
 
     /**
+     * Retrieve all prefix operators for iteration
+     * @return all prefix operators
+     */
+    public Map<Atomic, OperatorEntry> getPrefixOperators() {
+        return Collections.unmodifiableMap(prefixOperatorTable);
+    }
+
+    /**
+     * Retrieve all infix/postfix operators for iteration
+     * @return all infix/postfix operators
+     */
+    public Map<Atomic, OperatorEntry> getInfixPostfixOperators() {
+        return Collections.unmodifiableMap(infixPostfixOperatorTable);
+    }
+
+    /**
      * Current context path for open.
      *
      * @return Context path (Current working directory)
@@ -766,5 +787,13 @@ public class Environment {
      */
     public PrologFlags getFlags() {
         return flags;
+    }
+
+    /**
+     * Retrieve the character conversion table
+     * @return conversion table
+     */
+    public CharConverter getCharConverter() {
+        return charConverter;
     }
 }
