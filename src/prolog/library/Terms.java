@@ -7,6 +7,7 @@ import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtom;
 import prolog.constants.PrologInteger;
+import prolog.execution.CopyTermContext;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
@@ -199,9 +200,26 @@ public class Terms {
             struct = CompoundTerm.from((Atomic) struct);
         }
         CompoundTerm comp = (CompoundTerm) struct;
-        if (! (Unifier.unify(context, functor, comp.functor()) &&
+        if (!(Unifier.unify(context, functor, comp.functor()) &&
                 Unifier.unify(context, arity, new PrologInteger(BigInteger.valueOf(comp.arity())))
-                )) {
+        )) {
+            environment.backtrack();
+        }
+    }
+
+    /**
+     * Copy a source term such that it has a unique set of variables, and unify with target term.
+     *
+     * @param environment Execution environment
+     * @param source      Source term to copy
+     * @param target      Target unified with source
+     */
+    @Predicate("copy_term")
+    public static void copyTerm(Environment environment, Term source, Term target) {
+        CopyTermContext context = new CopyTermContext(environment);
+        Term copy = source.copyTerm(context);
+        Term bound = copy.resolve(environment.getLocalContext());
+        if (!Unifier.unify(environment.getLocalContext(), target, bound)) {
             environment.backtrack();
         }
     }

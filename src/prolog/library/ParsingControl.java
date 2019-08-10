@@ -61,7 +61,11 @@ public final class ParsingControl {
                     "Modifying a restricted operator"
             );
         }
-        environment.makeOperator(precedenceInt, typeCode, nameAtom);
+        if (precedenceInt > 0) {
+            environment.makeOperator(precedenceInt, typeCode, nameAtom);
+        } else {
+            environment.removeOperator(typeCode, nameAtom);
+        }
     }
 
     /**

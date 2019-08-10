@@ -4,6 +4,7 @@
 package prolog.expressions;
 
 import prolog.bootstrap.Interned;
+import prolog.execution.CopyTermContext;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.io.WriteContext;
@@ -89,6 +90,14 @@ public final class BracketedTerm implements Term, Container {
     @Override
     public Term simplify(Environment environment) {
         return expand().simplify(environment);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Term copyTerm(CopyTermContext context) {
+        return context.copy(this, t -> expand().copyTerm(context));
     }
 
     /**

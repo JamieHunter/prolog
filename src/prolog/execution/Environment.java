@@ -754,6 +754,21 @@ public class Environment {
     }
 
     /**
+     * Delete operator precedence.
+     *
+     * @param code       operator code (determines if operator is prefix or not).
+     * @param atom       Operator atom
+     */
+    public void removeOperator(OperatorEntry.Code code, PrologAtom atom) {
+        OperatorEntry entry;
+        if (code.isPrefix()) {
+            entry = prefixOperatorTable.remove(atom);
+        } else {
+            entry = infixPostfixOperatorTable.remove(atom);
+        }
+    }
+
+    /**
      * Retrieve active load group
      * @return load group
      */

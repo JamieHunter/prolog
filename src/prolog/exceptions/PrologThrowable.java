@@ -3,6 +3,7 @@
 //
 package prolog.exceptions;
 
+import prolog.execution.CopyTermContext;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.Container;
@@ -52,6 +53,14 @@ public class PrologThrowable extends RuntimeException implements Container {
     @Override
     public Term simplify(Environment environment) {
         return thrown.simplify(environment);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Term copyTerm(CopyTermContext context) {
+        return context.copy(this, t -> thrown.copyTerm(context));
     }
 
     /**

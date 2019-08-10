@@ -31,6 +31,18 @@ public class OpTest {
     }
 
     @Test
+    public void testCustomOperatorDelete() {
+        given()
+                .when("?- current_op(P, fy, foo).")
+                .assertSuccess()
+                .andWhen("?- op(0, fy, foo).")
+                .assertSuccess()
+                .andWhen("?- current_op(P, fy, foo).")
+                .assertFailed();
+        ;
+    }
+
+    @Test
     public void testCurrentOperatorConstrained() {
         given()
                 .when("?- current_op(P, fy, foo).")

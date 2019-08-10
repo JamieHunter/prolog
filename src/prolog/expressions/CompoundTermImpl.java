@@ -5,6 +5,7 @@ package prolog.expressions;
 
 import prolog.constants.Atomic;
 import prolog.execution.CompileContext;
+import prolog.execution.CopyTermContext;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.io.WriteContext;
@@ -178,6 +179,27 @@ public class CompoundTermImpl implements CompoundTerm {
         } else {
             return new CompoundTermImpl(copy);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public CompoundTerm copyTerm(CopyTermContext context) {
+        return (CompoundTerm)context.copy(this, tt -> {
+            Term[] copy = members.clone();
+            boolean grounded = true;
+            for (int i = 0; i < copy.length; i++) {
+                Term t = copy[i].copyTerm(context);
+                grounded = grounded && t.isGrounded();
+                copy[i] = t;
+            }
+            if (grounded) {
+                return new GroundedCompoundTerm(copy);
+            } else {
+                return new CompoundTermImpl(copy);
+            }
+        });
     }
 
     /**

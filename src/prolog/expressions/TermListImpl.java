@@ -5,6 +5,7 @@ package prolog.expressions;
 
 import prolog.constants.PrologEmptyList;
 import prolog.execution.CompileContext;
+import prolog.execution.CopyTermContext;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.io.WriteContext;
@@ -130,6 +131,29 @@ public class TermListImpl implements TermList {
         } else {
             return new TermListImpl(0, copy, newTail);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public TermList copyTerm(CopyTermContext context) {
+        return (TermList)context.copy(this, tt -> {
+            Term[] copy = Arrays.copyOfRange(terms, index, terms.length);
+            boolean grounded = true;
+            for (int i = 0; i < copy.length; i++) {
+                Term t = copy[i].copyTerm(context);
+                grounded = grounded && t.isGrounded();
+                copy[i] = t;
+            }
+            Term newTail = tail.copyTerm(context);
+            grounded = grounded && newTail.isGrounded();
+            if (grounded) {
+                return new GroundedTermList(0, copy, newTail);
+            } else {
+                return new TermListImpl(0, copy, newTail);
+            }
+        });
     }
 
     /**

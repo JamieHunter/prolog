@@ -1,6 +1,7 @@
 package prolog.variables;
 
 import prolog.execution.CompileContext;
+import prolog.execution.CopyTermContext;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.Term;
@@ -78,6 +79,21 @@ abstract class VariableBase implements Variable {
         } else {
             return value.simplify(environment);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Term copyTerm(CopyTermContext context) {
+        return context.copy(this, t -> {
+            if (value == null) {
+                // this is where copyTerm is distinct from simplify
+                return context.var(name(), id());
+            } else {
+                return value.copyTerm(context);
+            }
+        });
     }
 
     /**
