@@ -12,6 +12,7 @@ import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.CompileContext;
+import prolog.execution.CopyTermContext;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
@@ -183,7 +184,7 @@ public final class Dictionary {
     private static void addClause(Environment environment, Term term,
                                   BiConsumer<ClauseSearchPredicate, ClauseEntry> add,
                                   boolean isDynamic) {
-        term = term.simplify(environment);
+        term = term.copyTerm(new CopyTermContext(environment));
         if (CompoundTerm.termIsA(term, Interned.CLAUSE_FUNCTOR, 2)) {
             // Rule
             CompoundTerm clause = (CompoundTerm) term;

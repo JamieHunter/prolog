@@ -11,6 +11,7 @@ import prolog.constants.PrologEOF;
 import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologNumber;
 import prolog.exceptions.PrologSyntaxError;
+import prolog.execution.CopyTermContext;
 import prolog.execution.Environment;
 import prolog.execution.OperatorEntry;
 import prolog.expressions.BracketedTerm;
@@ -67,7 +68,7 @@ public final class ExpressionReader {
     public Term read() {
         Term t = read(Interned.DOT, () -> !tokenizer.isNext('('), tokenizer.nextToken());
         tokenizer.skipEOLN();
-        return t.simplify(environment);
+        return t.copyTerm(new CopyTermContext.KeepVars(environment));
     }
 
     /**

@@ -160,28 +160,6 @@ public class CompoundTermImpl implements CompoundTerm {
     }
 
     /**
-     * Ensure values are resolved or unbounded. Some containers reduced.
-     *
-     * @param environment local environment (used for any resolves)
-     * @return simplified structure
-     */
-    @Override
-    public CompoundTerm simplify(Environment environment) {
-        Term[] copy = members.clone();
-        boolean grounded = true;
-        for (int i = 0; i < copy.length; i++) {
-            Term t = copy[i].simplify(environment);
-            grounded = grounded && t.isGrounded();
-            copy[i] = t;
-        }
-        if (grounded) {
-            return new GroundedCompoundTerm(copy);
-        } else {
-            return new CompoundTermImpl(copy);
-        }
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override

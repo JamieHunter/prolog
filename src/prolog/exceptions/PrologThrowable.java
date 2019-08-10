@@ -45,17 +45,6 @@ public class PrologThrowable extends RuntimeException implements Container {
     }
 
     /**
-     * Extract and simplify term.
-     *
-     * @param environment Environment for value resolving
-     * @return Simplified term
-     */
-    @Override
-    public Term simplify(Environment environment) {
-        return thrown.simplify(environment);
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override

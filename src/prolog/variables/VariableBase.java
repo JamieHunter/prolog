@@ -73,18 +73,6 @@ abstract class VariableBase implements Variable {
      * {@inheritDoc}
      */
     @Override
-    public Term simplify(Environment environment) {
-        if (value == null) {
-            return new UnboundVariable(name(), id());
-        } else {
-            return value.simplify(environment);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public Term copyTerm(CopyTermContext context) {
         return context.copy(this, t -> {
             if (value == null) {

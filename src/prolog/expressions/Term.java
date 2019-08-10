@@ -118,18 +118,6 @@ public interface Term {
     Term resolve(LocalContext context);
 
     /**
-     * Simplify a structure. This is similar to resolve, but replaces uninstantiated variables with
-     * a placeholder that is not bound to a local context. Effectively undoing BoundedVariable. During parsing it
-     * also removes intermediate containers that help provide parsing context.
-     *
-     * @param environment Environment for value resolving
-     * @return simplified term
-     */
-    default Term simplify(Environment environment) {
-        return value(environment);
-    }
-
-    /**
      * Simplify a structure, but give variables new instance IDs
      *
      * @param context Context for copying a term

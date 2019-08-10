@@ -82,17 +82,6 @@ public final class BracketedTerm implements Term, Container {
     }
 
     /**
-     * When simplifying, decompose into a real comma list.
-     *
-     * @param environment local environment (used for any resolves)
-     * @return single term or comma tree
-     */
-    @Override
-    public Term simplify(Environment environment) {
-        return expand().simplify(environment);
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -108,7 +97,7 @@ public final class BracketedTerm implements Term, Container {
      */
     @Override
     public void write(WriteContext context) throws IOException {
-        simplify(context.environment()).write(context);
+        copyTerm(new CopyTermContext.KeepVars(context.environment())).write(context);
     }
 
     /**

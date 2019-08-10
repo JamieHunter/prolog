@@ -110,30 +110,6 @@ public class TermListImpl implements TermList {
     }
 
     /**
-     * Ensure variables are resolved or unbound
-     *
-     * @param environment local environment (used for any resolves)
-     * @return prepared list
-     */
-    @Override
-    public TermList simplify(Environment environment) {
-        Term[] copy = Arrays.copyOfRange(terms, index, terms.length);
-        boolean grounded = true;
-        for (int i = 0; i < copy.length; i++) {
-            Term t = copy[i].simplify(environment);
-            grounded = grounded && t.isGrounded();
-            copy[i] = t;
-        }
-        Term newTail = tail.simplify(environment);
-        grounded = grounded && newTail.isGrounded();
-        if (grounded) {
-            return new GroundedTermList(0, copy, newTail);
-        } else {
-            return new TermListImpl(0, copy, newTail);
-        }
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override

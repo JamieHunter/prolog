@@ -17,7 +17,7 @@ import java.util.function.Function;
 public class CopyTermContext {
     private final Environment environment;
     private final Map<Term, Term> refMap = new IdentityHashMap<>();
-    private final Map<Long, UnboundVariable> varMap = new HashMap<>();
+    protected final Map<Long, UnboundVariable> varMap = new HashMap<>();
 
     public CopyTermContext(Environment environment) {
         this.environment = environment;
@@ -33,5 +33,19 @@ public class CopyTermContext {
 
     public UnboundVariable var(String name, long id) {
         return varMap.computeIfAbsent(id, k -> new UnboundVariable(name, environment.nextVariableId()));
+    }
+
+    /**
+     * Version that does not give unique variable identifiers
+     */
+    public static class KeepVars extends CopyTermContext {
+        public KeepVars(Environment environment) {
+            super(environment);
+        }
+
+        @Override
+        public UnboundVariable var(String name, long id) {
+            return varMap.computeIfAbsent(id, k -> new UnboundVariable(name, id));
+        }
     }
 }
