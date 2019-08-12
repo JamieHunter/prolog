@@ -111,7 +111,7 @@ load_files(X) :- load_files(X, []).
 % internal - everything else is fact or clause
 '$consult_sentence'(Op, X, Disp) :-
     % TODO: Handle reconsultation
-    assertz(X), Disp = 'assert'.
+    '$consult_assertz'(X), Disp = 'assert'.
 
 % internal - call goal, with fast fail
 '$consult_goal'(Goal) :-

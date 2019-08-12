@@ -62,6 +62,18 @@ public final class Dictionary {
     }
 
     /**
+     * Add clause to end of dictionary for consult
+     * TODO: temporary, requires more work in consult.pl for optimization.
+     *
+     * @param environment Execution environment
+     * @param clause      Clause to add
+     */
+    @Predicate("$consult_assertz")
+    public static void consultAssertz(Environment environment, Term clause) {
+        addClause(environment, clause, ClauseSearchPredicate::addEnd, false);
+    }
+
+    /**
      * Abolish a predicate with given functor and arity specified as terms
      *
      * @param environment Execution environment
@@ -227,8 +239,20 @@ public final class Dictionary {
         // create library entry prior to compiling
         ClauseSearchPredicate dictionaryEntry =
                 environment.createDictionaryEntry(predication);
-        // this causes the reconsult type semantics when consulting
-        dictionaryEntry.changeLoadGroup(environment.getLoadGroup());
+
+        if (isDynamic) {
+            if (!dictionaryEntry.isDynamic()) {
+                if (dictionaryEntry.getClauses().length > 0) {
+                    throw PrologPermissionError.error(environment, "modify", "static_procedure",
+                            predication.term(),
+                            "The predicate " + predication.toString() + " is a static procedure");
+                }
+                dictionaryEntry.setDynamic(true); // implied
+            }
+        } else {
+            // this causes the reconsult type semantics when consulting
+            dictionaryEntry.changeLoadGroup(environment.getLoadGroup());
+        }
 
         // compile body
         CompileContext compiling = new CompileContext(environment);
