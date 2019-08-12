@@ -20,7 +20,16 @@ public class CutTest {
                 .and("foo([H]) :- !, '##expectLog'(x_final), foo(H), '##expectLog'(z_final).")
                 .and("foo([H|T]) :- !, '##expectLog'(x_split), foo(H), '##expectLog'(y_split), foo(T), '##expectLog'(z_split).")
                 .and("foo(fail) :- !, '##expectLog'(x_fail), fail, '##expectLog'(z_fail).")
-                .and("foo(X) :- !, '##expectLog'(X).");
+                .and("foo(X) :- !, '##expectLog'(X).")
+                // from sec78.pl
+                .and("log(X) :- '##expectLog'(X).")
+                .and("twice(!) :- log('C ').")
+                .and("twice(true) :- log('Moss ').")
+                .and("goal((twice(_),!)).")
+                .and("goal(log('Three ')).")
+                .and("calls(X) :- copy_term(X, X1), call(X1).")
+                .and("catches(X) :- catch(X, B, log(thrown)).")
+        ;
     }
 
     @Test
@@ -90,6 +99,67 @@ public class CutTest {
                 .expectLog(
                         isAtom("x_split"), // [fail,bang,boom]
                         isAtom("x_fail")
+                );
+    }
+
+    @Test
+    public void testSec78_C_Forwards_Moss_Forwards() {
+        given().when("?- twice(X), call(X), log('Forwards '), fail.")
+                .assertFailed()
+                .expectLog(
+                        isAtom("C "),
+                        isAtom("Forwards "),
+                        isAtom("Moss "),
+                        isAtom("Forwards ")
+                );
+        given().when("?- call((twice(X), call(X), log('Forwards '), fail)).")
+                .assertFailed()
+                .expectLog(
+                        isAtom("C "),
+                        isAtom("Forwards "),
+                        isAtom("Moss "),
+                        isAtom("Forwards ")
+                );
+    }
+
+    @Test
+    public void testSec78_C_Forwards_Three_Forwards() {
+        given().when("?- goal(X), call(X), log('Forwards '), fail.")
+                .assertFailed()
+                .expectLog(
+                        isAtom("C "),
+                        isAtom("Forwards "),
+                        isAtom("Three "),
+                        isAtom("Forwards ")
+                );
+        given().when("?- call((goal(X), call(X), log('Forwards '), fail)).")
+                .assertFailed()
+                .expectLog(
+                        isAtom("C "),
+                        isAtom("Forwards "),
+                        isAtom("Three "),
+                        isAtom("Forwards ")
+                );
+        given().when("?- calls((goal(X), call(X), log('Forwards '), fail)).")
+                .assertFailed()
+                .expectLog(
+                        isAtom("C "),
+                        isAtom("Forwards "),
+                        isAtom("Three "),
+                        isAtom("Forwards ")
+                );
+    }
+
+    @Test
+    public void testSec78_C_Forwards_Moss_Forwards_NotNot() {
+        given().and("test :- catches((twice(_), \\+(\\+(!)), log('Forwards '), fail)).")
+                .when("?- test.")
+                .assertFailed()
+                .expectLog(
+                        isAtom("C "),
+                        isAtom("Forwards "),
+                        isAtom("Moss "),
+                        isAtom("Forwards ")
                 );
     }
 

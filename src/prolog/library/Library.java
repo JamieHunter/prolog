@@ -27,5 +27,6 @@ public final class Library extends LibraryBase {
         consult(Terms.class);
         consult(ThrowCatch.class);
         consult(Unify.class);
+        consult(Debug.class);
     }
 }

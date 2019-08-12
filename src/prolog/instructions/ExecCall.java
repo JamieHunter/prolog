@@ -6,6 +6,7 @@ package prolog.instructions;
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
 import prolog.exceptions.FuturePrologError;
+import prolog.exceptions.FutureTypeError;
 import prolog.exceptions.PrologError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
@@ -19,6 +20,7 @@ import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.library.Lists;
+import prolog.variables.Variable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -137,9 +139,17 @@ public class ExecCall implements Instruction {
                 bound = apply(environment, bound, boundArgs);
             }
             // Compile on the fly
-            CompileContext compiling = new CompileContext(environment);
-            bound.compile(compiling);
-            nested = compiling.toInstruction();
+            try {
+                CompileContext compiling = new CompileContext(environment);
+                bound.compile(compiling);
+                nested = compiling.toInstruction();
+            } catch(PrologError|FuturePrologError e) {
+                // friendly (and per spec) error message with full term
+                // assume any error during compile phase amounts to this term not being callable
+                // TODO, this fails sec78.pl test "error_test(call((write(3), 1)), type_error(callable, 1))"
+                // based on other examples, is the test at fault?
+                throw PrologTypeError.callableExpected(environment, bound);
+            }
         }
         preCall();
         // Execute code

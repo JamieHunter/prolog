@@ -92,16 +92,43 @@ public class ExecRunClause implements Instruction {
         }
     }
 
+    private static class CutProxy implements CutPoint {
+        Environment environment;
+        CutPoint parent;
+        int cutDepth;
+        private CutProxy(Environment environment, CutPoint parent, int cutDepth) {
+            this.environment = environment;
+            this.parent = parent;
+            this.cutDepth = cutDepth;
+        }
+
+        @Override
+        public void cut() {
+            parent.cut(); // cut parent first
+            environment.cutBacktrackStack(cutDepth); // remove this decision point
+            environment.setCutPoint(parent); // future cut only needs to work on context
+        }
+
+        @Override
+        public void markDecisionPoint(int depth) {
+            parent.markDecisionPoint(depth);
+        }
+
+        @Override
+        public boolean isDeterministic() {
+            return parent.isDeterministic();
+        }
+    }
+
     /**
      * Main clause iterator with state. This is kept on the backtracking stack.
      */
-    private static class ClauseIterator extends DecisionPoint implements CutPoint {
+    private static class ClauseIterator extends DecisionPoint {
 
         final Term term;
         final Predication key;
         final ClauseEntry[] clauses;
         int index = 0;
-        int cutDepth;
 
         private ClauseIterator(Environment environment, Predication key, ClauseEntry[] clauses, Term boundTerm) {
             super(environment);
@@ -135,9 +162,9 @@ public class ExecRunClause implements Instruction {
             LocalContext newContext = environment.newLocalContext(key); // chains cut-point from newContext to active
             environment.setLocalContext(newContext);
             if (index != clauses.length) {
-                cutDepth = environment.getBacktrackDepth(); // might be reduced scope vs parent cut scope
+                CutProxy cutProxy = new CutProxy(environment, newContext, environment.getBacktrackDepth());
                 environment.pushDecisionPoint(this); // updates parent cut scope as needed
-                environment.setCutPoint(this); // this object will handle cut for newContext
+                environment.setCutPoint(cutProxy); // this object will handle cut for newContext
             } else {
                 environment.setCutPoint(newContext); // tail-call style cut handling
             }
@@ -162,24 +189,5 @@ public class ExecRunClause implements Instruction {
             }
         }
 
-        @Override
-        public void cut() {
-            LocalContext context = environment.getLocalContext();
-            context.cut(); // cut local context first (marks this as deterministic)
-            environment.cutBacktrackStack(cutDepth); // remove this decision point
-            environment.setCutPoint(context); // future cut only needs to work on context
-        }
-
-        @Override
-        public void markDecisionPoint(int depth) {
-            // delegate to localContext
-            environment.getLocalContext().markDecisionPoint(depth);
-        }
-
-        @Override
-        public boolean isDeterministic() {
-            // delegate to localContext
-            return environment.getLocalContext().isDeterministic();
-        }
     }
 }
