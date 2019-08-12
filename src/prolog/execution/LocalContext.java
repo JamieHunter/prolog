@@ -55,8 +55,19 @@ public final class LocalContext extends BasicCutPoint {
      * @return associated bound variable.
      */
     public BoundVariable bind(UnboundVariable var) {
-        final String name = var.name();
-        final long id = var.id();
+        return bind(var.name(), var.id());
+    }
+
+    /**
+     * Return a bound variable. Note that it is permissible for two variables to exist with
+     * the same name as long as they have different unique id's that were assigned at the time the term was read.
+     * The bound variable however is unique to this context.
+     *
+     * @param name Name of variable
+     * @param id Id of variable
+     * @return associated bound variable.
+     */
+    public BoundVariable bind(String name, long id) {
         return variables.computeIfAbsent(id, i -> new BoundVariable(this, name, id));
     }
 

@@ -4,9 +4,10 @@
 package prolog.expressions;
 
 import prolog.bootstrap.Interned;
-import prolog.execution.CopyTermContext;
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
+import prolog.execution.SimplifyTerm;
 import prolog.io.WriteContext;
 
 import java.io.IOException;
@@ -85,8 +86,8 @@ public final class BracketedTerm implements Term, Container {
      * {@inheritDoc}
      */
     @Override
-    public Term copyTerm(CopyTermContext context) {
-        return context.copy(this, t -> expand().copyTerm(context));
+    public Term enumTerm(EnumTermStrategy strategy) {
+        return strategy.visit(this, t -> expand().enumTerm(strategy));
     }
 
     /**
@@ -97,7 +98,7 @@ public final class BracketedTerm implements Term, Container {
      */
     @Override
     public void write(WriteContext context) throws IOException {
-        copyTerm(new CopyTermContext.KeepVars(context.environment())).write(context);
+        enumTerm(new SimplifyTerm(context.environment())).write(context);
     }
 
     /**
@@ -117,4 +118,5 @@ public final class BracketedTerm implements Term, Container {
         builder.append(')');
         return builder.toString();
     }
+
 }

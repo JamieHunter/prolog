@@ -4,7 +4,7 @@
 package prolog.variables;
 
 import prolog.execution.CompileContext;
-import prolog.execution.CopyTermContext;
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.Term;
@@ -101,9 +101,8 @@ public class UnboundVariable implements Variable {
      * {@inheritDoc}
      */
     @Override
-    public Term copyTerm(CopyTermContext context) {
-        return context.copy(this,
-                t -> context.var(name(), id()));
+    public Term enumTerm(EnumTermStrategy strategy) {
+        return strategy.visitVariable(this);
     }
 
     /**

@@ -11,9 +11,9 @@ import prolog.constants.PrologEOF;
 import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologNumber;
 import prolog.exceptions.PrologSyntaxError;
-import prolog.execution.CopyTermContext;
 import prolog.execution.Environment;
 import prolog.execution.OperatorEntry;
+import prolog.execution.SimplifyTerm;
 import prolog.expressions.BracketedTerm;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
@@ -68,7 +68,7 @@ public final class ExpressionReader {
     public Term read() {
         Term t = read(Interned.DOT, () -> !tokenizer.isNext('('), tokenizer.nextToken());
         tokenizer.skipEOLN();
-        return t.copyTerm(new CopyTermContext.KeepVars(environment));
+        return t.enumTerm(new SimplifyTerm(environment));
     }
 
     /**
@@ -227,7 +227,7 @@ public final class ExpressionReader {
             } else {
                 op = environment.getPrefixOperator((Atomic) term);
                 if (op == OperatorEntry.ARGUMENT) {
-                    op = environment.getInfixPostfixOperator((Atomic)term);
+                    op = environment.getInfixPostfixOperator((Atomic) term);
                     if (op != OperatorEntry.ARGUMENT) {
                         OperatorEntry lastOp = operators.peek();
                         if (lastOp.getCode().isPrefix() &&

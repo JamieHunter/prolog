@@ -4,6 +4,7 @@
 package prolog.expressions;
 
 import prolog.constants.Atomic;
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.LocalContext;
 import prolog.io.WriteContext;
 import prolog.unification.UnifyIterator;
@@ -61,6 +62,21 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
         return makeTerm().resolve(context);
     }
 
+    @Override
+    public CompoundTerm enumTerm(EnumTermStrategy strategy) {
+        return value(strategy.environment()).enumTerm(strategy);
+    }
+
+    @Override
+    public CompoundTerm mutateCompoundTerm(EnumTermStrategy strategy) {
+        throw new UnsupportedOperationException("Call value() first");
+    }
+
+    @Override
+    public CompoundTerm enumCompoundTerm(EnumTermStrategy strategy) {
+        throw new UnsupportedOperationException("Call value() first");
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -100,4 +116,21 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
     public UnifyIterator getUnifyIterator() {
         return makeTerm().getUnifyIterator();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int typeRank() {
+        throw new UnsupportedOperationException("Unexpected");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int compareSameType(Term o) {
+        throw new UnsupportedOperationException("Unexpected");
+    }
+
 }

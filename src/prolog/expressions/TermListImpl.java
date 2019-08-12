@@ -5,7 +5,7 @@ package prolog.expressions;
 
 import prolog.constants.PrologEmptyList;
 import prolog.execution.CompileContext;
-import prolog.execution.CopyTermContext;
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.io.WriteContext;
@@ -113,16 +113,24 @@ public class TermListImpl implements TermList {
      * {@inheritDoc}
      */
     @Override
-    public TermList copyTerm(CopyTermContext context) {
-        return (TermList)context.copy(this, tt -> {
+    public TermList enumTerm(EnumTermStrategy strategy) {
+        return (TermList)strategy.visit(this);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public TermList mutateCompoundTerm(EnumTermStrategy strategy) {
+        return (TermList) strategy.visit(this, tt -> {
             Term[] copy = Arrays.copyOfRange(terms, index, terms.length);
             boolean grounded = true;
             for (int i = 0; i < copy.length; i++) {
-                Term t = copy[i].copyTerm(context);
+                Term t = copy[i].enumTerm(strategy);
                 grounded = grounded && t.isGrounded();
                 copy[i] = t;
             }
-            Term newTail = tail.copyTerm(context);
+            Term newTail = tail.enumTerm(strategy);
             grounded = grounded && newTail.isGrounded();
             if (grounded) {
                 return new GroundedTermList(0, copy, newTail);
@@ -130,6 +138,17 @@ public class TermListImpl implements TermList {
                 return new TermListImpl(0, copy, newTail);
             }
         });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public TermList enumCompoundTerm(EnumTermStrategy strategy) {
+        for(int i = index; i < terms.length; i++) {
+            terms[i].enumTerm(strategy);
+        }
+        return this;
     }
 
     /**

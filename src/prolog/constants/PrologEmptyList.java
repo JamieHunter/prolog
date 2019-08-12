@@ -5,6 +5,7 @@ package prolog.constants;
 
 import prolog.expressions.TermList;
 import prolog.expressions.Term;
+import prolog.expressions.TypeRank;
 import prolog.io.WriteContext;
 
 import java.io.IOException;
@@ -38,5 +39,21 @@ public final class PrologEmptyList extends AtomicBase {
     public void write(WriteContext context) throws IOException {
         context.write("[]");
         context.beginSafe();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int typeRank() {
+        return TypeRank.EMPTY_LIST; // between atom and compound
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int compareSameType(Term o) {
+        return 0;
     }
 }

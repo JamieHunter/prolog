@@ -5,6 +5,7 @@ package prolog.expressions;
 
 import prolog.constants.Atomic;
 import prolog.constants.PrologEmptyList;
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.LocalContext;
 import prolog.bootstrap.Interned;
 import prolog.unification.HeadTailUnifyIterator;
@@ -100,4 +101,6 @@ public interface TermList extends CompoundTerm {
     default Term lastTail() {
         return PrologEmptyList.EMPTY_LIST;
     }
+
+    TermList enumTerm(EnumTermStrategy strategy);
 }

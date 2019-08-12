@@ -7,6 +7,7 @@ import prolog.bootstrap.Interned;
 import prolog.exceptions.FutureEvaluationError;
 import prolog.exceptions.FutureTypeError;
 import prolog.expressions.Term;
+import prolog.expressions.TypeRank;
 import prolog.io.WriteContext;
 
 import java.io.IOException;
@@ -219,5 +220,21 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
         } else {
             throw new FutureTypeError(Interned.INTEGER_TYPE, value);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int typeRank() {
+        return TypeRank.INTEGER;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int compareSameType(Term o) {
+        return get().compareTo(((PrologInteger)o).get());
     }
 }

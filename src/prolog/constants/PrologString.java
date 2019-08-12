@@ -3,6 +3,8 @@
 //
 package prolog.constants;
 
+import prolog.expressions.Term;
+import prolog.expressions.TypeRank;
 import prolog.io.TermWriter;
 import prolog.io.WriteContext;
 
@@ -85,5 +87,23 @@ public class PrologString extends AtomicBase {
                 writeQuoted('"', term.get());
             }
         }.write();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int typeRank() {
+        return TypeRank.STRING;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int compareSameType(Term o) {
+        // per standard, arity precedes functor in ordering
+        PrologString other = (PrologString) o;
+        return value.compareTo(other.value);
     }
 }

@@ -10,4 +10,26 @@ import prolog.expressions.Term;
  * In particular, variables are containers.
  */
 public interface Container extends Term {
+
+    /**
+     * Each Term type is given a rank per Prolog standard,
+     * not expected to be called on container terms.
+     *
+     * @return rank of term type
+     */
+    @Override
+    default int typeRank() {
+        throw new UnsupportedOperationException("Unexpected");
+    }
+
+    /**
+     * Compare primitive values, not expected to be called on container terms.
+     *
+     * @param o Other value
+     * @return rank order
+     */
+    @Override
+    default int compareSameType(Term o) {
+        throw new UnsupportedOperationException("Unexpected");
+    }
 }

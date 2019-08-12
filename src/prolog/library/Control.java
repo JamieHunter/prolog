@@ -5,24 +5,24 @@ package prolog.library;
 
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Predicate;
-import prolog.exceptions.FutureTypeError;
-import prolog.exceptions.PrologTypeError;
 import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
+import prolog.instructions.ExecBagOf;
 import prolog.instructions.ExecBlock;
 import prolog.instructions.ExecCall;
 import prolog.instructions.ExecDisjunction;
+import prolog.instructions.ExecFindAll;
 import prolog.instructions.ExecIfThenElse;
 import prolog.instructions.ExecIgnore;
 import prolog.instructions.ExecOnce;
 import prolog.instructions.ExecRepeat;
+import prolog.instructions.ExecSetOf;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * File is referenced by {@link Library} to parse all annotations.
@@ -88,8 +88,9 @@ public final class Control {
 
     /**
      * IF-THEN Construct.
+     *
      * @param compiling Compiling context
-     * @param term Initial '-&gt;' term.
+     * @param term      Initial '-&gt;' term.
      */
     @Predicate(value = "->", arity = 2)
     public static void ifThen(CompileContext compiling, CompoundTerm term) {
@@ -180,8 +181,8 @@ public final class Control {
     @Predicate(value = "call", arity = 2, vararg = true)
     public static void call2(CompileContext compiling, CompoundTerm term) {
         Term functorTerm = term.get(0);
-        Term [] members = new Term[term.arity()];
-        for(int i=1; i < term.arity();i++) {
+        Term[] members = new Term[term.arity()];
+        for (int i = 1; i < term.arity(); i++) {
             members[i] = term.get(i);
         }
         if (functorTerm.isAtom()) {
@@ -238,5 +239,56 @@ public final class Control {
     public static void ignore(CompileContext compiling, CompoundTerm term) {
         Term callTerm = term.get(0);
         compiling.add(new ExecIgnore(compiling.environment(), callTerm));
+    }
+
+    /**
+     * Given findall(Term, Goal, List), with Term being a term containing one or more variables,
+     * recursively iterate (with backtracking) Goal to enumerate all possible
+     * solutions. At the end of each solution, Term is copied and appended to a list. Term is expected to
+     * contain one or more variables specified in Goal. Once the set of solutions have been exhausted,
+     * the list is unified with List.
+     *
+     * @param compiling Compiling context
+     * @param term      Contains the arguments
+     */
+    @Predicate(value = "findall", arity = 3)
+    public static void findall(CompileContext compiling, CompoundTerm term) {
+        Term template = term.get(0);
+        Term callable = term.get(1);
+        Term list = term.get(2);
+        compiling.add(new ExecFindAll(template, callable, list));
+    }
+
+    /**
+     * Builds on the functionality of findall.
+     * Given bagof(Term, Goal, List), the entire solution set of findall is first determined. The solutions
+     * are re-collated to produce one or more solutions using the free variables of Goal. The syntax of
+     * Var^Goal or more generically Term^Goal is used to introduce additional existential variables such that if
+     * there are no free variables, bagof degenerates to be almost the same as findall.
+     *
+     * @param compiling Compiling context
+     * @param term      Contains the arguments
+     */
+    @Predicate(value = "bagof", arity = 3)
+    public static void bagof(CompileContext compiling, CompoundTerm term) {
+        Term variable = term.get(0);
+        Term callable = term.get(1);
+        Term list = term.get(2);
+        compiling.add(new ExecBagOf(variable, callable, list));
+    }
+
+    /**
+     * Builds on the functionality of bagof.
+     * Given setof(Term, Goal, List), Each List produced is further collated - sorted and deduplicated.
+     *
+     * @param compiling Compiling context
+     * @param term      Contains the arguments
+     */
+    @Predicate(value = "setof", arity = 3)
+    public static void setof(CompileContext compiling, CompoundTerm term) {
+        Term variable = term.get(0);
+        Term callable = term.get(1);
+        Term list = term.get(2);
+        compiling.add(new ExecSetOf(variable, callable, list));
     }
 }

@@ -5,6 +5,8 @@ package prolog.expressions;
 
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtom;
+import prolog.constants.PrologFloat;
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.unification.UnifyIterator;
@@ -61,6 +63,26 @@ public interface CompoundTerm extends Term {
      * {@inheritDoc}
      */
     @Override
+    CompoundTerm enumTerm(EnumTermStrategy strategy);
+
+    /**
+     * Called by {@link EnumTermStrategy#visit(CompoundTerm)} for mutation
+     * @param strategy Underlying strategy
+     * @return new compound term
+     */
+    CompoundTerm mutateCompoundTerm(EnumTermStrategy strategy);
+
+    /**
+     * Called by {@link EnumTermStrategy#visit(CompoundTerm)} for simple enumeration
+     * @param strategy Underlying strategy
+     * @return self
+     */
+    CompoundTerm enumCompoundTerm(EnumTermStrategy strategy);
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     default CompoundTerm value(Environment environment) {
         return this;
     }
@@ -91,4 +113,38 @@ public interface CompoundTerm extends Term {
      * @return An iterator to use during unification
      */
     UnifyIterator getUnifyIterator();
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    default int typeRank() {
+        return TypeRank.COMPOUND_TERM;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    default int compareSameType(Term o) {
+        // per standard, arity precedes functor in ordering
+        CompoundTerm other = (CompoundTerm)o;
+        int comp = Integer.compare(arity(), other.arity());
+        if (comp != 0) {
+            return comp;
+        }
+        comp = functor().compareTo(other.functor());
+        if (comp != 0) {
+            return comp;
+        }
+        int a = arity();
+        for(int i = 0; i < a; i++) {
+            comp = get(i).compareTo(other.get(i));
+            if (comp != 0) {
+                return comp;
+            }
+        }
+        return comp;
+    }
+
 }

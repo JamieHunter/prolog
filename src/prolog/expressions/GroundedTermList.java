@@ -4,6 +4,7 @@
 package prolog.expressions;
 
 import prolog.constants.Grounded;
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.LocalContext;
 
 /**
@@ -38,5 +39,14 @@ import prolog.execution.LocalContext;
      */
     protected TermListImpl newList(int index, Term[] terms, Term tail) {
         return new GroundedTermList(index, terms, tail);
+    }
+
+    @Override
+    public TermList enumTerm(EnumTermStrategy strategy) {
+        if (strategy.pruneGroundedCompound()) {
+            return this;
+        } else {
+            return super.enumTerm(strategy);
+        }
     }
 }

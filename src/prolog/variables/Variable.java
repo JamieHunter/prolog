@@ -5,6 +5,8 @@ package prolog.variables;
 
 import prolog.execution.Environment;
 import prolog.expressions.Container;
+import prolog.expressions.Term;
+import prolog.expressions.TypeRank;
 
 /**
  * Marker interface indicating this is a variable. Variables return names and each variable has
@@ -24,4 +26,20 @@ public interface Variable extends Container {
      * @return ID
      */
     long id();
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    default int typeRank() {
+        return TypeRank.VARIABLE;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    default int compareSameType(Term o) {
+        return Long.compare(id(), ((Variable)o).id());
+    }
 }

@@ -12,7 +12,7 @@ import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.CompileContext;
-import prolog.execution.CopyTermContext;
+import prolog.execution.CopyTerm;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
@@ -127,7 +127,8 @@ public final class Dictionary {
 
     /**
      * Mark a predication as dynamic
-     * @param environment Execution environment
+     *
+     * @param environment     Execution environment
      * @param predicationTerm Specifier
      */
     @Predicate("dynamic")
@@ -138,7 +139,8 @@ public final class Dictionary {
 
     /**
      * Mark a predication as multi-file (inhibit consult from deleting definitions)
-     * @param environment Execution environment
+     *
+     * @param environment     Execution environment
      * @param predicationTerm Specifier
      */
     @Predicate("multifile")
@@ -149,7 +151,8 @@ public final class Dictionary {
 
     /**
      * Mark a predication that definitions might be discontiguous
-     * @param environment Execution environment
+     *
+     * @param environment     Execution environment
      * @param predicationTerm Specifier
      */
     @Predicate("discontiguous")
@@ -184,7 +187,7 @@ public final class Dictionary {
     private static void addClause(Environment environment, Term term,
                                   BiConsumer<ClauseSearchPredicate, ClauseEntry> add,
                                   boolean isDynamic) {
-        term = term.copyTerm(new CopyTermContext(environment));
+        term = term.enumTerm(new CopyTerm(environment));
         if (CompoundTerm.termIsA(term, Interned.CLAUSE_FUNCTOR, 2)) {
             // Rule
             CompoundTerm clause = (CompoundTerm) term;
@@ -232,7 +235,7 @@ public final class Dictionary {
         body.compile(compiling);
         Instruction compiled = compiling.toInstruction();
         // add clause to library
-        ClauseEntry entry = new ClauseEntry((CompoundTerm)head, body, unifier, compiled);
+        ClauseEntry entry = new ClauseEntry((CompoundTerm) head, body, unifier, compiled);
         add.accept(dictionaryEntry, entry);
     }
 
@@ -241,7 +244,7 @@ public final class Dictionary {
             // TODO: better error?
             throw PrologTypeError.compoundExpected(environment, predicationTerm);
         }
-        CompoundTerm predicationCompound = (CompoundTerm)predicationTerm;
+        CompoundTerm predicationCompound = (CompoundTerm) predicationTerm;
         Term functor = predicationCompound.get(0);
         Term arity = predicationCompound.get(1);
         PrologAtom functorAtom = PrologAtom.from(functor);
@@ -253,6 +256,6 @@ public final class Dictionary {
             throw PrologPermissionError.error(environment, "modify", "static_procedure", predication.term(),
                     "Cannot make procedure dynamic");
         }
-        return (ClauseSearchPredicate)entry;
+        return (ClauseSearchPredicate) entry;
     }
 }

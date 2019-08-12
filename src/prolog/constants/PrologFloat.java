@@ -5,6 +5,8 @@ package prolog.constants;
 
 import prolog.bootstrap.Interned;
 import prolog.exceptions.FutureEvaluationError;
+import prolog.expressions.Term;
+import prolog.expressions.TypeRank;
 import prolog.io.WriteContext;
 
 import java.io.IOException;
@@ -210,4 +212,21 @@ public final class PrologFloat extends AtomicBase implements PrologNumber {
         context.beginAlphaNum();
         context.write(String.valueOf(value));
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int typeRank() {
+        return TypeRank.FLOAT;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int compareSameType(Term o) {
+        return get().compareTo(((PrologFloat)o).get());
+    }
+
 }

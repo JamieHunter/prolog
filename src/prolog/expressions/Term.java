@@ -5,7 +5,7 @@ package prolog.expressions;
 
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.CompileContext;
-import prolog.execution.CopyTermContext;
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.io.WriteContext;
@@ -15,7 +15,7 @@ import java.io.IOException;
 /**
  * In Prolog, all entities are considered Terms. It is the Prolog equivalent of Object.
  */
-public interface Term {
+public interface Term extends Comparable<Term> {
 
     /**
      * @return true if this term is considered an atom. By default, terms are not atoms.
@@ -118,13 +118,13 @@ public interface Term {
     Term resolve(LocalContext context);
 
     /**
-     * Simplify a structure, but give variables new instance IDs
+     * Used to recursively iterate a term performing an operation determined by the strategy class
      *
-     * @param context Context for copying a term
-     * @return simplified term
+     * @param strategy Strategy for enumerating a term
+     * @return modified term if applicable
      */
-    default Term copyTerm(CopyTermContext context) {
-        return context.copy(this, t -> value(context.environment()));
+    default Term enumTerm(EnumTermStrategy strategy) {
+        return strategy.visit(this, t -> value(strategy.environment()));
     }
 
     /**
@@ -133,5 +133,45 @@ public interface Term {
      * @param context Write context
      */
     void write(WriteContext context) throws IOException;
+
+    /**
+     * All terms are comparable, and must implement these methods:
+     */
+    @Override
+    default int compareTo(Term o) {
+        return compare(this, o);
+    }
+
+    /**
+     * Compare with another term of same type (assumed by rank)
+     * @param o Other value
+     * @return rank order
+     */
+    int compareSameType(Term o);
+
+    /**
+     * Each Term type is given a rank per Prolog standard. Note, each unique type must be given
+     * a unique rank value.
+     * @return rank of term type
+     */
+    int typeRank();
+
+    /**
+     * Compare two terms
+     * @param left Left term
+     * @param right right term
+     * @return
+     */
+    static int compare(Term left, Term right) {
+        int lt = left.typeRank();
+        int rt = right.typeRank();
+        if (lt < rt) {
+            return -1;
+        }
+        if (lt > rt) {
+            return 1;
+        }
+        return left.compareSameType(right);
+    }
 
 }

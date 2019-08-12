@@ -3,7 +3,7 @@
 //
 package prolog.exceptions;
 
-import prolog.execution.CopyTermContext;
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.Container;
@@ -48,8 +48,8 @@ public class PrologThrowable extends RuntimeException implements Container {
      * {@inheritDoc}
      */
     @Override
-    public Term copyTerm(CopyTermContext context) {
-        return context.copy(this, t -> thrown.copyTerm(context));
+    public Term enumTerm(EnumTermStrategy strategy) {
+        return strategy.visit(this, t -> thrown.enumTerm(strategy));
     }
 
     /**
@@ -70,4 +70,5 @@ public class PrologThrowable extends RuntimeException implements Container {
     public void write(WriteContext context) throws IOException {
         thrown.write(context);
     }
+
 }

@@ -5,7 +5,7 @@ package prolog.expressions;
 
 import prolog.constants.Atomic;
 import prolog.execution.CompileContext;
-import prolog.execution.CopyTermContext;
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.io.WriteContext;
@@ -163,12 +163,20 @@ public class CompoundTermImpl implements CompoundTerm {
      * {@inheritDoc}
      */
     @Override
-    public CompoundTerm copyTerm(CopyTermContext context) {
-        return (CompoundTerm)context.copy(this, tt -> {
+    public CompoundTerm enumTerm(EnumTermStrategy strategy) {
+        return strategy.visit(this);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public CompoundTerm mutateCompoundTerm(EnumTermStrategy strategy) {
+        return (CompoundTerm) strategy.visit(this, tt -> {
             Term[] copy = members.clone();
             boolean grounded = true;
             for (int i = 0; i < copy.length; i++) {
-                Term t = copy[i].copyTerm(context);
+                Term t = copy[i].enumTerm(strategy);
                 grounded = grounded && t.isGrounded();
                 copy[i] = t;
             }
@@ -184,7 +192,19 @@ public class CompoundTermImpl implements CompoundTerm {
      * {@inheritDoc}
      */
     @Override
+    public CompoundTerm enumCompoundTerm(EnumTermStrategy strategy) {
+        for(Term t : members) {
+            t.enumTerm(strategy);
+        }
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void write(WriteContext context) throws IOException {
         throw new InternalError("Unexpected call to write");
     }
+
 }

@@ -7,7 +7,7 @@ import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtom;
 import prolog.constants.PrologInteger;
-import prolog.execution.CopyTermContext;
+import prolog.execution.CopyTerm;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
@@ -216,8 +216,8 @@ public class Terms {
      */
     @Predicate("copy_term")
     public static void copyTerm(Environment environment, Term source, Term target) {
-        CopyTermContext context = new CopyTermContext(environment);
-        Term copy = source.copyTerm(context);
+        CopyTerm context = new CopyTerm(environment);
+        Term copy = source.enumTerm(context);
         Term bound = copy.resolve(environment.getLocalContext());
         if (!Unifier.unify(environment.getLocalContext(), target, bound)) {
             environment.backtrack();

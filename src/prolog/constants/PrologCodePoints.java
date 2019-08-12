@@ -3,7 +3,9 @@
 //
 package prolog.constants;
 
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.LocalContext;
+import prolog.expressions.CompoundTerm;
 import prolog.expressions.TermList;
 import prolog.expressions.Term;
 import prolog.io.TermWriter;
@@ -70,6 +72,21 @@ public class PrologCodePoints implements TermList, Grounded {
         for (int i = 0; i < arr.size(); i++) {
             arr.add(new PrologCharacter(value.charAt(i)));
         }
+    }
+
+    @Override
+    public TermList enumTerm(EnumTermStrategy strategy) {
+        return strategy.visitCodePoints(this);
+    }
+
+    @Override
+    public TermList mutateCompoundTerm(EnumTermStrategy strategy) {
+        throw new UnsupportedOperationException("Use visitCodePoints");
+    }
+
+    @Override
+    public TermList enumCompoundTerm(EnumTermStrategy strategy) {
+        throw new UnsupportedOperationException("Use visitCodePoints");
     }
 
     /**

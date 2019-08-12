@@ -3,12 +3,13 @@
 //
 package prolog.constants;
 
+import prolog.bootstrap.Interned;
 import prolog.exceptions.FutureTypeError;
 import prolog.execution.CompileContext;
 import prolog.execution.Environment;
-import prolog.bootstrap.Interned;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.expressions.TypeRank;
 import prolog.io.AtomWriter;
 import prolog.io.WriteContext;
 
@@ -23,6 +24,7 @@ public class PrologAtom extends AtomicBase {
 
     /**
      * Do not call this, use {@link Environment#getAtom(String)} instead.
+     *
      * @param name Name of atom
      * @return New atom with given name
      */
@@ -33,6 +35,7 @@ public class PrologAtom extends AtomicBase {
     /**
      * Made private as construction should be done indirectly either via {@link Interned#internAtom(String)} or via
      * {@link Environment#getAtom(String)}.
+     *
      * @param name Name of Atom
      */
     private PrologAtom(String name) {
@@ -40,7 +43,6 @@ public class PrologAtom extends AtomicBase {
     }
 
     /**
-     *
      * @return true indicating an atom is an atom.
      */
     @Override
@@ -48,13 +50,17 @@ public class PrologAtom extends AtomicBase {
         return true;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         return name;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String get() {
         return name;
@@ -62,6 +68,7 @@ public class PrologAtom extends AtomicBase {
 
     /**
      * Name of the atom.
+     *
      * @return Name
      */
     public String name() {
@@ -70,6 +77,7 @@ public class PrologAtom extends AtomicBase {
 
     /**
      * When compiling, an atom is considered to be a predication of name/0 and handled via CompoundTerm compilation.
+     *
      * @param compiling Context for compiling
      */
     @Override
@@ -79,6 +87,7 @@ public class PrologAtom extends AtomicBase {
 
     /**
      * Write quoted atom.
+     *
      * @param context Write context
      * @throws IOException on IO error
      */
@@ -89,6 +98,7 @@ public class PrologAtom extends AtomicBase {
 
     /**
      * "Cast" a term to an atom
+     *
      * @param term Term assumed to be an atom, or castable to an atom
      * @return term as an atom
      */
@@ -98,6 +108,22 @@ public class PrologAtom extends AtomicBase {
         } else {
             throw new FutureTypeError(Interned.ATOM_TYPE, term);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int typeRank() {
+        return TypeRank.ATOM;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int compareSameType(Term o) {
+        return name().compareTo(((PrologAtom) o).name());
     }
 
 }

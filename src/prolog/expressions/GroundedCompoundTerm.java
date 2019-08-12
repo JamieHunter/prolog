@@ -4,6 +4,7 @@
 package prolog.expressions;
 
 import prolog.constants.Grounded;
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.LocalContext;
 
 /**
@@ -36,5 +37,14 @@ import prolog.execution.LocalContext;
     @Override
     public CompoundTerm resolve(LocalContext context) {
         return this;
+    }
+
+    @Override
+    public CompoundTerm enumTerm(EnumTermStrategy strategy) {
+        if (strategy.pruneGroundedCompound()) {
+            return this;
+        } else {
+            return super.enumTerm(strategy);
+        }
     }
 }
