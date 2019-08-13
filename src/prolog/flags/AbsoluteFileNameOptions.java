@@ -8,13 +8,10 @@ import prolog.exceptions.FutureFlagError;
 import prolog.exceptions.PrologDomainError;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
-import prolog.library.Lists;
+import prolog.expressions.TermList;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 import static prolog.bootstrap.Interned.internAtom;
 import static prolog.flags.AbsoluteFileNameOptions.FileType.ATOM_txt;
@@ -42,8 +39,8 @@ public class AbsoluteFileNameOptions implements Flags {
     public FileType type = ATOM_txt;
 
     private void addExtensions(Term list) {
-        List<Term> termList = Lists.extractList(list);
-        for(Term term : termList) {
+        List<Term> termList = TermList.extractList(list);
+        for (Term term : termList) {
             PrologAtom extAtom = PrologAtom.from(term);
             String extString = extAtom.get();
             if (extString.length() > 0 && !extString.startsWith(".")) {
@@ -61,7 +58,7 @@ public class AbsoluteFileNameOptions implements Flags {
         if (!extensions.isEmpty()) {
             return;
         }
-        switch(type) {
+        switch (type) {
             case ATOM_prolog:
                 extensions.add(".pl");
                 break;

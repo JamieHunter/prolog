@@ -3,15 +3,27 @@
 //
 package prolog.expressions;
 
-import prolog.constants.Atomic;
-import prolog.constants.PrologEmptyList;
-import prolog.execution.EnumTermStrategy;
-import prolog.execution.LocalContext;
 import prolog.bootstrap.Interned;
+import prolog.constants.Atomic;
+import prolog.constants.PrologAtom;
+import prolog.constants.PrologCharacter;
+import prolog.constants.PrologCodePoints;
+import prolog.constants.PrologEmptyList;
+import prolog.constants.PrologInteger;
+import prolog.constants.PrologString;
+import prolog.constants.PrologStringAsList;
+import prolog.exceptions.FutureTypeError;
+import prolog.exceptions.PrologInstantiationError;
+import prolog.exceptions.PrologTypeError;
+import prolog.execution.EnumTermStrategy;
+import prolog.execution.Environment;
+import prolog.execution.LocalContext;
 import prolog.unification.HeadTailUnifyIterator;
 import prolog.unification.UnifyIterator;
 
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Identifies that a compound term object is '.'(head,tail). Specifically this is used to represent a list, and
@@ -21,6 +33,7 @@ public interface TermList extends CompoundTerm {
 
     /**
      * Return a unifier that is optimized towards lists.
+     *
      * @return Unify iterator
      */
     default UnifyIterator getUnifyIterator() {
@@ -29,6 +42,7 @@ public interface TermList extends CompoundTerm {
 
     /**
      * Assume arity of 2
+     *
      * @return Arity
      */
     @Override
@@ -38,6 +52,7 @@ public interface TermList extends CompoundTerm {
 
     /**
      * Assume functor of list
+     *
      * @return Functor
      */
     @Override
@@ -47,6 +62,7 @@ public interface TermList extends CompoundTerm {
 
     /**
      * Resolve list
+     *
      * @param context Context for variable bindings
      * @return new list
      */
@@ -55,24 +71,27 @@ public interface TermList extends CompoundTerm {
 
     /**
      * Retrieve head (first element) of list
+     *
      * @return Head term
      */
     Term getHead();
 
     /**
      * Retrieve tail (remaining elements) of list
+     *
      * @return Tail term
      */
     Term getTail();
 
     /**
      * Get Head or Tail
+     *
      * @param i Argument index
      * @return Head (0) or Tail (1)
      */
     @Override
     default Term get(int i) {
-        switch(i) {
+        switch (i) {
             case 0:
                 return getHead();
             case 1:
@@ -90,12 +109,14 @@ public interface TermList extends CompoundTerm {
 
     /**
      * Copy members to specified array, ignoring tail component
+     *
      * @param arr Target array
      */
     void copyMembers(ArrayList<Term> arr);
 
     /**
      * Assume [A,B,C,D|E] returns E. Very last tail component of list.
+     *
      * @return tail, or empty list
      */
     default Term lastTail() {
@@ -103,4 +124,130 @@ public interface TermList extends CompoundTerm {
     }
 
     TermList enumTerm(EnumTermStrategy strategy);
+
+    /**
+     * True if term is a list
+     *
+     * @param term Term to test
+     * @return true if list of 0 or more terms
+     */
+    static boolean isList(Term term) {
+        return term == PrologEmptyList.EMPTY_LIST || CompoundTerm.termIsA(term, Interned.LIST_FUNCTOR, 2);
+    }
+
+    /**
+     * Iterator to iterate through a list however constructed. Iterator will also throw exception if list is invalid.
+     *
+     * @param term Term to iterate
+     * @return iterator
+     */
+    static TermIterator listIterator(Term term) {
+        return new TermIterator(term);
+    }
+
+    class TermIterator implements Iterator<Term> {
+
+        private Term next;
+
+        public TermIterator(Term term) {
+            this.next = term;
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (next == PrologEmptyList.EMPTY_LIST) {
+                return false;
+            }
+            if (CompoundTerm.termIsA(next, Interned.LIST_FUNCTOR, 2)) {
+                return true;
+            }
+            throw new FutureTypeError(Interned.LIST_TYPE, next);
+        }
+
+        @Override
+        public Term next() {
+            if (!hasNext()) {
+                throw new InternalError("Iterating at end of list");
+            }
+            CompoundTerm node = (CompoundTerm) next;
+            Term term = node.get(0);
+            next = node.get(1);
+            return term;
+        }
+    }
+
+    /**
+     * Utility to extract list
+     *
+     * @param list Term to query
+     * @return array of list elements
+     */
+    static List<Term> extractList(Term list) {
+        ArrayList<Term> arr = new ArrayList<>();
+        while (list != PrologEmptyList.EMPTY_LIST) {
+            if (list instanceof TermList) {
+                ((TermList) list).copyMembers(arr);
+                list = ((TermList) list).lastTail();
+            } else if (CompoundTerm.termIsA(list, Interned.LIST_FUNCTOR, 2)) {
+                arr.add(((CompoundTerm) list).get(0));
+                list = ((CompoundTerm) list).get(1);
+            } else {
+                arr.add(list);
+                break;
+            }
+        }
+        if (!isList(list)) {
+            throw new FutureTypeError(Interned.LIST_TYPE, list);
+        }
+        return arr;
+    }
+
+    /**
+     * Utility to extract list of code-points/code-characters to a string
+     *
+     * @param list Term to query of length at least one
+     * @return PrologCodePoints
+     */
+    static String extractString(Environment environment, Term list) {
+        if (list == PrologEmptyList.EMPTY_LIST) {
+            return "";
+        }
+        if (list instanceof PrologStringAsList) {
+            return ((PrologStringAsList) list).getStringValue();
+        }
+        if (list instanceof PrologString) {
+            return ((PrologString) list).get();
+        }
+        StringBuilder builder = new StringBuilder();
+        while (list != PrologEmptyList.EMPTY_LIST) {
+            if (list instanceof PrologStringAsList) {
+                builder.append(((PrologStringAsList)list).getStringValue());
+                return builder.toString();
+            }
+            if (list instanceof PrologString) {
+                builder.append(((PrologString) list).get());
+                return builder.toString();
+            }
+            if (isList(list)) {
+                CompoundTerm comp = (CompoundTerm) list;
+                Term e = comp.get(0);
+                list = comp.get(1);
+                if (e instanceof PrologCharacter) {
+                    builder.append(((PrologCharacter) e).get());
+                } else if (e instanceof PrologAtom) {
+                    builder.append(((PrologAtom) e).name().charAt(0));
+                } else if (e instanceof PrologInteger) {
+                    builder.append((char) ((PrologInteger) e).get().intValue());
+                } else if (!e.isInstantiated()) {
+                    throw PrologInstantiationError.error(environment, list);
+                } else {
+                    throw PrologTypeError.characterExpected(environment, e);
+                }
+            } else {
+                throw PrologTypeError.listExpected(environment, list);
+            }
+        }
+        return builder.toString();
+    }
+
 }

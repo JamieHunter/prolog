@@ -12,21 +12,22 @@ import prolog.bootstrap.LibraryBase;
 public final class Library extends LibraryBase {
     {
         // List of classes to consult
+        consult(Apply.class);
         consult(Arithmetic.class);
         consult(CompareImpl.class);
-        consult(Apply.class);
-        consult(Time.class);
         consult(Consult.class);
         consult(Control.class);
+        consult(Conversions.class);
+        consult(Debug.class);
         consult(Dictionary.class);
-        consult(ParsingControl.class);
+        consult(Flags.class);
         consult(Io.class);
         consult(Lists.class);
-        consult(Flags.class);
         consult(Option.class);
+        consult(ParsingControl.class);
         consult(Terms.class);
         consult(ThrowCatch.class);
+        consult(Time.class);
         consult(Unify.class);
-        consult(Debug.class);
     }
 }

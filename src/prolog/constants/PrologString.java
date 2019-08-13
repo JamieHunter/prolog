@@ -3,7 +3,9 @@
 //
 package prolog.constants;
 
+import prolog.execution.Environment;
 import prolog.expressions.Term;
+import prolog.expressions.TermList;
 import prolog.expressions.TypeRank;
 import prolog.io.TermWriter;
 import prolog.io.WriteContext;
@@ -25,6 +27,19 @@ public class PrologString extends AtomicBase {
      */
     public PrologString(String value) {
         this.value = value;
+    }
+
+    /**
+     * Convert term to PrologString
+     * @param environment Execution environment
+     * @param term Term to convert
+     * @return converted term
+     */
+    public static PrologString from(Environment environment, Term term) {
+        if (term instanceof PrologString) {
+            return (PrologString)term;
+        }
+        return new PrologString(TermList.extractString(environment, term));
     }
 
     /**

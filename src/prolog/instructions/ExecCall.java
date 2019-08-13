@@ -6,7 +6,6 @@ package prolog.instructions;
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
 import prolog.exceptions.FuturePrologError;
-import prolog.exceptions.FutureTypeError;
 import prolog.exceptions.PrologError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
@@ -19,8 +18,7 @@ import prolog.execution.RestoresLocalContext;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
-import prolog.library.Lists;
-import prolog.variables.Variable;
+import prolog.expressions.TermList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +53,7 @@ public class ExecCall implements Instruction {
             try {
                 callTerm.compile(compiling);
                 precompiled = compiling.toInstruction();
-            } catch(PrologError|FuturePrologError e) {
+            } catch (PrologError | FuturePrologError e) {
                 // See sec78.pl catch_test(3)
             }
         }
@@ -109,7 +107,7 @@ public class ExecCall implements Instruction {
                 members.add(callArg.get(i));
             }
         } else if (CompoundTerm.termIsA(args, Interned.LIST_FUNCTOR)) {
-            List<Term> list = Lists.extractList(args);
+            List<Term> list = TermList.extractList(args);
             members.addAll(list);
         } else {
             throw PrologTypeError.listExpected(environment, args);
@@ -143,7 +141,7 @@ public class ExecCall implements Instruction {
                 CompileContext compiling = new CompileContext(environment);
                 bound.compile(compiling);
                 nested = compiling.toInstruction();
-            } catch(PrologError|FuturePrologError e) {
+            } catch (PrologError | FuturePrologError e) {
                 // friendly (and per spec) error message with full term
                 // assume any error during compile phase amounts to this term not being callable
                 // TODO, this fails sec78.pl test "error_test(call((write(3), 1)), type_error(callable, 1))"

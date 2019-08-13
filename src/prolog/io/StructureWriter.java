@@ -8,6 +8,7 @@ import prolog.bootstrap.Operators;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtom;
 import prolog.constants.PrologCharacter;
+import prolog.constants.PrologChars;
 import prolog.constants.PrologCodePoints;
 import prolog.constants.PrologEmptyList;
 import prolog.execution.Environment;
@@ -168,7 +169,7 @@ public class StructureWriter extends TermWriter<Term> {
         }
         if (stringish && tail == PrologEmptyList.EMPTY_LIST) {
             // This can be written as a string
-            PrologCodePoints cp = new PrologCodePoints(builder.toString());
+            PrologChars cp = new PrologChars(builder.toString());
             cp.write(context);
             return;
         }

@@ -10,7 +10,7 @@ import prolog.exceptions.FutureTypeError;
 import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
-import prolog.library.Lists;
+import prolog.expressions.TermList;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +38,7 @@ class OptionParser<T extends Flags> extends ParserBase<T, Void> {
         if (!CompoundTerm.termIsA(listTerm, Interned.LIST_FUNCTOR, 2)) {
             throw new FutureTypeError(Interned.LIST_TYPE, listTerm);
         }
-        for (Term flagStruct : Lists.extractList(listTerm)) {
+        for (Term flagStruct : TermList.extractList(listTerm)) {
             setFlagFromStruct(obj, flagStruct);
         }
         return obj;

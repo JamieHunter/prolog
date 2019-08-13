@@ -66,13 +66,17 @@ public final class Matchers {
                 mismatch.appendText("is null");
                 return false;
             }
-            if (!(o instanceof PrologAtom)) {
+            String atomVal;
+            if (o instanceof PrologAtom) {
+                atomVal = ((PrologAtom)o).name();
+            } else if (o instanceof PrologCharacter) {
+                atomVal = String.valueOf(((PrologCharacter)o).get());
+            } else {
                 mismatch.appendText("not an atom");
                 return false;
             }
-            PrologAtom value = (PrologAtom)o;
-            if (!value.name().equals(name)) {
-                mismatch.appendText("atom was '"+value.name()+"'");
+            if (!atomVal.equals(name)) {
+                mismatch.appendText("atom was '"+atomVal+"'");
                 return false;
             }
             return true;

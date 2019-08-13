@@ -3,6 +3,7 @@
 //
 package prolog.parser;
 
+import prolog.constants.PrologChars;
 import prolog.constants.PrologCodePoints;
 import prolog.constants.PrologInteger;
 import prolog.constants.PrologString;
@@ -121,7 +122,7 @@ class QuotedContextState extends ActiveParsingState {
         } else {
             switch (quote) {
                 case "`":
-                    return ParseState.finish(new PrologCodePoints(builder.toString()));
+                    return ParseState.finish(new PrologChars(builder.toString()));
                 case "'":
                     return ParseState.finish(tokenizer.environment().getAtom(builder.toString()));
                 default:

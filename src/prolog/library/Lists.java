@@ -54,7 +54,7 @@ public final class Lists {
         if (list.isInstantiated() && !struct.isInstantiated()) {
             // only need to go down this path is structure is not instantiated, otherwise
             // the single unification will work well enough
-            listArr = extractList(list);
+            listArr = TermList.extractList(list);
             if (listArr.size() == 0) {
                 throw new UnsupportedOperationException("Functor was not specified");
             }
@@ -142,29 +142,6 @@ public final class Lists {
             }
         }
         return len;
-    }
-
-    /**
-     * Utility to extract weak list excluding tail
-     *
-     * @param list Term to query
-     * @return array of list elements
-     */
-    public static List<Term> extractList(Term list) {
-        ArrayList<Term> arr = new ArrayList<>();
-        while (list != PrologEmptyList.EMPTY_LIST) {
-            if (list instanceof TermList) {
-                ((TermList) list).copyMembers(arr);
-                list = ((TermList) list).lastTail();
-            } else if (CompoundTerm.termIsA(list, Interned.LIST_FUNCTOR, 2)) {
-                arr.add(((CompoundTerm) list).get(0));
-                list = ((CompoundTerm) list).get(1);
-            } else {
-                arr.add(list);
-                break;
-            }
-        }
-        return arr;
     }
 
     /**

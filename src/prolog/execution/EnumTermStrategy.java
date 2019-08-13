@@ -4,6 +4,7 @@
 package prolog.execution;
 
 import prolog.constants.PrologCodePoints;
+import prolog.constants.PrologStringAsList;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
@@ -115,13 +116,13 @@ public abstract class EnumTermStrategy {
     }
 
     /**
-     * Override to visit code-points. Normally code-points are not visited.
+     * Override to visit code-points/chars. Normally code-points/chars are not visited.
      *
-     * @param codePoints Code-Points term
+     * @param stringAsList String as list term
      * @return Replacement term
      */
-    public TermList visitCodePoints(PrologCodePoints codePoints) {
-        return codePoints;
+    public TermList visitStringAsList(PrologStringAsList stringAsList) {
+        return stringAsList;
     }
 
     /**

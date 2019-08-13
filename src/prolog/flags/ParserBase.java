@@ -14,7 +14,7 @@ import prolog.exceptions.FutureTypeError;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
-import prolog.library.Lists;
+import prolog.expressions.TermList;
 
 import java.util.List;
 import java.util.Set;
@@ -61,7 +61,7 @@ public abstract class ParserBase<T extends Flags, R> {
                 if (!keyTerm.isAtomic()) {
                     throw new FutureFlagKeyError(flag); // report as '='(key,value) as key is not Atomic
                 }
-                key = (Atomic)keyTerm;
+                key = (Atomic) keyTerm;
                 value = compoundTerm.get(1);
                 flag = compoundTerm = new CompoundTermImpl(key, value); // improve error reporting below
             } else {
@@ -184,7 +184,7 @@ public abstract class ParserBase<T extends Flags, R> {
      */
     public <E extends Enum<E>> R enumFlags(final Atomic key, final Class<E> cls, final BiConsumer<T, Set<E>> consumer) {
         return createKey(key, (obj, value) -> {
-            List<Term> flags = Lists.extractList(value);
+            List<Term> flags = TermList.extractList(value);
             consumer.accept(obj, flags.stream().map(v -> toEnum(cls, key, v)).collect(Collectors.toSet()));
         });
     }
