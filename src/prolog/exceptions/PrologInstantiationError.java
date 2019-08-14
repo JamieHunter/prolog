@@ -39,4 +39,14 @@ public class PrologInstantiationError extends PrologError {
         super(formal, context, cause);
     }
 
+    /**
+     * Create instantiation error from future error
+     *
+     * @param environment Execution environment.
+     * @return Instantiation error (not thrown)
+     */
+    public static PrologInstantiationError error(Environment environment, FutureInstantiationError error) {
+        return error(environment, error.getTerm());
+    }
+
 }

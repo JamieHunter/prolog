@@ -3,6 +3,7 @@
 //
 package prolog.functions;
 
+import prolog.constants.Atomic;
 import prolog.constants.PrologNumber;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.CompileContext;
@@ -42,7 +43,7 @@ public class CompileMathExpression {
         if (term.isAtomic()) {
             if (term.isAtom()) {
                 // per standard
-                throw PrologTypeError.evaluableExpected(environment, term);
+                throw PrologTypeError.evaluableExpected(environment, new Predication((Atomic)term, 0).term());
             }
             if (!term.isNumber()) {
                 // per standard

@@ -9,6 +9,7 @@ import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologChars;
 import prolog.constants.PrologCodePoints;
 import prolog.constants.PrologEOF;
+import prolog.constants.PrologEmptyList;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologSyntaxError;
 import prolog.exceptions.PrologTypeError;
@@ -68,9 +69,6 @@ public class Conversions {
         if (!atom.isInstantiated()) {
             // construct atom, list must be grounded
             String text = TermList.extractString(environment, list);
-            if (text.length() == 0) {
-                throw PrologInstantiationError.error(environment, list);
-            }
             PrologAtomInterned newAtom = environment.internAtom(text);
             if (!Unifier.unify(environment.getLocalContext(), atom, newAtom)) {
                 environment.backtrack();
@@ -78,7 +76,12 @@ public class Conversions {
             return;
         }
         PrologAtomLike realAtom = PrologAtomLike.from(atom);
-        Term deconstructed = allocator.apply(realAtom.name());
+        Term deconstructed;
+        if (realAtom.name().length() == 0) {
+            deconstructed = PrologEmptyList.EMPTY_LIST;
+        } else {
+            deconstructed = allocator.apply(realAtom.name());
+        }
         if (!Unifier.unify(environment.getLocalContext(), list, deconstructed)) {
             environment.backtrack();
         }

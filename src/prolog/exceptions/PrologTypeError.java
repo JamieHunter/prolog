@@ -75,6 +75,17 @@ public class PrologTypeError extends PrologError {
     }
 
     /**
+     * Standard type error - atomic expected.
+     *
+     * @param environment Execution environment.
+     * @param target      Term that has the error
+     * @return Type error (not thrown)
+     */
+    public static PrologTypeError atomicExpected(Environment environment, Term target) {
+        return error(environment, Interned.ATOMIC_TYPE, target);
+    }
+
+    /**
      * Standard type error - number (integer or float) expected
      *
      * @param environment Execution environment.

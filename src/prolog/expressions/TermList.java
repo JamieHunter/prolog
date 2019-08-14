@@ -5,13 +5,13 @@ package prolog.expressions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologCharacter;
 import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologInteger;
 import prolog.constants.PrologString;
 import prolog.constants.PrologStringAsList;
+import prolog.exceptions.FutureInstantiationError;
 import prolog.exceptions.FutureTypeError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
@@ -147,10 +147,11 @@ public interface TermList extends CompoundTerm {
 
     class TermIterator implements Iterator<Term> {
 
+        private Term origList;
         private Term next;
 
         public TermIterator(Term term) {
-            this.next = term;
+            this.origList = this.next = term;
         }
 
         @Override
@@ -161,7 +162,7 @@ public interface TermList extends CompoundTerm {
             if (CompoundTerm.termIsA(next, Interned.LIST_FUNCTOR, 2)) {
                 return true;
             }
-            throw new FutureTypeError(Interned.LIST_TYPE, next);
+            throw new FutureTypeError(Interned.LIST_TYPE, origList);
         }
 
         @Override
@@ -183,6 +184,7 @@ public interface TermList extends CompoundTerm {
      * @return array of list elements
      */
     static List<Term> extractList(Term list) {
+        Term origList = list;
         ArrayList<Term> arr = new ArrayList<>();
         while (list != PrologEmptyList.EMPTY_LIST) {
             if (list instanceof TermList) {
@@ -196,8 +198,11 @@ public interface TermList extends CompoundTerm {
                 break;
             }
         }
+        if (!list.isInstantiated()) {
+            throw new FutureInstantiationError(list);
+        }
         if (!isList(list)) {
-            throw new FutureTypeError(Interned.LIST_TYPE, list);
+            throw new FutureTypeError(Interned.LIST_TYPE, origList);
         }
         return arr;
     }
@@ -209,6 +214,7 @@ public interface TermList extends CompoundTerm {
      * @return PrologCodePoints
      */
     static String extractString(Environment environment, Term list) {
+        Term origList = list;
         if (list == PrologEmptyList.EMPTY_LIST) {
             return "";
         }
@@ -244,7 +250,7 @@ public interface TermList extends CompoundTerm {
                     throw PrologTypeError.characterExpected(environment, e);
                 }
             } else {
-                throw PrologTypeError.listExpected(environment, list);
+                throw PrologTypeError.listExpected(environment, origList);
             }
         }
         return builder.toString();

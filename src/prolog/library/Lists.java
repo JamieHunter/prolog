@@ -7,6 +7,9 @@ import prolog.bootstrap.Interned;
 import prolog.bootstrap.Predicate;
 import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologInteger;
+import prolog.exceptions.PrologDomainError;
+import prolog.exceptions.PrologInstantiationError;
+import prolog.exceptions.PrologTypeError;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
@@ -32,7 +35,7 @@ public final class Lists {
 
     /**
      * Unifies between a compound term and a list. This may result in the compound term being
-     * instantiated, the list being instiated, or both updating each other.
+     * instantiated, the list being instantiated, or both updating each other.
      *
      * @param environment Execution environment
      * @param struct      Structure (left)
@@ -44,32 +47,48 @@ public final class Lists {
         List<Term> listArr;
         TermList listFromStruct = null;
         Term structFromList = null;
+
+        if (!struct.isInstantiated()) {
+            if (!list.isInstantiated()) {
+                throw PrologInstantiationError.error(environment, list);
+            }
+            if (!TermList.isList(list)) {
+                throw PrologTypeError.listExpected(environment, list);
+            }
+        }
         if (struct.isInstantiated()) {
-            // Always this path even if list is instantiated.
             structArr = extractStructure(struct);
             listFromStruct = new TermListImpl(
                     structArr.toArray(new Term[structArr.size()]),
                     PrologEmptyList.EMPTY_LIST);
         }
-        if (list.isInstantiated() && !struct.isInstantiated()) {
-            // only need to go down this path is structure is not instantiated, otherwise
-            // the single unification will work well enough
-            listArr = TermList.extractList(list);
-            if (listArr.size() == 0) {
-                throw new UnsupportedOperationException("Functor was not specified");
+        if (list.isInstantiated()) {
+            if (!struct.isInstantiated() && list == PrologEmptyList.EMPTY_LIST) {
+                throw PrologDomainError.nonEmptyList(environment, list);
             }
-            if (!listArr.get(0).isAtom()) {
-                throw new UnsupportedOperationException("Functor must be an atom");
+            CompoundTerm listComp = (CompoundTerm) list;
+            Term head = listComp.get(0);
+            Term tail = listComp.get(1);
+            if (!struct.isInstantiated() && !head.isInstantiated()) {
+                throw PrologInstantiationError.error(environment, head);
             }
-            if (listArr.size() == 1) {
-                structFromList = listArr.get(0);
-            } else {
-                structFromList = new CompoundTermImpl(
-                        listArr.toArray(new Term[listArr.size()]));
+            if (head.isInstantiated() && !head.isAtomic() && tail == PrologEmptyList.EMPTY_LIST) {
+                throw PrologTypeError.atomicExpected(environment, head);
+            }
+            if (head.isInstantiated() && !head.isAtom() && tail != PrologEmptyList.EMPTY_LIST) {
+                throw PrologTypeError.atomExpected(environment, head);
+            }
+            if (!struct.isInstantiated()) {
+                if (tail == PrologEmptyList.EMPTY_LIST) {
+                    structFromList = head;
+                } else {
+                    listArr = TermList.extractList(list);
+                    structFromList = new CompoundTermImpl(
+                            listArr.toArray(new Term[listArr.size()]));
+                }
             }
         }
-        if ((structFromList == null && listFromStruct == null) ||
-                (structFromList != null && !Unifier.unify(environment.getLocalContext(), struct, structFromList)) ||
+        if ((structFromList != null && !Unifier.unify(environment.getLocalContext(), struct, structFromList)) ||
                 (listFromStruct != null && !Unifier.unify(environment.getLocalContext(), list, listFromStruct))) {
             environment.backtrack();
         }

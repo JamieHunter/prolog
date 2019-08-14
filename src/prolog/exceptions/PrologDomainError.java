@@ -65,6 +65,17 @@ public class PrologDomainError extends PrologError {
     }
 
     /**
+     * List is expected to not be empty
+     *
+     * @param environment Execution environment.
+     * @param target      Term with error
+     * @return Domain error (not thrown)
+     */
+    public static PrologDomainError nonEmptyList(Environment environment, Term target) {
+        return error(environment, Interned.NON_EMPTY_LIST_DOMAIN, target);
+    }
+
+    /**
      * Integer/Float is outside of expected range
      *
      * @param environment Execution environment.

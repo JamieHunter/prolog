@@ -72,11 +72,13 @@ public final class Interned {
     public static final PrologAtomInterned INTEGER_TYPE = internAtom("integer");
     public static final PrologAtomInterned COMPOUND_TYPE = internAtom("compound");
     public static final PrologAtomInterned ATOM_TYPE = internAtom("atom");
+    public static final PrologAtomInterned ATOMIC_TYPE = internAtom("atomic");
     public static final PrologAtomInterned CALLABLE_TYPE = internAtom("callable");
     public static final PrologAtomInterned EVALUABLE_TYPE = internAtom("evaluable");
     public static final PrologAtomInterned COMPOUND_OR_ATOM_TYPE = internAtom("compound_or_atom");
     public static final PrologAtomInterned STREAM_TYPE = internAtom("stream");
     public static final PrologAtomInterned NOT_LESS_THAN_ZERO_DOMAIN = internAtom("not_less_than_zero");
+    public static final PrologAtomInterned NON_EMPTY_LIST_DOMAIN = internAtom("non_empty_list");
     public static final PrologAtomInterned OUT_OF_RANGE_DOMAIN = internAtom("out_of_range");
     public static final PrologAtomInterned STREAM_OR_ALIAS_DOMAIN = internAtom("stream_or_alias");
     public static final PrologAtomInterned STREAM_PROPERTY_DOMAIN = internAtom("stream_property");

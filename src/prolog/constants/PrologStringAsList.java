@@ -24,6 +24,7 @@ public abstract class PrologStringAsList implements TermList, Grounded {
     private final CharSequence value;
 
     public PrologStringAsList(CharSequence value) {
+        assert value.length() != 0;
         this.value = value;
     }
 

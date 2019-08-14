@@ -7,6 +7,9 @@ import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologInteger;
+import prolog.exceptions.PrologDomainError;
+import prolog.exceptions.PrologInstantiationError;
+import prolog.exceptions.PrologTypeError;
 import prolog.execution.CopyTerm;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
@@ -106,6 +109,19 @@ public class Terms {
     }
 
     /**
+     * Success if term is a compound
+     *
+     * @param environment Execution environment
+     * @param term        Term to test
+     */
+    @Predicate("compound")
+    public static void compound(Environment environment, Term term) {
+        if (!(term instanceof CompoundTerm)) {
+            environment.backtrack();
+        }
+    }
+
+    /**
      * Success if term is an uninstantiated variable
      *
      * @param environment Execution environment
@@ -143,17 +159,29 @@ public class Terms {
     @Predicate("arg")
     public static void arg(Environment environment, Term index, Term struct, Term arg) {
         // index and struct are expected to have values
-        if (!(struct instanceof CompoundTerm && index.isInteger())) {
-            environment.backtrack();
-            return;
+        if (!struct.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, struct);
+        }
+        if (!index.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, index);
         }
         PrologInteger indexInt = PrologInteger.from(index);
-        int i = indexInt.get().intValue() - 1;
-        CompoundTerm comp = (CompoundTerm) struct;
-        if (i < 0 || i >= comp.arity()) {
-            throw new IndexOutOfBoundsException("Specified an index out of bounds");
+        int i = indexInt.get().intValue();
+        if (i < 0) {
+            throw PrologDomainError.notLessThanZero(environment, indexInt);
         }
-        if (!Unifier.unify(environment.getLocalContext(), arg, comp.get(i))) {
+        Term value = null;
+        int arity = 0;
+        if (struct instanceof CompoundTerm) {
+            CompoundTerm comp = (CompoundTerm) struct;
+            arity = comp.arity();
+            if (i > 0 && i <= arity) {
+                value = comp.get(i - 1);
+            }
+        } else {
+            throw PrologTypeError.compoundExpected(environment, struct);
+        }
+        if (value == null || !Unifier.unify(environment.getLocalContext(), arg, value)) {
             environment.backtrack();
         }
     }
@@ -162,45 +190,53 @@ public class Terms {
      * unify functor with functor of struct, unify arity with arity of struct.
      *
      * @param environment Execution environment
-     * @param struct      Structure, sufficiently instantiated
-     * @param functor     Functor, typically uninstantiated
-     * @param arity       Lambda, typically uninstantiated
+     * @param term     Term, typically instantiated
+     * @param name     Functor, typically uninstantiated
+     * @param arity    Arity, typically uninstantiated
      */
     @Predicate("functor")
-    public static void functor(Environment environment, Term struct, Term functor, Term arity) {
+    public static void functor(Environment environment, Term term, Term name, Term arity) {
         // struct is expected to be sufficiently bound to instantiate functor and args
         // however if not bound, functor and arity must be bound
         LocalContext context = environment.getLocalContext();
-        if (!struct.isInstantiated()) {
-            if (!(functor.isAtom() && arity.isInteger())) {
-                environment.backtrack();
-                return;
+        if (!term.isInstantiated()) {
+            if (!name.isInstantiated()) {
+                throw PrologInstantiationError.error(environment, name);
+            }
+            if (!arity.isInstantiated()) {
+                throw PrologInstantiationError.error(environment, arity);
+            }
+            if (!name.isAtomic()) {
+                throw PrologTypeError.atomicExpected(environment, name);
             }
             int arityInt = PrologInteger.from(arity).get().intValue();
             if (arityInt < 0) {
-                throw new IndexOutOfBoundsException("Specified an arity out of bounds");
+                throw PrologDomainError.notLessThanZero(environment, arity);
             }
-            Atomic functorAtom = PrologAtomInterned.from(environment, functor);
+            if (arityInt > 0 && !name.isAtom()) {
+                throw PrologTypeError.atomExpected(environment, name);
+            }
+            Term newStruct;
             if (arityInt == 0) {
-                struct = functorAtom;
+                newStruct = name;
             } else {
                 // Build a struct from these terms
                 Term[] members = new Term[arityInt];
                 for (int i = 0; i < arityInt; i++) {
                     members[i] = new UnboundVariable("_", environment.nextVariableId()).resolve(context);
                 }
-                struct = new CompoundTermImpl(functorAtom, members);
+                newStruct = new CompoundTermImpl((Atomic)name, members);
             }
-            if (!struct.instantiate(functorAtom)) {
+            if (!term.instantiate(newStruct)) {
                 throw new UnsupportedOperationException("Unable to instantiate");
             }
             return;
         }
-        if (struct.isAtom()) {
-            struct = CompoundTerm.from((Atomic) struct);
+        if (term.isAtomic()) {
+            term = CompoundTerm.from((Atomic) term);
         }
-        CompoundTerm comp = (CompoundTerm) struct;
-        if (!(Unifier.unify(context, functor, comp.functor()) &&
+        CompoundTerm comp = (CompoundTerm) term;
+        if (!(Unifier.unify(context, name, comp.functor()) &&
                 Unifier.unify(context, arity, new PrologInteger(BigInteger.valueOf(comp.arity())))
         )) {
             environment.backtrack();

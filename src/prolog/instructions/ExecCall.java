@@ -146,7 +146,8 @@ public class ExecCall implements Instruction {
                 // assume any error during compile phase amounts to this term not being callable
                 // TODO, this fails sec78.pl test "error_test(call((write(3), 1)), type_error(callable, 1))"
                 // based on other examples, is the test at fault?
-                throw PrologTypeError.callableExpected(environment, bound);
+                //throw PrologTypeError.callableExpected(environment, bound);
+                throw e;
             }
         }
         preCall();
