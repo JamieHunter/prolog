@@ -3,20 +3,17 @@
 //
 package prolog.constants;
 
-import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.Environment;
-import prolog.expressions.Container;
 import prolog.expressions.Term;
 import prolog.io.WriteContext;
 
 import java.io.IOException;
 
 /**
- * Represents a character in Prolog. It's seen by the application as an atom, but this avoids conversion to an atom
- * until necessary.
+ * Represents a character in Prolog. It is considered an atom, but with deferred behavior.
  */
-public class PrologCharacter extends AtomicBase implements Container {
+public class PrologCharacter extends PrologAtomLike {
     private final char value;
 
     public PrologCharacter(char value) {
@@ -34,18 +31,8 @@ public class PrologCharacter extends AtomicBase implements Container {
 
     /** {@inheritDoc} */
     @Override
-    public String toString() {
+    public String name() {
         return String.valueOf(value);
-    }
-
-    /**
-     * Convert character to an atom if unifiable value is required.
-     * @param environment Environment to retrieve/create atom
-     * @return atom
-     */
-    @Override
-    public Term value(Environment environment) {
-        return environment.getAtom(String.valueOf(value));
     }
 
     /** {@inheritDoc} */
@@ -62,8 +49,8 @@ public class PrologCharacter extends AtomicBase implements Container {
         if (source instanceof PrologCharacter) {
             return (PrologCharacter)source;
         }
-        if (source instanceof PrologAtom) {
-            String t = ((PrologAtom)source).name();
+        if (source instanceof PrologAtomLike) {
+            String t = ((PrologAtomLike)source).name();
             if (t.length() > 0) {
                 return new PrologCharacter(t.charAt(0));
             }

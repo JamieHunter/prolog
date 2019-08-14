@@ -4,7 +4,7 @@
 package prolog.exceptions;
 
 import prolog.bootstrap.Interned;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 
@@ -25,7 +25,7 @@ public class PrologPermissionError extends PrologError {
      * @param cause       Java cause if any, else null
      * @return exception (not thrown)
      */
-    public static PrologPermissionError error(Environment environment, PrologAtom action, PrologAtom type, Term target,
+    public static PrologPermissionError error(Environment environment, PrologAtomInterned action, PrologAtomInterned type, Term target,
                                               String description, Throwable cause) {
         return new PrologPermissionError(
                 formal(Interned.PERMISSION_ERROR_FUNCTOR, action, type, target),
@@ -43,7 +43,7 @@ public class PrologPermissionError extends PrologError {
      * @param description Description of permission error
      * @return exception (not thrown)
      */
-    public static PrologPermissionError error(Environment environment, PrologAtom action, PrologAtom type, Term target,
+    public static PrologPermissionError error(Environment environment, PrologAtomInterned action, PrologAtomInterned type, Term target,
                                               String description) {
         return error(environment, action, type, target, description, null);
     }
@@ -60,7 +60,7 @@ public class PrologPermissionError extends PrologError {
      */
     public static PrologPermissionError error(Environment environment, String action, String type, Term target,
                                               String description) {
-        return error(environment, environment.getAtom(action), environment.getAtom(type), target, description);
+        return error(environment, environment.internAtom(action), environment.internAtom(type), target, description);
     }
 
     /**

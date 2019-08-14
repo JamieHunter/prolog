@@ -5,7 +5,8 @@ package prolog.flags;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
 import prolog.exceptions.FutureFlagKeyError;
 import prolog.exceptions.FutureFlagPermissionError;
@@ -125,10 +126,10 @@ public abstract class ParserBase<T extends Flags, R> {
      * @param consumer Specific value function
      * @return Option/Flag dependent
      */
-    public R atomFlag(final Atomic key, final BiConsumer<T, PrologAtom> consumer) {
+    public R atomFlag(final Atomic key, final BiConsumer<T, PrologAtomLike> consumer) {
         return createKey(key, (obj, value) -> {
             if (value.isAtom()) {
-                consumer.accept(obj, (PrologAtom) value);
+                consumer.accept(obj, (PrologAtomLike) value);
             } else {
                 throw new FutureTypeError(Interned.ATOM_TYPE, value);
             }
@@ -149,7 +150,7 @@ public abstract class ParserBase<T extends Flags, R> {
         if (!value.isAtom()) {
             throw new FutureFlagKeyError(key, value);
         }
-        String matchName = "ATOM_" + ((PrologAtom) value).name();
+        String matchName = "ATOM_" + ((PrologAtomLike) value).name();
         try {
             return Enum.valueOf(cls, matchName);
         } catch (IllegalArgumentException ae) {

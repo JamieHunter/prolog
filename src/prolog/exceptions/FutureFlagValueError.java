@@ -57,6 +57,6 @@ public class FutureFlagValueError extends FutureFlagError {
     @Override
     public PrologDomainError toError(Environment environment) {
         Term err = new CompoundTermImpl(Interned.PLUS_ATOM, key, value);
-        return PrologDomainError.error(environment, environment.getAtom("flag_value"), err, this);
+        return PrologDomainError.error(environment, environment.internAtom("flag_value"), err, this);
     }
 }

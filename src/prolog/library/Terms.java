@@ -5,7 +5,7 @@ package prolog.library;
 
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologInteger;
 import prolog.execution.CopyTerm;
 import prolog.execution.Environment;
@@ -180,7 +180,7 @@ public class Terms {
             if (arityInt < 0) {
                 throw new IndexOutOfBoundsException("Specified an arity out of bounds");
             }
-            Atomic functorAtom = PrologAtom.from(functor);
+            Atomic functorAtom = PrologAtomInterned.from(environment, functor);
             if (arityInt == 0) {
                 struct = functorAtom;
             } else {

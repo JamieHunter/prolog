@@ -4,7 +4,6 @@
 package prolog.parser;
 
 import prolog.constants.PrologChars;
-import prolog.constants.PrologCodePoints;
 import prolog.constants.PrologInteger;
 import prolog.constants.PrologString;
 import prolog.exceptions.PrologSyntaxError;
@@ -124,7 +123,7 @@ class QuotedContextState extends ActiveParsingState {
                 case "`":
                     return ParseState.finish(new PrologChars(builder.toString()));
                 case "'":
-                    return ParseState.finish(tokenizer.environment().getAtom(builder.toString()));
+                    return ParseState.finish(tokenizer.environment().internAtom(builder.toString()));
                 default:
                     return ParseState.finish(new PrologString(builder.toString()));
             }

@@ -3,7 +3,7 @@
 //
 package prolog.bootstrap;
 
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologInteger;
 import prolog.flags.StreamProperties;
 import prolog.io.LogicalStream;
@@ -23,15 +23,15 @@ public class DefaultIoBinding {
     /**
      * Name of well defined input stream
      */
-    public static final PrologAtom USER_INPUT_STREAM = Interned.internAtom("user_input");
+    public static final PrologAtomInterned USER_INPUT_STREAM = Interned.internAtom("user_input");
     /**
      * Name of well defined output stream
      */
-    public static final PrologAtom USER_OUTPUT_STREAM = Interned.internAtom("user_output");
+    public static final PrologAtomInterned USER_OUTPUT_STREAM = Interned.internAtom("user_output");
     /**
      * Name of well defined error output stream
      */
-    public static final PrologAtom USER_ERROR_STREAM = Interned.internAtom("user_error");
+    public static final PrologAtomInterned USER_ERROR_STREAM = Interned.internAtom("user_error");
 
     /**
      * Well defined user input stream.
@@ -61,7 +61,7 @@ public class DefaultIoBinding {
             StreamProperties.OpenMode.ATOM_write);
 
     private static final Map<PrologInteger, LogicalStream> initialStreams = new HashMap<>();
-    private static final Map<PrologAtom, LogicalStream> initialAliases = new HashMap<>();
+    private static final Map<PrologAtomInterned, LogicalStream> initialAliases = new HashMap<>();
 
     //
     // Well defined streams.
@@ -85,7 +85,7 @@ public class DefaultIoBinding {
             stream.setCloseOnExec(false);
             stream.setCloseOnAbort(false);
             initialStreams.put(stream.getId(), stream);
-            initialAliases.put((PrologAtom) stream.getAlias(), stream);
+            initialAliases.put((PrologAtomInterned) stream.getAlias(), stream);
         }
     }
 
@@ -103,7 +103,7 @@ public class DefaultIoBinding {
      *
      * @return Map of streams by name.
      */
-    public static Map<? extends PrologAtom, ? extends LogicalStream> getByAlias() {
+    public static Map<? extends PrologAtomInterned, ? extends LogicalStream> getByAlias() {
         return Collections.unmodifiableMap(initialAliases);
     }
 }

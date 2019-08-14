@@ -149,7 +149,7 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
      * {@inheritDoc}
      */
     @Override
-    public PrologAtom lessThan(PrologNumber right) {
+    public PrologAtomInterned lessThan(PrologNumber right) {
         return atomize(value.compareTo(right.toPrologInteger().get()) < 0);
     }
 
@@ -157,7 +157,7 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
      * {@inheritDoc}
      */
     @Override
-    public PrologAtom greaterThan(PrologNumber right) {
+    public PrologAtomInterned greaterThan(PrologNumber right) {
         return atomize(value.compareTo(right.toPrologInteger().get()) > 0);
     }
 
@@ -165,7 +165,7 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
      * {@inheritDoc}
      */
     @Override
-    public PrologAtom equalTo(PrologNumber right) {
+    public PrologAtomInterned equalTo(PrologNumber right) {
         return atomize(value.compareTo(right.toPrologInteger().get()) == 0);
     }
 

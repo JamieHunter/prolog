@@ -117,7 +117,7 @@ public class WriteOptions implements Flags {
             characterEscapes = flags.characterEscapes;
             parser.apply(environment, this, optionsTerm);
         } catch (FutureFlagError ffe) {
-            throw PrologDomainError.error(environment, environment.getAtom("write_option"), ffe.getTerm(), ffe);
+            throw PrologDomainError.error(environment, environment.internAtom("write_option"), ffe.getTerm(), ffe);
         }
     }
 

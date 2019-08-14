@@ -4,7 +4,7 @@
 package prolog.exceptions;
 
 import prolog.bootstrap.Interned;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 
@@ -22,7 +22,7 @@ public class PrologTypeError extends PrologError {
      * @param cause       Java exception that lead to this error
      * @return Type error (not thrown)
      */
-    public static PrologTypeError error(Environment environment, PrologAtom type, Term target, Throwable cause) {
+    public static PrologTypeError error(Environment environment, PrologAtomInterned type, Term target, Throwable cause) {
         return new PrologTypeError(
                 formal(Interned.TYPE_ERROR_FUNCTOR, type, target),
                 context(environment, "Type expected to be: " + type.toString()),
@@ -37,7 +37,7 @@ public class PrologTypeError extends PrologError {
      * @param target      Term that has the error
      * @return Type error (not thrown)
      */
-    public static PrologTypeError error(Environment environment, PrologAtom type, Term target) {
+    public static PrologTypeError error(Environment environment, PrologAtomInterned type, Term target) {
         return error(environment, type, target, null);
     }
 

@@ -4,7 +4,7 @@
 package prolog.bootstrap;
 
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.execution.Instruction;
 import prolog.functions.StackFunction;
 import prolog.predicates.BuiltinPredicateCompare;
@@ -165,7 +165,7 @@ public class Builtins {
      * @return Predication
      */
     public static Predication predicate(String name, int arity) {
-        PrologAtom functor = Interned.internAtom(name);
+        PrologAtomInterned functor = Interned.internAtom(name);
         return new Predication(functor, arity);
     }
 

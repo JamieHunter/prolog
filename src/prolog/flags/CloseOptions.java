@@ -34,7 +34,7 @@ public class CloseOptions implements Flags {
         try {
             parser.apply(environment, this, optionsTerm);
         } catch (FutureFlagError ffe) {
-            throw PrologDomainError.error(environment, environment.getAtom("open_option"), ffe.getTerm(), ffe);
+            throw PrologDomainError.error(environment, environment.internAtom("open_option"), ffe.getTerm(), ffe);
         }
     }
 }

@@ -6,36 +6,23 @@ package prolog.library;
 import prolog.bootstrap.DemandLoad;
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologFloat;
-import prolog.constants.PrologInteger;
 import prolog.constants.PrologNumber;
 import prolog.constants.PrologString;
-import prolog.exceptions.PrologDomainError;
-import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
-import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
-import prolog.instructions.ExecCall;
 import prolog.instructions.ExecCallLocal;
-import prolog.instructions.ExecRetractClause;
 import prolog.io.LogicalStream;
 import prolog.io.Prompt;
-import prolog.predicates.ClauseEntry;
-import prolog.predicates.ClauseSearchPredicate;
 import prolog.predicates.LoadGroup;
-import prolog.predicates.PredicateDefinition;
 import prolog.predicates.Predication;
 import prolog.unification.Unifier;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -108,7 +95,7 @@ public final class Consult {
         String id = convertId(environment, idTerm);
         PrologFloat time = convertTime(environment, timeTerm);
         LoadGroup priorGroup = environment.getLoadGroup();
-        PrologAtom priorIdAtom = environment.getAtom(priorGroup.getId());
+        PrologAtomInterned priorIdAtom = environment.internAtom(priorGroup.getId());
         if (!Unifier.unify(environment.getLocalContext(), priorGroupTerm, priorIdAtom)) {
             environment.backtrack();
             return;
@@ -205,7 +192,7 @@ public final class Consult {
     private static String convertId(Environment environment, Term id) {
         String pathName;
         if (id.isAtom()) {
-            return ((PrologAtom) (id.value(environment))).name();
+            return ((PrologAtomLike) (id.value(environment))).name();
         } else if (id.isString()) {
             return ((PrologString) (id.value(environment))).get();
         } else {

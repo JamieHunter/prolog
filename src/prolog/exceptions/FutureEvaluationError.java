@@ -3,14 +3,14 @@
 //
 package prolog.exceptions;
 
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.execution.Environment;
 
 /**
  * This will get turned into a PrologEvaluationError once context is known
  */
 public class FutureEvaluationError extends FuturePrologError {
-    private final PrologAtom type;
+    private final PrologAtomInterned type;
 
     /**
      * Create an Evaluation exception that is eventually turned into PrologEvaluationError
@@ -18,7 +18,7 @@ public class FutureEvaluationError extends FuturePrologError {
      * @param type     Type of exception
      * @param original Original exception
      */
-    public FutureEvaluationError(PrologAtom type, ArithmeticException original) {
+    public FutureEvaluationError(PrologAtomInterned type, ArithmeticException original) {
         super(original.getMessage(), original);
         this.type = type;
     }
@@ -29,7 +29,7 @@ public class FutureEvaluationError extends FuturePrologError {
      * @param type    Type of exception
      * @param message Description of error
      */
-    public FutureEvaluationError(PrologAtom type, String message) {
+    public FutureEvaluationError(PrologAtomInterned type, String message) {
         super(message);
         this.type = type;
     }
@@ -37,7 +37,7 @@ public class FutureEvaluationError extends FuturePrologError {
     /**
      * @return Type of exception
      */
-    public PrologAtom getType() {
+    public PrologAtomInterned getType() {
         return type;
     }
 

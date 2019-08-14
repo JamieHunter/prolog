@@ -67,10 +67,8 @@ public final class Matchers {
                 return false;
             }
             String atomVal;
-            if (o instanceof PrologAtom) {
-                atomVal = ((PrologAtom)o).name();
-            } else if (o instanceof PrologCharacter) {
-                atomVal = String.valueOf(((PrologCharacter)o).get());
+            if (o instanceof PrologAtomLike) {
+                atomVal = ((PrologAtomLike)o).name();
             } else {
                 mismatch.appendText("not an atom");
                 return false;
@@ -332,12 +330,12 @@ public final class Matchers {
             }
             CompoundTerm term = (CompoundTerm)o;
             Term actualFunctor = term.functor();
-            if (!(actualFunctor instanceof PrologAtom)) {
+            if (!(actualFunctor instanceof PrologAtomInterned)) {
                 mismatch.appendText("functor not atom");
                 return false;
             }
-            if (!functor.equals(((PrologAtom) actualFunctor).name())) {
-                mismatch.appendText("functor name mismatch, was '" + ((PrologAtom)actualFunctor).name() + "'");
+            if (!functor.equals(((PrologAtomInterned) actualFunctor).name())) {
+                mismatch.appendText("functor name mismatch, was '" + ((PrologAtomInterned)actualFunctor).name() + "'");
                 return false;
             }
             if (term.arity() != components.length) {

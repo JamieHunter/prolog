@@ -5,7 +5,6 @@ package prolog.exceptions;
 
 import prolog.constants.Atomic;
 import prolog.execution.Environment;
-import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 
 /**
@@ -45,8 +44,8 @@ public class FutureFlagPermissionError extends FutureFlagError {
     @Override
     public PrologPermissionError toError(Environment environment) {
         return PrologPermissionError.error(environment,
-                environment.getAtom("modify"),
-                environment.getAtom("flag"),
+                environment.internAtom("modify"),
+                environment.internAtom("flag"),
                 key,
                 getMessage(),
                 this);

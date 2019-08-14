@@ -11,8 +11,6 @@ import prolog.io.WriteContext;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.MathContext;
 
 /**
  * A floating point number in Prolog. This is implemented using Java's Double. Note that
@@ -85,7 +83,7 @@ public final class PrologFloat extends AtomicBase implements PrologNumber {
      * {@inheritDoc}
      */
     @Override
-    public PrologAtom lessThan(PrologNumber right) {
+    public PrologAtomInterned lessThan(PrologNumber right) {
         return atomize(value < right.toPrologFloat().value);
     }
 
@@ -93,7 +91,7 @@ public final class PrologFloat extends AtomicBase implements PrologNumber {
      * {@inheritDoc}
      */
     @Override
-    public PrologAtom greaterThan(PrologNumber right) {
+    public PrologAtomInterned greaterThan(PrologNumber right) {
         return atomize(value > right.toPrologFloat().value);
     }
 
@@ -101,7 +99,7 @@ public final class PrologFloat extends AtomicBase implements PrologNumber {
      * {@inheritDoc}
      */
     @Override
-    public PrologAtom equalTo(PrologNumber right) {
+    public PrologAtomInterned equalTo(PrologNumber right) {
         return atomize(value == right.toPrologFloat().value);
     }
 

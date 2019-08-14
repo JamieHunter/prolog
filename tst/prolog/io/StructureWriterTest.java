@@ -3,7 +3,7 @@ package prolog.io;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologEmptyList;
 import prolog.execution.Environment;
 import prolog.bootstrap.Interned;
@@ -30,11 +30,11 @@ public class StructureWriterTest {
     public void setEnvironment() {
         environment = new Environment();
         // fake postfix operator
-        environment.makeOperator(450, OperatorEntry.Code.YF, environment.getAtom("@@@")); // between * and +
+        environment.makeOperator(450, OperatorEntry.Code.YF, environment.internAtom("@@@")); // between * and +
     }
 
-    private PrologAtom atom(String name) {
-        return environment.getAtom(name);
+    private PrologAtomInterned atom(String name) {
+        return environment.internAtom(name);
     }
 
     private Term read(String text) {

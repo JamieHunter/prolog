@@ -4,7 +4,8 @@
 package prolog.library;
 
 import prolog.bootstrap.Predicate;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologChars;
 import prolog.constants.PrologCodePoints;
 import prolog.constants.PrologEOF;
@@ -70,13 +71,13 @@ public class Conversions {
             if (text.length() == 0) {
                 throw PrologInstantiationError.error(environment, list);
             }
-            PrologAtom newAtom = environment.getAtom(text);
+            PrologAtomInterned newAtom = environment.internAtom(text);
             if (!Unifier.unify(environment.getLocalContext(), atom, newAtom)) {
                 environment.backtrack();
             }
             return;
         }
-        PrologAtom realAtom = PrologAtom.from(atom);
+        PrologAtomLike realAtom = PrologAtomLike.from(atom);
         Term deconstructed = allocator.apply(realAtom.name());
         if (!Unifier.unify(environment.getLocalContext(), list, deconstructed)) {
             environment.backtrack();

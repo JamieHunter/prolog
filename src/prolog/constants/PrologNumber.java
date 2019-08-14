@@ -105,7 +105,7 @@ public interface PrologNumber extends Atomic {
      * @param right right constant to compare with
      * @return 'true' or 'false'
      */
-    PrologAtom equalTo(PrologNumber right);
+    PrologAtomInterned equalTo(PrologNumber right);
 
     /**
      * Compare this number to another number
@@ -113,7 +113,7 @@ public interface PrologNumber extends Atomic {
      * @param right right constant to compare with
      * @return 'true' or 'false'
      */
-    PrologAtom lessThan(PrologNumber right);
+    PrologAtomInterned lessThan(PrologNumber right);
 
     /**
      * Compare this number to another number
@@ -121,5 +121,5 @@ public interface PrologNumber extends Atomic {
      * @param right right constant to compare with
      * @return 'true' or 'false'
      */
-    PrologAtom greaterThan(PrologNumber right);
+    PrologAtomInterned greaterThan(PrologNumber right);
 }

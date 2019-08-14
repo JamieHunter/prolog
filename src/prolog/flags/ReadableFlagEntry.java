@@ -5,7 +5,7 @@ package prolog.flags;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologInteger;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
@@ -131,10 +131,10 @@ public class ReadableFlagEntry<T extends FlagsWithEnvironment> {
      * @param <E>         Enum class
      * @return Atom
      */
-    private static <E extends Enum<E>> PrologAtom parseEnum(Environment environment, E enumValue) {
+    private static <E extends Enum<E>> PrologAtomInterned parseEnum(Environment environment, E enumValue) {
         String name = enumValue.name();
         if (name.startsWith("ATOM_")) {
-            return environment.getAtom(name.substring(5));
+            return environment.internAtom(name.substring(5));
         } else {
             throw new InternalError("Expecting prefix ATOM_ on " + name);
         }

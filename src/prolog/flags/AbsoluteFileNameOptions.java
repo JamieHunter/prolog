@@ -4,6 +4,8 @@
 package prolog.flags;
 
 import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.exceptions.FutureFlagError;
 import prolog.exceptions.PrologDomainError;
 import prolog.execution.Environment;
@@ -41,8 +43,8 @@ public class AbsoluteFileNameOptions implements Flags {
     private void addExtensions(Term list) {
         List<Term> termList = TermList.extractList(list);
         for (Term term : termList) {
-            PrologAtom extAtom = PrologAtom.from(term);
-            String extString = extAtom.get();
+            PrologAtomLike extAtom = PrologAtomLike.from(term);
+            String extString = extAtom.name();
             if (extString.length() > 0 && !extString.startsWith(".")) {
                 extString = "." + extString;
             }
@@ -77,7 +79,7 @@ public class AbsoluteFileNameOptions implements Flags {
             parser.apply(environment, this, optionsTerm);
             typeExtensions();
         } catch (FutureFlagError ffe) {
-            throw PrologDomainError.error(environment, environment.getAtom("absolute_file_name_option"), ffe.getTerm(), ffe);
+            throw PrologDomainError.error(environment, environment.internAtom("absolute_file_name_option"), ffe.getTerm(), ffe);
         }
     }
 

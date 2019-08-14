@@ -3,10 +3,11 @@
 //
 package prolog.variables;
 
-import prolog.execution.Environment;
 import prolog.expressions.Container;
 import prolog.expressions.Term;
 import prolog.expressions.TypeRank;
+
+import java.util.Set;
 
 /**
  * Marker interface indicating this is a variable. Variables return names and each variable has
@@ -28,6 +29,11 @@ public interface Variable extends Container {
     long id();
 
     /**
+     * @return co-reference ID to use, or original ID
+     */
+    long corefId();
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -40,6 +46,9 @@ public interface Variable extends Container {
      */
     @Override
     default int compareSameType(Term o) {
-        return Long.compare(id(), ((Variable)o).id());
+        // It might seem to make sense to compare only the id's. However if the variables are co-references, a
+        // more relevant id may be buried, and the two id's are the same but for different contexts. The co-ref
+        // id is therefore considered to be the significant id in the chain
+        return Long.compare(corefId(), ((Variable) o).corefId());
     }
 }

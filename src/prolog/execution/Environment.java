@@ -8,7 +8,8 @@ import prolog.bootstrap.DefaultIoBinding;
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Operators;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
 import prolog.exceptions.PrologError;
 import prolog.exceptions.PrologPermissionError;
@@ -28,7 +29,6 @@ import prolog.predicates.VarArgDefinition;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -44,7 +44,7 @@ public class Environment {
     // character translation table
     private final CharConverter charConverter = new CharConverter();
     // table of atoms for this instance
-    private final HashMap<String, PrologAtom> atomTable = new HashMap<>();
+    private final HashMap<String, PrologAtomInterned> atomTable = new HashMap<>();
     // table of predicates for this instance
     private final HashMap<Predication, PredicateDefinition> dictionary = new HashMap<>();
     // table of variable argument predicates for this instance
@@ -56,7 +56,7 @@ public class Environment {
     private final HashMap<Atomic, OperatorEntry> prefixOperatorTable = new HashMap<>();
     // io, ID mappings
     private final HashMap<PrologInteger, LogicalStream> streamById = new HashMap<>();
-    private final HashMap<PrologAtom, LogicalStream> streamByAlias = new HashMap<>();
+    private final HashMap<PrologAtomLike, LogicalStream> streamByAlias = new HashMap<>();
     // load group mappings
     private final HashMap<String, LoadGroup> loadGroups = new HashMap<>();
     // stacks
@@ -451,10 +451,10 @@ public class Environment {
      * Create or retrieve an atom of specified name for this environment. Only one atom exists per name per environment.
      *
      * @param name Name of atom
-     * @return Atom
+     * @return Interned Atom
      */
-    public PrologAtom getAtom(String name) {
-        return atomTable.computeIfAbsent(name, PrologAtom::internalNew);
+    public PrologAtomInterned internAtom(String name) {
+        return atomTable.computeIfAbsent(name, PrologAtomInterned::internalNew);
     }
 
     /**
@@ -605,6 +605,7 @@ public class Environment {
 
     /**
      * Retrieve all prefix operators for iteration
+     *
      * @return all prefix operators
      */
     public Map<Atomic, OperatorEntry> getPrefixOperators() {
@@ -613,6 +614,7 @@ public class Environment {
 
     /**
      * Retrieve all infix/postfix operators for iteration
+     *
      * @return all infix/postfix operators
      */
     public Map<Atomic, OperatorEntry> getInfixPostfixOperators() {
@@ -714,7 +716,7 @@ public class Environment {
      * @param stream Stream, or null to remove
      * @return previous stream with this alias, or null if none
      */
-    public LogicalStream addStreamAlias(PrologAtom alias, LogicalStream stream) {
+    public LogicalStream addStreamAlias(PrologAtomLike alias, LogicalStream stream) {
         if (alias == null) {
             return null;
         }
@@ -742,7 +744,7 @@ public class Environment {
      * @param code       operator code
      * @param atom       Operator atom
      */
-    public void makeOperator(int precedence, OperatorEntry.Code code, PrologAtom atom) {
+    public void makeOperator(int precedence, OperatorEntry.Code code, PrologAtomInterned atom) {
         OperatorEntry entry;
         if (code.isPrefix()) {
             entry = prefixOperatorTable.computeIfAbsent(atom, OperatorEntry::new);
@@ -756,10 +758,10 @@ public class Environment {
     /**
      * Delete operator precedence.
      *
-     * @param code       operator code (determines if operator is prefix or not).
-     * @param atom       Operator atom
+     * @param code operator code (determines if operator is prefix or not).
+     * @param atom Operator atom
      */
-    public void removeOperator(OperatorEntry.Code code, PrologAtom atom) {
+    public void removeOperator(OperatorEntry.Code code, PrologAtomInterned atom) {
         OperatorEntry entry;
         if (code.isPrefix()) {
             entry = prefixOperatorTable.remove(atom);
@@ -770,6 +772,7 @@ public class Environment {
 
     /**
      * Retrieve active load group
+     *
      * @return load group
      */
     public LoadGroup getLoadGroup() {
@@ -778,6 +781,7 @@ public class Environment {
 
     /**
      * Get load group by id
+     *
      * @param id Load group identifier
      * @return load group, or empty
      */
@@ -788,6 +792,7 @@ public class Environment {
     /**
      * Change load group. Group is inserted into table, replacing
      * any previous group of that name
+     *
      * @param group New load group
      */
     public void changeLoadGroup(LoadGroup group) {
@@ -806,6 +811,7 @@ public class Environment {
 
     /**
      * Retrieve the character conversion table
+     *
      * @return conversion table
      */
     public CharConverter getCharConverter() {

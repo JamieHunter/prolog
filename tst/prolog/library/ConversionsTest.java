@@ -1,4 +1,4 @@
-package prolog.predicates;
+package prolog.library;
 
 import org.junit.Test;
 import prolog.test.Given;

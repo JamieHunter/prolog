@@ -4,8 +4,7 @@
 package prolog.expressions;
 
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
-import prolog.constants.PrologFloat;
+import prolog.constants.PrologAtomInterned;
 import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
@@ -36,7 +35,7 @@ public interface CompoundTerm extends Term {
      * @param atom Atom to match
      * @return true if matched
      */
-    static boolean termIsA(Term term, PrologAtom atom) {
+    static boolean termIsA(Term term, PrologAtomInterned atom) {
         return term instanceof CompoundTerm && ((CompoundTerm) term).functor() == atom;
     }
 
@@ -49,7 +48,7 @@ public interface CompoundTerm extends Term {
      * @param arity Lambda to match
      * @return true if matched
      */
-    static boolean termIsA(Term term, PrologAtom atom, int arity) {
+    static boolean termIsA(Term term, PrologAtomInterned atom, int arity) {
         return termIsA(term, atom) && ((CompoundTerm) term).arity() == arity;
     }
 

@@ -77,7 +77,7 @@ class TokenParseCoreState extends ActiveParsingState {
         match = matcher.group(Tokenizer.ATOM_TAG);
         if (match != null) {
             // Simple atom is accepted as is
-            return finish(tokenizer.environment().getAtom(match));
+            return finish(tokenizer.environment().internAtom(match));
         }
         match = matcher.group(Tokenizer.FLOAT_TAG);
         if (match != null) {

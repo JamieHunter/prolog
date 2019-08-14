@@ -88,7 +88,7 @@ public class ReadOptions implements Flags {
             characterEscapes = flags.characterEscapes;
             parser.apply(environment, this, optionsTerm);
         } catch (FutureFlagError ffe) {
-            throw PrologDomainError.error(environment, environment.getAtom("read_option"), ffe.getTerm(), ffe);
+            throw PrologDomainError.error(environment, environment.internAtom("read_option"), ffe.getTerm(), ffe);
         }
     }
 

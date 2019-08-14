@@ -6,7 +6,7 @@ package prolog.parser;
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Operators;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologEOF;
 import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologNumber;
@@ -79,7 +79,7 @@ public final class ExpressionReader {
      * @param initialToken Initial token.
      * @return Resulting term of expression
      */
-    private Term read(PrologAtom terminal, BooleanSupplier confirmTerminal, Term initialToken) {
+    private Term read(PrologAtomInterned terminal, BooleanSupplier confirmTerminal, Term initialToken) {
         operators.push(OperatorEntry.TERMINAL); // adds a guard for handleEnd
         State oldState = state;
         try {
@@ -165,7 +165,7 @@ public final class ExpressionReader {
                 atom = list.get(0);
             }
         }
-        if (!(atom instanceof PrologAtom)) {
+        if (!(atom instanceof PrologAtomInterned)) {
             throw PrologSyntaxError.functorError(environment, "Functor expected before '('");
         }
         Term result = read(Interned.CLOSE_BRACKET, () -> true, tokenizer.nextToken());
@@ -337,7 +337,7 @@ public final class ExpressionReader {
      *
      * @param terminal Expected terminal
      */
-    private void reinterpretLastOperator(PrologAtom terminal) {
+    private void reinterpretLastOperator(PrologAtomInterned terminal) {
         // consider (atom) scenario where atom was being interpreted as a prefix
         if (operators.peek() != OperatorEntry.TERMINAL) {
             OperatorEntry lastOp = operators.pop();
@@ -365,7 +365,7 @@ public final class ExpressionReader {
      * @param terminal Expected terminal
      * @return Completed term
      */
-    private Term handleEnd(PrologAtom terminal) {
+    private Term handleEnd(PrologAtomInterned terminal) {
         if (state == State.ARG_OR_PREFIX) {
             reinterpretLastOperator(terminal);
         }

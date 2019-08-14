@@ -48,6 +48,6 @@ public class FutureFlagKeyError extends FutureFlagError {
      */
     @Override
     public PrologDomainError toError(Environment environment) {
-        return PrologDomainError.error(environment, environment.getAtom("prolog_flag"), term, this);
+        return PrologDomainError.error(environment, environment.internAtom("prolog_flag"), term, this);
     }
 }

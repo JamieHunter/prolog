@@ -9,6 +9,8 @@ import prolog.instructions.ExecCall;
 import prolog.io.WriteContext;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Base variable implementation shared between Coreference and BoundVariable
@@ -145,5 +147,17 @@ abstract class VariableBase implements Variable {
     @Override
     public void write(WriteContext context) throws IOException {
         context.write(name()); // TODO, need to follow write mode
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long corefId() {
+        if (value == null || value.isInstantiated()) {
+            return id();
+        } else {
+            return Math.max(id(), ((Variable)value).id());
+        }
     }
 }

@@ -12,6 +12,7 @@ import prolog.instructions.ExecCall;
 import prolog.io.WriteContext;
 
 import java.io.IOException;
+import java.util.Set;
 
 /**
  * Variable that exists, but has not been bound to a local context.
@@ -44,6 +45,14 @@ public class UnboundVariable implements Variable {
      */
     public long id() {
         return id;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long corefId() {
+        return id();
     }
 
     /**

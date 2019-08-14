@@ -4,7 +4,7 @@
 package prolog.exceptions;
 
 import prolog.bootstrap.Interned;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 
@@ -23,7 +23,7 @@ public class PrologDomainError extends PrologError {
      * @param cause       Exception that lead to this error
      * @return Domain error (not thrown)
      */
-    public static PrologDomainError error(Environment environment, PrologAtom domain, Term target, Throwable cause) {
+    public static PrologDomainError error(Environment environment, PrologAtomInterned domain, Term target, Throwable cause) {
         return new PrologDomainError(
                 formal(Interned.DOMAIN_ERROR_FUNCTOR, domain, target),
                 context(environment, "Domain error: " + domain.toString()),
@@ -38,7 +38,7 @@ public class PrologDomainError extends PrologError {
      * @param target      Term that has the error
      * @return Domain error (not thrown)
      */
-    public static PrologDomainError error(Environment environment, PrologAtom domain, Term target) {
+    public static PrologDomainError error(Environment environment, PrologAtomInterned domain, Term target) {
         return error(environment, domain, target, null);
     }
 
@@ -138,7 +138,7 @@ public class PrologDomainError extends PrologError {
      * @return Domain error (not thrown)
      */
     public static PrologDomainError readOption(Environment environment, Term target) {
-        return error(environment, environment.getAtom("read_option"), target);
+        return error(environment, environment.internAtom("read_option"), target);
     }
 
     /**
@@ -149,7 +149,7 @@ public class PrologDomainError extends PrologError {
      * @return Domain error (not thrown)
      */
     public static PrologDomainError openOption(Environment environment, Term target) {
-        return error(environment, environment.getAtom("open_option"), target);
+        return error(environment, environment.internAtom("open_option"), target);
     }
 
     /**

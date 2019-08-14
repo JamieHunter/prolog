@@ -28,7 +28,7 @@ public class PrologEOF extends AtomicBase implements Container {
      * @return atom
      */
     @Override
-    public PrologAtom get() {
+    public PrologAtomInterned get() {
         return Io.END_OF_FILE;
     }
 

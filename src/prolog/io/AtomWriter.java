@@ -3,7 +3,7 @@
 //
 package prolog.io;
 
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomLike;
 
 import java.io.IOException;
 import java.util.regex.Matcher;
@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 /**
  * Utility to write an Atom in simplest form possible allowing it to be read correctly on re-parsing.
  */
-public class AtomWriter extends TermWriter<PrologAtom> {
+public class AtomWriter extends TermWriter<PrologAtomLike> {
 
     private static final String GRAPHIC_TAG = "g";
     private static final String SOLO_TAG = "s";
@@ -24,7 +24,7 @@ public class AtomWriter extends TermWriter<PrologAtom> {
                     group(SOLO_TAG, SOLO_GRAPHIC),
                     group(ALPHA_TAG, ALPHA_ATOM)), Pattern.DOTALL);
 
-    public AtomWriter(WriteContext context, PrologAtom prologAtom) {
+    public AtomWriter(WriteContext context, PrologAtomLike prologAtom) {
         super(context, prologAtom);
     }
 

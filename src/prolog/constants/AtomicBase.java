@@ -53,7 +53,7 @@ public abstract class AtomicBase implements Atomic {
      * @param flag True or False
      * @return Atom "true" or "false"
      */
-    protected static PrologAtom atomize(boolean flag) {
+    protected static PrologAtomInterned atomize(boolean flag) {
         if (flag) {
             return Interned.TRUE_ATOM;
         } else {

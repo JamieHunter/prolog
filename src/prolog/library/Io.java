@@ -6,7 +6,8 @@ package prolog.library;
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologFloat;
 import prolog.constants.PrologInteger;
@@ -31,7 +32,6 @@ import prolog.io.FileReadWriteStreams;
 import prolog.io.LogicalStream;
 import prolog.io.PrologInputStream;
 import prolog.io.PrologOutputStream;
-import prolog.io.PrologStream;
 import prolog.unification.Unifier;
 
 import java.io.FileNotFoundException;
@@ -57,12 +57,12 @@ public final class Io {
     }
 
     // Universal EOF atom
-    public static final PrologAtom END_OF_FILE = Interned.internAtom("end_of_file");
+    public static final PrologAtomInterned END_OF_FILE = Interned.internAtom("end_of_file");
     // Stream modes
-    public static final PrologAtom OPEN_APPEND = Interned.internAtom("append");
-    public static final PrologAtom OPEN_READ = Interned.internAtom("read");
-    public static final PrologAtom OPEN_WRITE = Interned.internAtom("write");
-    public static final PrologAtom OPEN_UPDATE = Interned.internAtom("update");
+    public static final PrologAtomInterned OPEN_APPEND = Interned.internAtom("append");
+    public static final PrologAtomInterned OPEN_READ = Interned.internAtom("read");
+    public static final PrologAtomInterned OPEN_WRITE = Interned.internAtom("write");
+    public static final PrologAtomInterned OPEN_UPDATE = Interned.internAtom("update");
 
     /**
      * Open a stream
@@ -513,7 +513,7 @@ public final class Io {
     // Helper methods
     // ====================================================================
 
-    private static final PrologAtom OPEN_ACTION = Interned.internAtom("open");
+    private static final PrologAtomInterned OPEN_ACTION = Interned.internAtom("open");
 
     /**
      * Translates an open error
@@ -582,12 +582,12 @@ public final class Io {
         OpenOption[] ops = op.toArray(new OpenOption[0]);
 
         Path path = parsePath(environment, fileName);
-        PrologAtom aliasName = null;
+        PrologAtomLike aliasName = null;
         if (streamTarget.isInstantiated()) {
             if (!(streamTarget.isAtom())) {
                 throw PrologTypeError.atomExpected(environment, streamTarget);
             }
-            aliasName = (PrologAtom) streamTarget;
+            aliasName = (PrologAtomLike) streamTarget;
         }
 
         LogicalStream binding;
@@ -637,7 +637,7 @@ public final class Io {
     private static Path parsePathBasic(Environment environment, Term fileName) {
         String pathName;
         if (fileName.isAtom()) {
-            pathName = ((PrologAtom) (fileName.value(environment))).name();
+            pathName = ((PrologAtomLike) (fileName.value(environment))).name();
         } else if (fileName.isString()) {
             pathName = ((PrologString) (fileName.value(environment))).get();
         } else {
@@ -747,10 +747,10 @@ public final class Io {
      */
     private static class RestoreStreamBinding implements Backtrack {
         private final Environment environment;
-        private final PrologAtom alias;
+        private final PrologAtomInterned alias;
         private final LogicalStream binding;
 
-        RestoreStreamBinding(Environment environment, PrologAtom alias, LogicalStream binding) {
+        RestoreStreamBinding(Environment environment, PrologAtomInterned alias, LogicalStream binding) {
             this.environment = environment;
             this.alias = alias;
             this.binding = binding;

@@ -6,7 +6,8 @@ package prolog.io;
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Operators;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologCharacter;
 import prolog.constants.PrologChars;
 import prolog.constants.PrologCodePoints;
@@ -153,8 +154,8 @@ public class StructureWriter extends TermWriter<Term> {
                 if (item instanceof PrologCharacter) {
                     builder.append((char) ((PrologCharacter) item).get());
                 } else {
-                    if (item instanceof PrologAtom) {
-                        String name = ((PrologAtom) item).name();
+                    if (item instanceof PrologAtomLike) {
+                        String name = ((PrologAtomLike) item).name();
                         if (name.length() == 1) {
                             builder.append(name.charAt(0));
                         } else {

@@ -5,7 +5,7 @@ package prolog.library;
 
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Predicate;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologCharacter;
 import prolog.constants.PrologInteger;
 import prolog.exceptions.PrologPermissionError;
@@ -38,8 +38,8 @@ public final class ParsingControl {
     @Predicate("op")
     public static void op(Environment environment, Term precedence, Term type, Term name) {
         int precedenceInt = PrologInteger.from(precedence).get().intValue();
-        PrologAtom nameAtom = PrologAtom.from(name);
-        OperatorEntry.Code typeCode = OperatorEntry.parseCode(PrologAtom.from(type));
+        PrologAtomInterned nameAtom = PrologAtomInterned.from(environment, name);
+        OperatorEntry.Code typeCode = OperatorEntry.parseCode(PrologAtomInterned.from(environment, type));
         boolean allowed = true;
         if (nameAtom == Interned.COMMA_FUNCTOR) {
             OperatorEntry existing = environment.getInfixPostfixOperator(Interned.COMMA_FUNCTOR);
@@ -57,7 +57,7 @@ public final class ParsingControl {
         if (!allowed) {
             // TODO: Better error
             throw PrologPermissionError.error(environment, "modify", "op",
-                    new CompoundTermImpl(environment.getAtom("op"), precedence, type, name),
+                    new CompoundTermImpl(environment.internAtom("op"), precedence, type, name),
                     "Modifying a restricted operator"
             );
         }

@@ -5,7 +5,7 @@ package prolog.execution;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.exceptions.FutureDomainError;
 
 /**
@@ -16,7 +16,7 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
     public static final OperatorEntry ARGUMENT = new OperatorEntry(0);
     public static final OperatorEntry TERMINAL = new OperatorEntry(Integer.MAX_VALUE);
 
-    private static final PrologAtom NULL_ATOM = PrologAtom.internalNew("");
+    private static final PrologAtomInterned NULL_ATOM = PrologAtomInterned.internalNew("");
     public static final int COMMA = 1000; // this is a special inflection point
 
     private final Atomic functor;
@@ -97,7 +97,7 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
     public enum Code {
         FX {
             @Override
-            public PrologAtom atom() {
+            public PrologAtomInterned atom() {
                 return Interned.OP_FX;
             }
 
@@ -108,7 +108,7 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
         },
         XF {
             @Override
-            public PrologAtom atom() {
+            public PrologAtomInterned atom() {
                 return Interned.OP_XF;
             }
 
@@ -119,7 +119,7 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
         },
         FY {
             @Override
-            public PrologAtom atom() {
+            public PrologAtomInterned atom() {
                 return Interned.OP_FY;
             }
 
@@ -135,7 +135,7 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
         },
         YF {
             @Override
-            public PrologAtom atom() {
+            public PrologAtomInterned atom() {
                 return Interned.OP_YF;
             }
 
@@ -151,7 +151,7 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
         },
         XFX {
             @Override
-            public PrologAtom atom() {
+            public PrologAtomInterned atom() {
                 return Interned.OP_XFX;
             }
 
@@ -162,7 +162,7 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
         },
         YFX {
             @Override
-            public PrologAtom atom() {
+            public PrologAtomInterned atom() {
                 return Interned.OP_YFX;
             }
 
@@ -178,7 +178,7 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
         },
         XFY {
             @Override
-            public PrologAtom atom() {
+            public PrologAtomInterned atom() {
                 return Interned.OP_XFY;
             }
 
@@ -194,13 +194,13 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
         },
         NONE {
             @Override
-            public PrologAtom atom() {
+            public PrologAtomInterned atom() {
                 return null;
             }
 
         };
 
-        abstract public PrologAtom atom();
+        abstract public PrologAtomInterned atom();
 
         /**
          * @return true if operator is prefix.
@@ -237,7 +237,7 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
      * @param code Atom describing operator
      * @return Internal operator code.
      */
-    public static Code parseCode(PrologAtom code) {
+    public static Code parseCode(PrologAtomInterned code) {
         String name = code.name();
         switch (name) {
             case "fx":

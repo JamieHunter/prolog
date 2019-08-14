@@ -3,7 +3,8 @@
 //
 package prolog.flags;
 
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.exceptions.FutureFlagError;
 import prolog.exceptions.PrologDomainError;
 import prolog.execution.Environment;
@@ -38,7 +39,7 @@ public class OpenOptions implements Flags {
     /**
      * Specify an alias to use in addition to the file handle
      */
-    public Optional<PrologAtom> alias = Optional.empty();
+    public Optional<PrologAtomLike> alias = Optional.empty();
     /**
      * Specify text vs binary
      */
@@ -82,7 +83,7 @@ public class OpenOptions implements Flags {
         try {
             parser.apply(environment, this, optionsTerm);
         } catch (FutureFlagError ffe) {
-            throw PrologDomainError.error(environment, environment.getAtom("open_option"), ffe.getTerm(), ffe);
+            throw PrologDomainError.error(environment, environment.internAtom("open_option"), ffe.getTerm(), ffe);
         }
     }
 

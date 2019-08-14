@@ -50,7 +50,7 @@ public class CreateFlagOptions implements Flags {
         try {
             parser.apply(environment, this, optionsTerm);
         } catch (FutureFlagError ffe) {
-            throw PrologDomainError.error(environment, environment.getAtom("create_prolog_flag_option"), ffe.getTerm(), ffe);
+            throw PrologDomainError.error(environment, environment.internAtom("create_prolog_flag_option"), ffe.getTerm(), ffe);
         }
     }
 

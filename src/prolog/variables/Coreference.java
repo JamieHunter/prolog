@@ -4,6 +4,7 @@ import prolog.execution.Backtrack;
 import prolog.execution.Environment;
 
 import java.util.ListIterator;
+import java.util.Set;
 
 /**
  * Corefers two variables, which could also be Coreference variables. Assumes variables

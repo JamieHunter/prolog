@@ -24,7 +24,7 @@ public class ExpressionReaderTest {
     private void expect(String text, Matcher<? super Term>... terms) {
         Environment environment = new Environment();
         // fake postfix operator
-        environment.makeOperator(450, OperatorEntry.Code.YF, environment.getAtom("@@@")); // between * and +
+        environment.makeOperator(450, OperatorEntry.Code.YF, environment.internAtom("@@@")); // between * and +
         PrologInputStream stream = StreamUtils.bufferedString(text);
         Tokenizer tok = new Tokenizer(environment, new ReadOptions(environment, null), stream);
         ExpressionReader reader = new ExpressionReader(tok);

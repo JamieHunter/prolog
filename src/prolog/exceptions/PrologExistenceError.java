@@ -4,7 +4,7 @@
 package prolog.exceptions;
 
 import prolog.bootstrap.Interned;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 
@@ -22,7 +22,7 @@ public class PrologExistenceError extends PrologError {
      * @param cause       Java cause if any, else null
      * @return exception (not thrown)
      */
-    public static PrologExistenceError error(Environment environment, PrologAtom type, Term target, String message, Throwable cause) {
+    public static PrologExistenceError error(Environment environment, PrologAtomInterned type, Term target, String message, Throwable cause) {
         return new PrologExistenceError(
                 formal(Interned.EXISTENCE_ERROR_FUNCTOR, type, target),
                 context(environment, message),

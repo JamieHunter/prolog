@@ -6,7 +6,7 @@ package prolog.library;
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologInteger;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
@@ -82,7 +82,7 @@ public final class Dictionary {
      */
     @Predicate("abolish")
     public static void abolish(Environment environment, Term functor, Term arity) {
-        PrologAtom functorAtom = PrologAtom.from(functor);
+        PrologAtomInterned functorAtom = PrologAtomInterned.from(environment, functor);
         PrologInteger arityInt = PrologInteger.from(arity);
         Predication predication = new Predication(functorAtom, arityInt.get().intValue());
         PredicateDefinition defn =
@@ -227,7 +227,7 @@ public final class Dictionary {
         if (!head.isInstantiated()) {
             throw PrologInstantiationError.error(environment, head);
         }
-        if (head instanceof PrologAtom) {
+        if (head instanceof PrologAtomInterned) {
             head = CompoundTerm.from((Atomic) head);
         }
         if (!(head instanceof CompoundTerm)) {
@@ -271,7 +271,7 @@ public final class Dictionary {
         CompoundTerm predicationCompound = (CompoundTerm) predicationTerm;
         Term functor = predicationCompound.get(0);
         Term arity = predicationCompound.get(1);
-        PrologAtom functorAtom = PrologAtom.from(functor);
+        PrologAtomInterned functorAtom = PrologAtomInterned.from(environment, functor);
         PrologInteger arityInt = PrologInteger.from(arity);
         Predication predication = new Predication(functorAtom, arityInt.get().intValue());
         // create library entry if needed

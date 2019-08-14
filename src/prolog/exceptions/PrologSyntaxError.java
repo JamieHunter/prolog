@@ -4,7 +4,7 @@
 package prolog.exceptions;
 
 import prolog.bootstrap.Interned;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 
@@ -22,7 +22,7 @@ public class PrologSyntaxError extends PrologError {
      * @param message     Display message
      * @return exception (not thrown)
      */
-    public static PrologSyntaxError error(Environment environment, PrologAtom type, String message) {
+    public static PrologSyntaxError error(Environment environment, PrologAtomInterned type, String message) {
         return new PrologSyntaxError(
                 formal(Interned.SYNTAX_ERROR_FUNCTOR, type),
                 context(environment, message),
@@ -38,7 +38,7 @@ public class PrologSyntaxError extends PrologError {
      * @return exception (not thrown)
      */
     public static PrologSyntaxError error(Environment environment, String type, String message) {
-        return error(environment, environment.getAtom(type), message);
+        return error(environment, environment.internAtom(type), message);
     }
 
     /**

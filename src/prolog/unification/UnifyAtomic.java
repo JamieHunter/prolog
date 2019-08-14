@@ -33,11 +33,11 @@ public final class UnifyAtomic implements UnifyStep {
         if (other.instantiate(atomic)) {
             return it;
         }
-        if (atomic.equals(other)) {
+        if (other.isAtomic() && atomic.compareTo(other) == 0) {
             return it;
         }
         Environment env = context.environment();
-        if (atomic.value(env).equals(other.value(env))) {
+        if (atomic.value(env).compareTo(other.value(env)) == 0) {
             return it;
         }
         return UnifyIterator.FAILED;

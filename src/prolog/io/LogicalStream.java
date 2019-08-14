@@ -4,7 +4,8 @@
 package prolog.io;
 
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologCharacter;
 import prolog.constants.PrologInteger;
 import prolog.exceptions.PrologError;
@@ -56,7 +57,7 @@ public class LogicalStream implements Closeable {
     private PrologInputStream input = null;
     private PrologOutputStream output = null;
 
-    private List<PrologAtom> aliases = new ArrayList<>();
+    private List<PrologAtomLike> aliases = new ArrayList<>();
     private StreamProperties.OpenMode openMode;
     private StreamProperties.NewLineMode newLineMode = StreamProperties.NewLineMode.ATOM_detect;
     private StreamProperties.Buffering bufferMode = StreamProperties.Buffering.ATOM_full;
@@ -129,7 +130,7 @@ public class LogicalStream implements Closeable {
      *
      * @param alias Alias to add
      */
-    public void removeAlias(PrologAtom alias) {
+    public void removeAlias(PrologAtomLike alias) {
         // We assume few (typically 0 or 1) aliases, so this is maintained as a list
         // rather than as a set.
         aliases.remove(alias);
@@ -140,7 +141,7 @@ public class LogicalStream implements Closeable {
      *
      * @param alias Alias to add
      */
-    public void addAlias(PrologAtom alias) {
+    public void addAlias(PrologAtomLike alias) {
         // We assume few (typically 0 or 1) aliases, so this is maintained as a list
         // rather than as a set. We also assume alias is not already in list (enfored
         // by caller).
@@ -552,7 +553,7 @@ public class LogicalStream implements Closeable {
         if (target.isInteger()) {
             text = String.valueOf((char) PrologInteger.from(target).get().intValue());
         } else if (target.isAtom()) {
-            text = PrologAtom.from(target).get();
+            text = PrologAtomLike.from(target).name();
             if (text.length() != 1) {
                 throw PrologTypeError.characterExpected(environment, target);
             }

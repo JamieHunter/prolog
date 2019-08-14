@@ -4,19 +4,15 @@
 package prolog.instructions;
 
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
 import prolog.execution.OperatorEntry;
-import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
-import prolog.predicates.ClauseEntry;
-import prolog.predicates.ClauseSearchPredicate;
-import prolog.predicates.PredicateDefinition;
-import prolog.predicates.Predication;
 import prolog.unification.Unifier;
 import prolog.unification.UnifyBuilder;
 
@@ -50,15 +46,15 @@ public class ExecFindOp implements Instruction {
         Term boundPrecedence = precedenceTerm.resolve(context);
         Term boundType = typeTerm.resolve(context);
 
-        PrologAtom constrainedName = null;
+        PrologAtomInterned constrainedName = null;
         OperatorEntry.Code constrainedType = null;
         if (boundName.isInstantiated()) {
             // most significant constraint
-            constrainedName = PrologAtom.from(boundName);
+            constrainedName = PrologAtomInterned.from(environment, boundName);
         }
         if (boundType.isInstantiated()) {
             // at best, constrains between two search lists
-            constrainedType = OperatorEntry.parseCode(PrologAtom.from(boundType));
+            constrainedType = OperatorEntry.parseCode(PrologAtomInterned.from(environment, boundType));
         }
         if (boundPrecedence.isInstantiated()) {
             // type check, but not processed until iteration
@@ -87,7 +83,7 @@ public class ExecFindOp implements Instruction {
      * @param name Name of operator (filter)
      * @param source Source map of operators
      */
-    private static void addToList(List<OperatorEntry> operators, PrologAtom name, Map<Atomic,OperatorEntry> source) {
+    private static void addToList(List<OperatorEntry> operators, PrologAtomInterned name, Map<Atomic,OperatorEntry> source) {
         if (name != null) {
             OperatorEntry select = source.get(name);
             if (select != null) {
@@ -145,7 +141,7 @@ public class ExecFindOp implements Instruction {
             }
 
             PrologInteger precedence = new PrologInteger(entry.getPrecedence());
-            PrologAtom type = entry.getCode().atom();
+            PrologAtomInterned type = entry.getCode().atom();
             Atomic name = entry.getFunctor();
             LocalContext context = environment.getLocalContext();
 

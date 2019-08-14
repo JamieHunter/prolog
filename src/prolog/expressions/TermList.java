@@ -5,9 +5,9 @@ package prolog.expressions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologCharacter;
-import prolog.constants.PrologCodePoints;
 import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologInteger;
 import prolog.constants.PrologString;
@@ -234,8 +234,8 @@ public interface TermList extends CompoundTerm {
                 list = comp.get(1);
                 if (e instanceof PrologCharacter) {
                     builder.append(((PrologCharacter) e).get());
-                } else if (e instanceof PrologAtom) {
-                    builder.append(((PrologAtom) e).name().charAt(0));
+                } else if (e instanceof PrologAtomLike) {
+                    builder.append(((PrologAtomLike) e).name().charAt(0));
                 } else if (e instanceof PrologInteger) {
                     builder.append((char) ((PrologInteger) e).get().intValue());
                 } else if (!e.isInstantiated()) {

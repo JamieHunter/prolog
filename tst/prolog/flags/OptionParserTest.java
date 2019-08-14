@@ -3,7 +3,7 @@ package prolog.flags;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomLike;
 import prolog.exceptions.FutureFlagValueError;
 import prolog.exceptions.FutureTypeError;
 import prolog.execution.Environment;
@@ -33,7 +33,7 @@ public class OptionParserTest implements Flags {
     private OptionParser<OptionParserTest> parser = new OptionParser<>();
     private Environment environment = new Environment();
     private Boolean bool_flag = null;
-    private PrologAtom atom_flag = null;
+    private PrologAtomLike atom_flag = null;
     private Integer int_flag = null;
     private SampleEnum enum_flag = null;
     private Set<SampleEnum> enum_set = null;
@@ -47,12 +47,12 @@ public class OptionParserTest implements Flags {
 
     {
         // option that takes true/false
-        parser.booleanFlag(environment.getAtom("bool_flag"), (o, v) -> o.bool_flag = v);
-        parser.atomFlag(environment.getAtom("atom_flag"), (o, v) -> o.atom_flag = v);
-        parser.intFlag(environment.getAtom("int_flag"), (o, v) -> o.int_flag = v);
-        parser.enumFlag(environment.getAtom("enum_flag"), SampleEnum.class, (o, v) -> o.enum_flag = v);
-        parser.enumFlags(environment.getAtom("enum_set"), SampleEnum.class, (o, v) -> o.enum_set = v);
-        parser.other(environment.getAtom("term_flag"), (o, v) -> o.term_flag = v);
+        parser.booleanFlag(environment.internAtom("bool_flag"), (o, v) -> o.bool_flag = v);
+        parser.atomFlag(environment.internAtom("atom_flag"), (o, v) -> o.atom_flag = v);
+        parser.intFlag(environment.internAtom("int_flag"), (o, v) -> o.int_flag = v);
+        parser.enumFlag(environment.internAtom("enum_flag"), SampleEnum.class, (o, v) -> o.enum_flag = v);
+        parser.enumFlags(environment.internAtom("enum_set"), SampleEnum.class, (o, v) -> o.enum_set = v);
+        parser.other(environment.internAtom("term_flag"), (o, v) -> o.term_flag = v);
     }
 
     private void apply(String text) {
@@ -100,7 +100,7 @@ public class OptionParserTest implements Flags {
     @Test
     public void testAtomAny() {
         apply("[atom_flag = any].");
-        assertThat(atom_flag, is(environment.getAtom("any")));
+        assertThat(atom_flag, is(environment.internAtom("any")));
     }
 
     @Test
