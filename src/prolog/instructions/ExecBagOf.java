@@ -5,15 +5,20 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.PrologEmptyList;
+import prolog.execution.CopyTerm;
 import prolog.execution.EnumTermStrategy;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
+import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
 import prolog.expressions.TermListImpl;
+import prolog.library.Unify;
 import prolog.unification.Unifier;
+import prolog.unification.UnifyBuilder;
+import prolog.variables.UnboundVariable;
 import prolog.variables.Variable;
 
 import java.util.ArrayList;
@@ -21,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
 
@@ -81,7 +87,7 @@ public class ExecBagOf extends ExecFindAll {
      * @param source List of terms
      * @return original list, or collated list if overridden.
      */
-    protected List<Term> collate(List<Term> source) {
+    protected ArrayList<Term> collate(ArrayList<Term> source) {
         return source;
     }
 
@@ -89,11 +95,21 @@ public class ExecBagOf extends ExecFindAll {
     private class BagOfCollector extends FindAllCollector {
         final Term realTemplate;
         final CompoundTerm freeVariables;
+        final Set<Long> freeVariableIds;
         public BagOfCollector(Environment environment, CompoundTerm combinedTemplate, Term callable,
                               Unifier listUnifier) {
             super(environment, combinedTemplate, callable, listUnifier);
             realTemplate = combinedTemplate.get(0);
             freeVariables = (CompoundTerm)combinedTemplate.get(1);
+            freeVariableIds = new HashSet<Long>();
+            for(int i = 0; i < freeVariables.arity(); i++) {
+                freeVariableIds.add(((Variable)freeVariables.get(i)).id());
+            }
+        }
+
+        @Override
+        protected Term copyTemplate() {
+            return template.enumTerm(new BagOfCopyTerm(environment, freeVariableIds));
         }
 
         @Override
@@ -109,58 +125,71 @@ public class ExecBagOf extends ExecFindAll {
      */
     private class ProduceIterator extends DecisionPoint {
 
-        final Term template;
-        final CompoundTerm freeVariables;
-        final Unifier listUnifier;
-        final TreeMap<CompoundTerm, List<Term>> collated = new TreeMap<>();
-        final Iterator<Map.Entry<CompoundTerm, List<Term>>> iter;
+        private final Term template;
+        private final CompoundTerm freeVariables;
+        private final Unifier listUnifier;
+        private final Unifier varUnifier;
+        private final List<Term> solutions;
+        private int iter = 0;
 
         protected ProduceIterator(Environment environment, Term template, CompoundTerm freeVariables,
                                   List<Term> solutions, Unifier listUnifier) {
             super(environment);
             this.template = template;
             this.freeVariables = freeVariables;
+            this.varUnifier = UnifyBuilder.from(freeVariables);
             this.listUnifier = listUnifier;
-
-            // Collate solutions
-            for(Term s : solutions) {
-                CompoundTerm ct = (CompoundTerm)s;
-                Term v = ct.get(0); // matches with template
-                CompoundTerm k = (CompoundTerm)ct.get(1); // matches with free variables
-                List<Term> list = collated.computeIfAbsent(k, kk -> new ArrayList<>());
-                list.add(v);
-            }
-            iter = collated.entrySet().iterator();
+            this.solutions = solutions;
         }
 
         @Override
         protected void next() {
-            if (!iter.hasNext()) {
+            while(iter < solutions.size() && solutions.get(iter) == PrologEmptyList.EMPTY_LIST) {
+                iter++;
+            }
+            if (iter == solutions.size()) {
                 // no more values
                 environment.backtrack();
                 return;
             }
             environment.forward();
-
-            Map.Entry<CompoundTerm, List<Term>> entry = iter.next();
-            CompoundTerm freeVarVals = entry.getKey();
-            // entry will always contain at least one value, no need to handle an empty list.
-            TermList values = new TermListImpl(collate(entry.getValue()), PrologEmptyList.EMPTY_LIST);
             environment.pushDecisionPoint(this);
+            LocalContext context = environment.getLocalContext();
 
-            // Unify the list first
-            if(!listUnifier.unify(environment.getLocalContext(), values)) {
-                environment.backtrack();
-                return;
+            // Collect possible solutions - solutions may be merged together including unification.
+            // original logic just used sort, but that is not sufficient
+            CompoundTerm entry = (CompoundTerm)solutions.get(iter++).resolve(context);
+            CompoundTerm freeVarVals = (CompoundTerm)entry.get(1);
+
+            // bind key with free variables
+            if (!varUnifier.unify(context, freeVarVals)) {
+                throw new InternalError("Unexpected unify failure");
             }
 
-            // Unify succeeded, now bind all the free variables
-            for (int i = 0; i < freeVariables.arity(); i++) {
-                Term fv = freeVariables.get(i);
-                Term fvv = freeVarVals.get(i);
-                if (!fv.instantiate(fvv)) {
-                    throw new InternalError("Unexpected");
+            // dedup/collate all other viable entries that can be considered to have the same set of values
+            ArrayList<Term> values = new ArrayList<>();
+            values.add(entry.get(0));
+            for(int i = iter; i < solutions.size(); i++) {
+                Term next = solutions.get(i);
+                if (next == PrologEmptyList.EMPTY_LIST) {
+                    continue;
                 }
+                int depth = environment.getBacktrackDepth();
+                CompoundTerm compNext = (CompoundTerm)next.resolve(context);
+                if (varUnifier.unify(context, compNext.get(1))) {
+                    values.add(compNext.get(0));
+                    solutions.set(i, PrologEmptyList.EMPTY_LIST); // don't include again
+                } else {
+                    // localized rollback
+                    environment.trimBacktrackStackToDepth(depth);
+                }
+            }
+            // entry will always contain at least one value, no need to handle an empty list.
+            TermList outTerm = new TermListImpl(collate(values), PrologEmptyList.EMPTY_LIST);
+            // Unify
+            if(!listUnifier.unify(context, outTerm)) {
+                environment.backtrack();
+                return;
             }
         }
     }
@@ -168,7 +197,7 @@ public class ExecBagOf extends ExecFindAll {
     /**
      * used with Term enumeration capability to identify all free variables.
      */
-    protected class FreeVariableCollector extends EnumTermStrategy {
+    protected static class FreeVariableCollector extends EnumTermStrategy {
 
         // TODO: Refactoring of EnumTermStrategy
         protected boolean beginFreeVariables = false;
@@ -205,5 +234,36 @@ public class ExecBagOf extends ExecFindAll {
             }
             return bound;
         }
+    }
+
+    /**
+     * Like copyterm, but free variables remain bound to the original free variables
+     */
+    protected static class BagOfCopyTerm extends CopyTerm {
+
+        protected final Set<Long> freeVariableIds;
+
+        public BagOfCopyTerm(Environment environment, Set<Long> freeVariableIds) {
+            super(environment);
+            this.freeVariableIds = freeVariableIds;
+        }
+
+
+        /**
+         * Rename only variables that are not in the set of free variables
+         *
+         * @param source Source variable
+         * @return Renamed variable (deduped)
+         */
+        protected Variable renameVariable(Variable source) {
+            return varMap.computeIfAbsent(source.id(), id -> {
+                if (freeVariableIds.contains(id)) {
+                    return source;
+                } else {
+                    return new UnboundVariable(source.name(), environment().nextVariableId());
+                }
+            });
+        }
+
     }
 }

@@ -37,13 +37,13 @@ public class BagOfTest {
                 .when("?- bagof(A, legs(A,N), B).")
                 .assertSuccess()
                 .variable("A", isUninstantiated())
-                .variable("N", isInteger(4))
-                .variable("B", isList(isAtom("horse"), isAtom("cat"), isAtom("dog")))
+                .variable("N", isInteger(6))
+                .variable("B", isList(isAtom("bee"), isAtom("ant")))
                 .anotherSolution()
                 .assertSuccess()
                 .variable("A", isUninstantiated())
-                .variable("N", isInteger(6))
-                .variable("B", isList(isAtom("bee"), isAtom("ant")))
+                .variable("N", isInteger(4))
+                .variable("B", isList(isAtom("horse"), isAtom("cat"), isAtom("dog")))
                 .anotherSolution()
                 .assertSuccess()
                 .variable("A", isUninstantiated())
@@ -126,6 +126,33 @@ public class BagOfTest {
                 .when("?- setof(Z, X^Y^p(X,Y,Z), Bag).")
                 .assertSuccess()
                 .variable("Bag", isList(isInteger(1), isInteger(2), isInteger(4), isInteger(5)))
+                .anotherSolution()
+                .assertFailed();
+    }
+
+    @Test
+    public void testBagOfOverOr() {
+        given()
+                // from sec810.pl, resulted in unbound variable casting error
+                .when("?- bagof(X, (X=Y;X=Z), S).")
+                .assertSuccess()
+                .variable("S", isList(isUninstantiated(), isUninstantiated()))
+                .anotherSolution()
+                .assertFailed();
+    }
+
+    @Test
+    public void testSetOfWithUnboundVariables() {
+        given()
+                // from sec810.pl, edge case fails
+                .when("?- setof(X, member(X, [f(b, U), f(c, V)]), [f(b, a), f(c, a)]).")
+                .assertSuccess()
+                .anotherSolution()
+                .assertFailed();
+        given()
+                // from sec810.pl, edge case fails
+                .when("?- setof(X, member(X, [V, U, f(U), f(V)]), [a, b, f(a), f(b)]).")
+                .assertSuccess()
                 .anotherSolution()
                 .assertFailed();
     }

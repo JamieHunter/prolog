@@ -69,4 +69,35 @@ public class ListsTest {
                 .variable("L", isList(isAtom("one"), isAtom("two")));
     }
 
+    @Test
+    public void testMemberToVarWithBacktracking() {
+        PrologTest.given()
+                .when("?- member(X, [1, 2, 3]).")
+                .assertSuccess()
+                .variable("X", isInteger(1))
+                .anotherSolution()
+                .assertSuccess()
+                .variable("X", isInteger(2))
+                .anotherSolution()
+                .assertSuccess()
+                .variable("X", isInteger(3))
+                .anotherSolution()
+                .assertFailed();
+    }
+
+    @Test
+    public void testMemberUnifyWithBacktracking() {
+        PrologTest.given()
+                .when("?- member(p(X, 2), [p(3, 1), p(4, 2), p(5, Y)]).")
+                .assertSuccess()
+                .variable("X", isInteger(4))
+                .variable("Y", isUninstantiated())
+                .anotherSolution()
+                .assertSuccess()
+                .variable("X", isInteger(5))
+                .variable("Y", isInteger(2))
+                .anotherSolution()
+                .assertFailed();
+    }
+
 }

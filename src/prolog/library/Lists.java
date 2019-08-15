@@ -10,6 +10,7 @@ import prolog.constants.PrologInteger;
 import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
+import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
@@ -17,6 +18,7 @@ import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
 import prolog.expressions.TermListImpl;
+import prolog.instructions.ExecMember;
 import prolog.unification.Unifier;
 import prolog.variables.UnboundVariable;
 
@@ -134,6 +136,18 @@ public final class Lists {
         } else if (!length.isInstantiated()) {
             environment.backtrack();
         }
+    }
+
+    /**
+     * Determine if a term is a member of a list
+     * @param compiling Compiling context
+     * @param params Contains (term,list)
+     */
+    @Predicate(value = "member", arity = 2)
+    public static void member(CompileContext compiling, CompoundTerm params) {
+        Term element = params.get(0);
+        Term list = params.get(1);
+        compiling.add(new ExecMember(element, list));
     }
 
     // ====================================================================

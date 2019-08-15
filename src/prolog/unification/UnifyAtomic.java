@@ -29,8 +29,8 @@ public final class UnifyAtomic implements UnifyStep {
      */
     @Override
     public UnifyIterator invoke(LocalContext context, UnifyIterator it) {
-        Term other = it.next();
-        if (other.instantiate(atomic)) {
+        Term other = it.next().resolve(context);
+        if (!other.isInstantiated() && other.instantiate(atomic)) {
             return it;
         }
         if (other.isAtomic() && atomic.compareTo(other) == 0) {

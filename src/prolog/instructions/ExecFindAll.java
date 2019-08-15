@@ -26,7 +26,7 @@ import java.util.List;
  * Find all possible solutions of a subgoal. This is overridden for bagof and setof implementations.
  */
 public class ExecFindAll implements Instruction {
-    private final Term template;
+    protected final Term template;
     private final Term callable;
     private final Term list;
     protected final Unifier listUnifier;
@@ -71,7 +71,8 @@ public class ExecFindAll implements Instruction {
      */
     protected class FindAllCollector extends DecisionPoint {
 
-        private final Unifier listUnifier;
+        protected final Term template;
+        protected final Unifier listUnifier;
         private ArrayList<Term> builder = new ArrayList<>();
         private final Instruction call;
 
@@ -81,15 +82,20 @@ public class ExecFindAll implements Instruction {
                          Unifier listUnifier) {
             super(environment);
             this.listUnifier = listUnifier;
+            this.template = template;
             CompileContext compile = new CompileContext(environment);
             compile.add(new ExecCall(environment, callable));
             compile.add(e -> {
                 // success
-                builder.add(template.enumTerm(new CopyTerm(environment)));
+                builder.add(copyTemplate());
                 environment.backtrack();
             });
             compile.add(Control.FALSE);
             call = compile.toInstruction();
+        }
+
+        protected Term copyTemplate() {
+            return template.enumTerm(new CopyTerm(environment));
         }
 
         @Override
