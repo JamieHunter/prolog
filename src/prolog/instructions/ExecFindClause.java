@@ -3,13 +3,18 @@
 //
 package prolog.instructions;
 
+import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
+import prolog.exceptions.PrologInstantiationError;
+import prolog.exceptions.PrologPermissionError;
+import prolog.exceptions.PrologTypeError;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.predicates.BuiltInPredicate;
 import prolog.predicates.ClauseEntry;
 import prolog.predicates.ClauseSearchPredicate;
 import prolog.predicates.PredicateDefinition;
@@ -40,22 +45,35 @@ public class ExecFindClause implements Instruction {
         Term boundHead = head.resolve(context);
         Term boundBody = body.resolve(context);
         CompoundTerm matcher;
+
         //
         // Head must be sufficiently instantiated to build a matcher
         //
-        if (boundHead instanceof Atomic) {
+        if (!boundHead.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, boundHead);
+        }
+        if (boundHead.isAtom()) {
             // Normalize matcher to a compound of arity 0
             matcher = CompoundTerm.from((Atomic) boundHead);
         } else if (boundHead instanceof CompoundTerm) {
             matcher = (CompoundTerm) boundHead;
         } else {
-            environment.backtrack();
-            return;
+            throw PrologTypeError.callableExpected(environment, boundHead);
+        }
+        //
+        // Body, if instantiated, must be something that can be called
+        //
+        if (boundBody.isInstantiated() && !(boundBody.isAtom() || boundBody instanceof CompoundTerm)) {
+            throw PrologTypeError.callableExpected(environment, boundBody);
         }
         Predication key = new Predication(matcher.functor(), matcher.arity());
         PredicateDefinition defn = environment.lookupPredicate(key);
+        if (defn instanceof BuiltInPredicate) {
+            throw PrologPermissionError.error(environment,
+                    Interned.ACCESS_ACTION, Interned.PRIVATE_PROCEDURE_TYPE, key.term(),
+                    String.format("Cannot retrieve clause for internal procedure: %s", key.toString()));
+        }
         if (!(defn instanceof ClauseSearchPredicate)) {
-            // Builtin or undefined
             environment.backtrack();
             return;
         }

@@ -84,6 +84,17 @@ public class RetractTest {
     }
 
     @Test
+    public void testRetractSpider() {
+        // from sec89.pl
+        given()
+                .that("legs(A, 6) :- insect(A).")
+                .and("legs(A, 8) :- spider(A).")
+                .and("spider(itsy).")
+                .when("?- retract(legs(spider,6)).")
+                .assertSuccess(); // vanilla test claims this should fail, but why?
+    }
+
+    @Test
     public void testRetractAll() {
         given()
                 .when("?- clause(a(_),_).")

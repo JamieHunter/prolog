@@ -141,6 +141,17 @@ public class PrologTypeError extends PrologError {
     }
 
     /**
+     * Standard type error - predicate indicator expected
+     *
+     * @param environment Execution environment.
+     * @param target      Term that has the error
+     * @return Type error (not thrown)
+     */
+    public static PrologTypeError predicateIndicatorExpected(Environment environment, Term target) {
+        return error(environment, Interned.PREDICATE_INDICATOR_TYPE, target);
+    }
+
+    /**
      * Standard type error - compound expected.
      *
      * @param environment Execution environment.

@@ -7,7 +7,9 @@ import prolog.bootstrap.Interned;
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
+import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
@@ -20,6 +22,7 @@ import prolog.expressions.Term;
 import prolog.instructions.ExecExhaust;
 import prolog.instructions.ExecFindClause;
 import prolog.instructions.ExecRetractClause;
+import prolog.predicates.BuiltInPredicate;
 import prolog.predicates.ClauseEntry;
 import prolog.predicates.ClauseSearchPredicate;
 import prolog.predicates.MissingPredicate;
@@ -73,6 +76,25 @@ public final class Dictionary {
         addClause(environment, clause, ClauseSearchPredicate::addEnd, false);
     }
 
+
+    /**
+     * Abolish a predicate with given functor and arity specified as terms
+     *
+     * @param environment Execution environment
+     * @param predicator  functor/arity
+     */
+    @Predicate("abolish")
+    public static void abolish(Environment environment, Term predicator) {
+        if (!predicator.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, predicator);
+        }
+        if (!CompoundTerm.termIsA(predicator, Interned.SLASH_ATOM, 2)) {
+            throw PrologTypeError.predicateIndicatorExpected(environment, predicator);
+        }
+        CompoundTerm comp = (CompoundTerm)predicator;
+        abolish(environment, comp.get(0), comp.get(1));
+    }
+
     /**
      * Abolish a predicate with given functor and arity specified as terms
      *
@@ -82,20 +104,30 @@ public final class Dictionary {
      */
     @Predicate("abolish")
     public static void abolish(Environment environment, Term functor, Term arity) {
+        if (!functor.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, functor);
+        }
+        if (!arity.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, functor);
+        }
         PrologAtomInterned functorAtom = PrologAtomInterned.from(environment, functor);
-        PrologInteger arityInt = PrologInteger.from(arity);
-        Predication predication = new Predication(functorAtom, arityInt.get().intValue());
+        int arityInt = PrologInteger.from(arity).get().intValue();
+        if (arityInt < 0) {
+            throw PrologDomainError.notLessThanZero(environment, arity);
+        }
+        Predication predication = new Predication(functorAtom, arityInt);
         PredicateDefinition defn =
                 environment.lookupPredicate(predication);
-        if (defn instanceof MissingPredicate) {
-            return; // already abolished
+        if (defn instanceof BuiltInPredicate) {
+            // TODO: There can be some ClauseSearchPredicate procedures that are also considered static
+            throw PrologPermissionError.error(environment,
+                    Interned.MODIFY_ACTION, Interned.STATIC_PROCEDURE_TYPE, predication.term(),
+                    String.format("Cannot retrieve clause for static procedure: %s", predication.toString()));
         }
-        if (defn instanceof ClauseSearchPredicate) {
-            environment.abolishPredicate(predication);
-        } else {
-            throw PrologPermissionError.error(environment, "modify", "static_procedure", predication.term(),
-                    "Cannot abolish built-in procedure");
+        if (!(defn instanceof ClauseSearchPredicate)) {
+            return; // silent
         }
+        environment.abolishPredicate(predication);
     }
 
     /**

@@ -5,12 +5,16 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
+import prolog.exceptions.PrologInstantiationError;
+import prolog.exceptions.PrologPermissionError;
+import prolog.exceptions.PrologTypeError;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.predicates.BuiltInPredicate;
 import prolog.predicates.ClauseEntry;
 import prolog.predicates.ClauseSearchPredicate;
 import prolog.predicates.PredicateDefinition;
@@ -53,22 +57,31 @@ public class ExecRetractClause implements Instruction {
             body = null; // indicate is was not specified
         }
         CompoundTerm matcher;
+
         //
         // Head must be sufficiently instantiated to build a matcher
         //
-        if (head instanceof Atomic) {
+        if (!head.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, head);
+        }
+        if (head.isAtom()) {
             // Normalize matcher to a compound of arity 0
             matcher = CompoundTerm.from((Atomic) head);
         } else if (head instanceof CompoundTerm) {
             matcher = (CompoundTerm) head;
         } else {
-            environment.backtrack();
-            return;
+            throw PrologTypeError.callableExpected(environment, head);
         }
+
         Predication predication = new Predication(matcher.functor(), matcher.arity());
         PredicateDefinition defn = environment.lookupPredicate(predication);
+        if (defn instanceof BuiltInPredicate) {
+            // TODO: There can be some ClauseSearchPredicate procedures that are also considered static
+            throw PrologPermissionError.error(environment,
+                    Interned.MODIFY_ACTION, Interned.STATIC_PROCEDURE_TYPE, predication.term(),
+                    String.format("Cannot retrieve clause for static procedure: %s", predication.toString()));
+        }
         if (!(defn instanceof ClauseSearchPredicate)) {
-            // Builtin or undefined
             environment.backtrack();
             return;
         }
