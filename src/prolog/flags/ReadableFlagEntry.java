@@ -124,6 +124,16 @@ public class ReadableFlagEntry<T extends FlagsWithEnvironment> {
     }
 
     /**
+     * Set read handler to read boolean atoms described as on/off
+     *
+     * @param onRead read handler
+     * @return self (for chaining)
+     */
+    ReadableFlagEntry<T> readOnOff(Function<T, Boolean> onRead) {
+        return read(o -> onRead.apply(o) ? Interned.ON_ATOM : Interned.OFF_ATOM);
+    }
+
+    /**
      * Helper to parse enums. Enum constants have prefix "ATOM_" followed by atom name.
      *
      * @param environment Execution environment

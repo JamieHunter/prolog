@@ -24,7 +24,6 @@ import prolog.execution.Backtrack;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
-import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
 import prolog.expressions.TermListImpl;
@@ -54,7 +53,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -75,7 +73,7 @@ public final class Io {
     public static final PrologAtomInterned OPEN_WRITE = Interned.internAtom("write");
     public static final PrologAtomInterned OPEN_UPDATE = Interned.internAtom("update");
     public static final PrologAtomInterned INPUT_ACTION = Interned.internAtom("input");
-    public static final PrologAtomInterned OUTPUT_ACTION = Interned.internAtom("ouput");
+    public static final PrologAtomInterned OUTPUT_ACTION = Interned.internAtom("output");
     public static final PrologAtomInterned TEXT_STREAM = Interned.internAtom("text_stream");
     public static final PrologAtomInterned BINARY_STREAM = Interned.internAtom("binary_stream");
     public static final PrologAtomInterned BYTE_POS = Interned.internAtom("byte");
@@ -192,13 +190,13 @@ public final class Io {
      *
      * @param environment Execution environment
      * @param streamIdent Stream identifier
-     * @param options Close options
+     * @param options     Close options
      */
     @Predicate("close")
     public static void close(Environment environment, Term streamIdent, Term options) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
         try {
-            if(!logicalStream.close(new CloseOptions(environment, options))) {
+            if (!logicalStream.close(new CloseOptions(environment, options))) {
                 return;
             }
         } catch (IOException ioe) {
@@ -214,7 +212,7 @@ public final class Io {
         }
         environment.removeStream(logicalStream.getId(), logicalStream);
         ArrayList<PrologAtomLike> aliases = logicalStream.getAliases();
-        for(PrologAtomLike alias : aliases) {
+        for (PrologAtomLike alias : aliases) {
             environment.removeStreamAlias(alias, logicalStream);
         }
     }
@@ -228,6 +226,9 @@ public final class Io {
      */
     @Predicate("stream_property")
     public static void streamProperty(Environment environment, Term streamIdent, Term propertyStruct) {
+        if (streamIdent.isInstantiated() && !streamIdent.isAtomic()) {
+            throw PrologDomainError.stream(environment, streamIdent);
+        }
         forEachStream(environment, streamIdent, (id, stream) -> {
             forEachStreamProperty(environment, id, stream, propertyStruct);
         });
@@ -299,6 +300,10 @@ public final class Io {
     @Predicate("set_stream_position")
     public static void setStreamPosition(Environment environment, Term streamIdent, Term position) {
         // Restore position on a stream
+        if (!position.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, position);
+        }
+        // TODO: end_of_stream(at)
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
         logicalStream.restorePosition(environment, (Atomic) streamIdent, position);
     }
@@ -351,12 +356,12 @@ public final class Io {
      *
      * @param environment Execution environment
      * @param streamIdent Stream to get character from
-     * @param chr Character retrieved
+     * @param chr         Character retrieved
      */
     @Predicate("get_char")
     public static void getChar(Environment environment, Term streamIdent, Term chr) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
-        Atomic value = logicalStream.getChar(environment, (Atomic)streamIdent);
+        Atomic value = logicalStream.getChar(environment, (Atomic) streamIdent);
         if (!Unifier.unify(environment.getLocalContext(), chr, value)) {
             environment.backtrack();
         }
@@ -382,12 +387,12 @@ public final class Io {
      *
      * @param environment Execution environment
      * @param streamIdent Stream to get character from
-     * @param code Character retrieved
+     * @param code        Character retrieved
      */
     @Predicate("get_code")
     public static void getCode(Environment environment, Term streamIdent, Term code) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
-        Atomic value = logicalStream.getCode(environment, (Atomic)streamIdent);
+        Atomic value = logicalStream.getCode(environment, (Atomic) streamIdent);
         if (!Unifier.unify(environment.getLocalContext(), code, value)) {
             environment.backtrack();
         }
@@ -413,12 +418,12 @@ public final class Io {
      *
      * @param environment Execution environment
      * @param streamIdent Stream to get character from
-     * @param code Character retrieved
+     * @param code        Character retrieved
      */
     @Predicate("get_byte")
     public static void getByte(Environment environment, Term streamIdent, Term code) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
-        Atomic value = logicalStream.getByte(environment, (Atomic)streamIdent);
+        Atomic value = logicalStream.getByte(environment, (Atomic) streamIdent);
         if (!Unifier.unify(environment.getLocalContext(), code, value)) {
             environment.backtrack();
         }
@@ -446,7 +451,7 @@ public final class Io {
     @Predicate({"put_char", "put_code"})
     public static void putChar(Environment environment, Term streamIdent, Term term) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
-        logicalStream.putChar(environment, (Atomic)streamIdent, term);
+        logicalStream.putChar(environment, (Atomic) streamIdent, term);
     }
 
     /**
@@ -471,7 +476,7 @@ public final class Io {
     @Predicate("put_byte")
     public static void putByte(Environment environment, Term streamIdent, Term term) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
-        logicalStream.putByte(environment, (Atomic)streamIdent, term);
+        logicalStream.putByte(environment, (Atomic) streamIdent, term);
     }
 
     /**
@@ -1040,19 +1045,31 @@ public final class Io {
                         // handled below
                     }
                 }
+            } else if (property.isAtom()) {
+                if (property.compareTo(INPUT_ACTION) == 0) {
+                    if (!stream.isInput()) {
+                        environment.backtrack();
+                    }
+                    return;
+                } else if (property.compareTo(OUTPUT_ACTION) == 0) {
+                    if (!stream.isOutput()) {
+                        environment.backtrack();
+                    }
+                    return;
+                }
             }
             throw PrologDomainError.streamProperty(environment, property);
         } else {
-            Map<Atomic, Term> allProps = new StreamProperties(environment, stream, streamIdent).getAll();
-            new ForEachStreamProperty(environment, allProps.entrySet().iterator(), property).next();
+            List<Term> allProps = new StreamProperties(environment, stream, streamIdent).getAll(stream);
+            new ForEachStreamProperty(environment, allProps.iterator(), property).next();
         }
     }
 
     private static class ForEachStreamProperty extends DecisionPoint {
-        private final Iterator<Map.Entry<Atomic, Term>> iter;
+        private final Iterator<Term> iter;
         private final Term property;
 
-        private ForEachStreamProperty(Environment environment, Iterator<Map.Entry<Atomic, Term>> iter, Term property) {
+        private ForEachStreamProperty(Environment environment, Iterator<Term> iter, Term property) {
             super(environment);
             this.iter = iter;
             this.property = property;
@@ -1064,13 +1081,12 @@ public final class Io {
                 environment.backtrack();
                 return;
             }
-            Map.Entry<Atomic, Term> entry = iter.next();
+            Term term = iter.next();
             environment.forward();
             if (iter.hasNext()) {
                 environment.pushDecisionPoint(this);
             }
-            CompoundTerm comp = new CompoundTermImpl(entry.getKey(), entry.getValue());
-            if (!Unifier.unify(environment.getLocalContext(), property, comp)) {
+            if (!Unifier.unify(environment.getLocalContext(), property, term)) {
                 environment.backtrack();
             }
         }

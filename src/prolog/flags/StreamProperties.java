@@ -5,9 +5,12 @@ package prolog.flags;
 
 import prolog.constants.Atomic;
 import prolog.execution.Environment;
+import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.io.LogicalStream;
+import prolog.library.Io;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -65,7 +68,6 @@ public class StreamProperties implements FlagsWithEnvironment {
     private final Environment environment;
     private final LogicalStream binding;
     private final Atomic streamIdent;
-    private static List<Term> propertyNames;
 
     /**
      * Create a new PrologFlags associated with a new environment
@@ -89,6 +91,7 @@ public class StreamProperties implements FlagsWithEnvironment {
 
     /**
      * Retrieve specified property for this stream
+     *
      * @param key Property key
      * @return Property value
      */
@@ -98,15 +101,27 @@ public class StreamProperties implements FlagsWithEnvironment {
 
     /**
      * Retrieve all properties for this stream
+     *
      * @return map of all properties
      */
-    public Map<Atomic,Term> getAll() {
-        return parser.getAll(this);
+    public List<Term> getAll(LogicalStream stream) {
+        List<Term> terms = new ArrayList<>();
+        if (stream.isInput()) {
+            terms.add(Io.INPUT_ACTION);
+        }
+        if (stream.isOutput()) {
+            terms.add(Io.OUTPUT_ACTION);
+        }
+        for(Map.Entry<Atomic, Term> e : parser.getAll(this).entrySet()) {
+            terms.add(new CompoundTermImpl(e.getKey(), e.getValue()));
+        }
+        return terms;
     }
 
     /**
      * Modified specified property for this stream
-     * @param key Property key
+     *
+     * @param key   Property key
      * @param value Property value
      */
     public void set(Atomic key, Term value) {

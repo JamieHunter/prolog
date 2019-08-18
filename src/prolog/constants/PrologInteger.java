@@ -6,6 +6,7 @@ package prolog.constants;
 import prolog.bootstrap.Interned;
 import prolog.exceptions.FutureEvaluationError;
 import prolog.exceptions.FutureTypeError;
+import prolog.exceptions.PrologEvaluationError;
 import prolog.expressions.Term;
 import prolog.expressions.TypeRank;
 import prolog.io.WriteContext;
@@ -118,7 +119,17 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
      * {@inheritDoc}
      */
     public PrologInteger mod(PrologInteger right) {
-        return new PrologInteger(value.mod(right.value));
+        BigInteger leftVal = value;
+        BigInteger rightVal = right.value;
+        int cmp = rightVal.compareTo(BigInteger.ZERO);
+        if (cmp == 0) {
+            throw new FutureEvaluationError(Interned.ZERO_DIVISOR_EVALUATION, "Division by zero");
+        }
+        if (cmp < 0) {
+            leftVal = leftVal.negate();
+            rightVal = rightVal.negate();
+        }
+        return new PrologInteger(leftVal.mod(rightVal));
     }
 
     /**

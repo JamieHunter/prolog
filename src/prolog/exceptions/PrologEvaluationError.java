@@ -4,7 +4,7 @@
 package prolog.exceptions;
 
 import prolog.bootstrap.Interned;
-import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 
@@ -22,7 +22,7 @@ public class PrologEvaluationError extends PrologError {
      * @param cause       Underlying Java cause if any, or null if not
      * @return exception
      */
-    public static PrologEvaluationError error(Environment environment, PrologAtomInterned type, String message, Throwable cause) {
+    public static PrologEvaluationError error(Environment environment, PrologAtomLike type, String message, Throwable cause) {
         return new PrologEvaluationError(
                 formal(Interned.EVALUATION_ERROR_FUNCTOR, type),
                 context(environment, message),

@@ -92,9 +92,28 @@ public abstract class ParserBase<T extends Flags, R> {
      */
     public R booleanFlag(final Atomic key, final BiConsumer<T, Boolean> consumer) {
         return createKey(key, (obj, value) -> {
-            if (value == Interned.TRUE_ATOM) {
+            if (value.compareTo(Interned.TRUE_ATOM) == 0) {
                 consumer.accept(obj, true);
-            } else if (value == Interned.FALSE_ATOM) {
+            } else if (value.compareTo(Interned.FALSE_ATOM) == 0) {
+                consumer.accept(obj, false);
+            } else {
+                throw new FutureFlagValueError(key, value);
+            }
+        });
+    }
+
+    /**
+     * Specify/validate a boolean parameter
+     *
+     * @param key      Key atom
+     * @param consumer Specific value function
+     * @return Option/Flag dependent
+     */
+    public R onOffFlag(final Atomic key, final BiConsumer<T, Boolean> consumer) {
+        return createKey(key, (obj, value) -> {
+            if (value.compareTo(Interned.ON_ATOM) == 0) {
+                consumer.accept(obj, true);
+            } else if (value.compareTo(Interned.OFF_ATOM) == 0) {
                 consumer.accept(obj, false);
             } else {
                 throw new FutureFlagValueError(key, value);

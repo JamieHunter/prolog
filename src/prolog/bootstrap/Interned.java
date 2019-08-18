@@ -29,6 +29,8 @@ public final class Interned {
     public static final PrologAtomInterned QUERY_FUNCTOR = internAtom("?-");
     public static final PrologAtomInterned TRUE_ATOM = internAtom("true");
     public static final PrologAtomInterned FALSE_ATOM = internAtom("false");
+    public static final PrologAtomInterned ON_ATOM = internAtom("on");
+    public static final PrologAtomInterned OFF_ATOM = internAtom("off");
     public static final PrologAtomInterned LIST_FUNCTOR = internAtom(".");
     public static final PrologAtomInterned DOT = LIST_FUNCTOR; // alias
     public static final PrologAtomInterned COMMA_FUNCTOR = internAtom(",");

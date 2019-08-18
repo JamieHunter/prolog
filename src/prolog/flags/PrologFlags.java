@@ -10,7 +10,6 @@ import prolog.expressions.Term;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import static prolog.bootstrap.Interned.internAtom;
 
@@ -29,16 +28,19 @@ public class PrologFlags implements FlagsWithEnvironment {
         global.protectedFlag(internAtom("bounded")).
                 constant(Interned.FALSE_ATOM).protect();
         global.protectedFlag(internAtom("break_level")).
-                readInteger(o -> (long)o.breakLevel).protect();
+                readInteger(o -> (long) o.breakLevel).protect();
         global.booleanFlag(internAtom("character_escapes"), (o, v) -> o.characterEscapes = v).
                 readBoolean(o -> o.characterEscapes).protect();
-        global.booleanFlag(internAtom("char_conversion"),
-                (o, v) -> o.environment.getCharConverter().enableConversion(v)).
-                readBoolean(o -> o.environment.getCharConverter().isEnabled()).protect();
-        global.booleanFlag(internAtom("debug"), (o, v) -> o.debug = v).
-                readBoolean(o -> o.debug).protect();
+        global.onOffFlag(internAtom("char_conversion"), (o, v) -> o.charConversion = v).
+                readOnOff(o -> o.charConversion).protect();
+        global.onOffFlag(internAtom("debug"), (o, v) -> o.debug = v).
+                readOnOff(o -> o.debug).protect();
         global.enumFlag(internAtom("encoding"), StreamProperties.Encoding.class, (o, v) -> o.encoding = v).
                 readEnum(StreamProperties.Encoding.class, o -> o.encoding).protect();
+        global.protectedFlag(internAtom("integer_rounding_function")).
+                constant(internAtom("toward_zero")).protect();
+        global.protectedFlag(internAtom("max_arity")).
+                constant(internAtom("unbounded")).protect();
         global.enumFlag(internAtom("unknown"), Unknown.class, (o, v) -> o.unknown = v).
                 readEnum(Unknown.class, o -> o.unknown).protect();
     }
@@ -61,6 +63,10 @@ public class PrologFlags implements FlagsWithEnvironment {
      * Handling of character escapes
      */
     public boolean characterEscapes = true;
+    /**
+     * Handling of character conversion
+     */
+    public boolean charConversion = false;
     /**
      * Mode to make prolog more debuggable
      */
@@ -147,6 +153,13 @@ public class PrologFlags implements FlagsWithEnvironment {
         return otherFlags.get(key);
     }
 
+    /**
+     * @return merged set of flags
+     */
+    public Map<Atomic, Term> getAll() {
+        return local.getAll(this);
+    }
+
     public enum Quotes {
         ATOM_codes,
         ATOM_symbol_char,
@@ -158,4 +171,5 @@ public class PrologFlags implements FlagsWithEnvironment {
         ATOM_warning,
         ATOM_error
     }
+
 }

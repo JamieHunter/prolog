@@ -26,6 +26,7 @@ public final class Library extends LibraryBase {
         consult(Lists.class);
         consult(Option.class);
         consult(ParsingControl.class);
+        consult(SystemControl.class);
         consult(Terms.class);
         consult(ThrowCatch.class);
         consult(Time.class);

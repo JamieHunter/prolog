@@ -26,7 +26,7 @@ public final class ExecRepeat implements Instruction {
      */
     @Override
     public void invoke(Environment environment) {
-        environment.pushBacktrack(new Repeat(environment));
+        environment.pushDecisionPoint(new Repeat(environment));
     }
 
     /**
