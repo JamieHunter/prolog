@@ -31,14 +31,12 @@ import prolog.parser.ExpressionReader;
 import prolog.parser.Tokenizer;
 import prolog.unification.Unifier;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -67,7 +65,7 @@ public class LogicalStream {
     private PrologInputStream input = null;
     private PrologOutputStream output = null;
     private PositionTracker tracker = null;
-    private List<PrologAtomLike> aliases = new ArrayList<>();
+    private List<PrologAtomInterned> aliases = new ArrayList<>();
     private StreamProperties.OpenMode openMode;
     private StreamProperties.NewLineMode newLineMode = StreamProperties.NewLineMode.ATOM_detect;
     private StreamProperties.Buffering bufferMode = StreamProperties.Buffering.ATOM_full;
@@ -153,7 +151,7 @@ public class LogicalStream {
      *
      * @param alias Alias to add
      */
-    public void addAlias(PrologAtomLike alias) {
+    public void addAlias(PrologAtomInterned alias) {
         // We assume few (typically 0 or 1) aliases, so this is maintained as a list
         // rather than as a set. We also assume alias is not already in list (enfored
         // by caller).
@@ -174,8 +172,8 @@ public class LogicalStream {
     /**
      * @return Retrieve all aliases.
      */
-    public ArrayList<PrologAtomLike> getAliases() {
-        ArrayList<PrologAtomLike> atoms = new ArrayList<>();
+    public ArrayList<PrologAtomInterned> getAliases() {
+        ArrayList<PrologAtomInterned> atoms = new ArrayList<>();
         atoms.addAll(aliases);
         return atoms;
     }
@@ -871,20 +869,19 @@ public class LogicalStream {
      * @param environment Execution environment
      * @param streamId    Stream id for error reporting (or null if unknown)
      * @param source      Source term to write
-     * @param optionsTerm Term providing options
+     * @param options     Write options
      */
-    public void write(Environment environment, Atomic streamId, Term source, Term optionsTerm) {
+    public void write(Environment environment, Atomic streamId, Term source, WriteOptions options) {
         assertText(environment, Io.OUTPUT_ACTION, streamId);
         PrologOutputStream output = getOutputStream(environment, streamId);
         if (!source.isInstantiated()) {
             throw PrologInstantiationError.error(environment, source);
         }
-        WriteOptions options = new WriteOptions(environment, optionsTerm);
         WriteContext context = new WriteContext(environment, options, output);
-        StructureWriter writer = new StructureWriter(context, source);
+        StructureWriter writer = new StructureWriter(context);
 
         try {
-            writer.write();
+            writer.write(source);
         } catch (IOException ioe) {
             throw writeError(ioe, environment);
         }

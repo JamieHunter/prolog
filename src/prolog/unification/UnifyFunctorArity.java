@@ -25,7 +25,7 @@ public final class UnifyFunctorArity implements UnifyStep {
      */
     @Override
     public UnifyIterator invoke(LocalContext context, UnifyIterator it) {
-        if (it.next() == functor && it.size() == arity) {
+        if (it.size() == arity && it.next().compareTo(functor)==0) {
             return it;
         } else {
             return UnifyIterator.FAILED;

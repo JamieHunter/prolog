@@ -31,6 +31,7 @@ import prolog.flags.AbsoluteFileNameOptions;
 import prolog.flags.CloseOptions;
 import prolog.flags.OpenOptions;
 import prolog.flags.StreamProperties;
+import prolog.flags.WriteOptions;
 import prolog.io.FileReadWriteStreams;
 import prolog.io.LogicalStream;
 import prolog.io.PrologInputStream;
@@ -211,8 +212,8 @@ public final class Io {
             environment.setOutputStream(DefaultIoBinding.USER_OUTPUT);
         }
         environment.removeStream(logicalStream.getId(), logicalStream);
-        ArrayList<PrologAtomLike> aliases = logicalStream.getAliases();
-        for (PrologAtomLike alias : aliases) {
+        ArrayList<PrologAtomInterned> aliases = logicalStream.getAliases();
+        for (PrologAtomInterned alias : aliases) {
             environment.removeStreamAlias(alias, logicalStream);
         }
     }
@@ -540,7 +541,43 @@ public final class Io {
     @Predicate("write")
     public static void write(Environment environment, Term term) {
         LogicalStream logicalStream = environment.getOutputStream();
-        logicalStream.write(environment, null, term, null);
+        WriteOptions options = new WriteOptions(environment, null);
+        options.numbervars = true;
+        options.quoted = false;
+        options.ignoreOps = false;
+        logicalStream.write(environment, null, term, options);
+    }
+
+    /**
+     * Writes a term, quoted, to current output stream
+     *
+     * @param environment Execution environment
+     * @param term        term to write
+     */
+    @Predicate("writeq")
+    public static void writeq(Environment environment, Term term) {
+        LogicalStream logicalStream = environment.getOutputStream();
+        WriteOptions options = new WriteOptions(environment, null);
+        options.numbervars = true;
+        options.quoted = true;
+        options.ignoreOps = false;
+        logicalStream.write(environment, null, term, options);
+    }
+
+    /**
+     * Writes a term, in canonical form, to current output stream
+     *
+     * @param environment Execution environment
+     * @param term        term to write
+     */
+    @Predicate("write_canonical")
+    public static void writeCanonical(Environment environment, Term term) {
+        LogicalStream logicalStream = environment.getOutputStream();
+        WriteOptions options = new WriteOptions(environment, null);
+        options.numbervars = false;
+        options.quoted = true;
+        options.ignoreOps = true;
+        logicalStream.write(environment, null, term, options);
     }
 
     /**
@@ -552,7 +589,11 @@ public final class Io {
     @Predicate("writeln")
     public static void writeln(Environment environment, Term term) {
         LogicalStream logicalStream = environment.getOutputStream();
-        logicalStream.write(environment, null, term, null);
+        WriteOptions options = new WriteOptions(environment, null);
+        options.numbervars = true;
+        options.quoted = false;
+        options.ignoreOps = false;
+        logicalStream.write(environment, null, term, options);
         logicalStream.nl(environment, null);
     }
 
@@ -566,7 +607,45 @@ public final class Io {
     @Predicate("write")
     public static void write(Environment environment, Term streamIdent, Term term) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
-        logicalStream.write(environment, (Atomic) streamIdent, term, null);
+        WriteOptions options = new WriteOptions(environment, null);
+        options.numbervars = true;
+        options.quoted = false;
+        options.ignoreOps = false;
+        logicalStream.write(environment, (Atomic) streamIdent, term, options);
+    }
+
+    /**
+     * Writes a term, quoted, to current output stream
+     *
+     * @param environment Execution environment
+     * @param streamIdent Stream to write
+     * @param term        term to write
+     */
+    @Predicate("writeq")
+    public static void writeq(Environment environment, Term streamIdent, Term term) {
+        LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        WriteOptions options = new WriteOptions(environment, null);
+        options.numbervars = true;
+        options.quoted = true;
+        options.ignoreOps = false;
+        logicalStream.write(environment, null, term, options);
+    }
+
+    /**
+     * Writes a term, in canonical form, to current output stream
+     *
+     * @param environment Execution environment
+     * @param streamIdent Stream to write
+     * @param term        term to write
+     */
+    @Predicate("write_canonical")
+    public static void writeCanonical(Environment environment, Term streamIdent, Term term) {
+        LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        WriteOptions options = new WriteOptions(environment, null);
+        options.numbervars = false;
+        options.quoted = true;
+        options.ignoreOps = true;
+        logicalStream.write(environment, null, term, options);
     }
 
     /**
@@ -579,7 +658,11 @@ public final class Io {
     @Predicate("writeln")
     public static void writeln(Environment environment, Term streamIdent, Term term) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
-        logicalStream.write(environment, (Atomic) streamIdent, term, null);
+        WriteOptions options = new WriteOptions(environment, null);
+        options.numbervars = true;
+        options.quoted = false;
+        options.ignoreOps = false;
+        logicalStream.write(environment, (Atomic) streamIdent, term, options);
         logicalStream.nl(environment, null);
     }
 
@@ -588,11 +671,13 @@ public final class Io {
      *
      * @param environment Execution environment
      * @param term        term to write
-     * @param options     formatting options
+     * @param optionsTerm formatting options
      */
     @Predicate("write_term")
-    public static void writeTerm(Environment environment, Term term, Term options) {
+    public static void writeTerm(Environment environment, Term term, Term optionsTerm) {
         LogicalStream logicalStream = environment.getOutputStream();
+        WriteOptions options = new WriteOptions(environment, optionsTerm);
+        options.numbervars = true;
         logicalStream.write(environment, null, term, options);
     }
 
@@ -602,11 +687,12 @@ public final class Io {
      * @param environment Execution environment
      * @param streamIdent Stream to write
      * @param term        term to write
-     * @param options     formatting options
+     * @param optionsTerm formatting options
      */
     @Predicate("write_term")
-    public static void writeTerm(Environment environment, Term streamIdent, Term term, Term options) {
+    public static void writeTerm(Environment environment, Term streamIdent, Term term, Term optionsTerm) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        WriteOptions options = new WriteOptions(environment, optionsTerm);
         logicalStream.write(environment, (Atomic) streamIdent, term, options);
     }
 
@@ -726,12 +812,10 @@ public final class Io {
         if (!mode.isInstantiated()) {
             throw PrologInstantiationError.error(environment, fileName);
         }
-        if (!mode.isAtom()) {
-            throw PrologTypeError.atomExpected(environment, mode);
-        }
+        mode = PrologAtomInterned.from(environment, mode);
         // TODO: consider options above for the open mode below
         Set<OpenOption> op = new HashSet<OpenOption>();
-        if (mode == OPEN_READ) {
+        if (mode.is(OPEN_READ)) {
             op.add(StandardOpenOption.READ);
             openMode = StreamProperties.OpenMode.ATOM_read;
         } else if (mode == OPEN_WRITE) {
@@ -755,12 +839,12 @@ public final class Io {
         OpenOption[] ops = op.toArray(new OpenOption[0]);
 
         Path path = parsePath(environment, fileName);
-        PrologAtomLike aliasName = null;
+        PrologAtomInterned aliasName = null;
         if (streamTarget.isInstantiated()) {
             if (!(streamTarget.isAtom())) {
                 throw PrologTypeError.atomExpected(environment, streamTarget);
             }
-            aliasName = (PrologAtomLike) streamTarget;
+            aliasName = PrologAtomInterned.from(environment, streamTarget);
         }
 
         LogicalStream binding;
@@ -797,7 +881,8 @@ public final class Io {
         if (aliasName != null) {
             environment.addStreamAlias(aliasName, binding);
         }
-        options.alias.ifPresent(prologAtom -> environment.addStreamAlias(prologAtom, binding));
+        options.alias.ifPresent(prologAtom ->
+                environment.addStreamAlias(PrologAtomInterned.from(environment, prologAtom), binding));
     }
 
     /**

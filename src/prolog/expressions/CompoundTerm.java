@@ -36,7 +36,7 @@ public interface CompoundTerm extends Term {
      * @return true if matched
      */
     static boolean termIsA(Term term, PrologAtomInterned atom) {
-        return term instanceof CompoundTerm && ((CompoundTerm) term).functor() == atom;
+        return term instanceof CompoundTerm && atom.compareTo(((CompoundTerm) term).functor()) == 0;
     }
 
     /**

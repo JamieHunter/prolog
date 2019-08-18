@@ -3,7 +3,7 @@
 //
 package prolog.exceptions;
 
-import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 
@@ -11,7 +11,7 @@ import prolog.expressions.Term;
  * This will get turned into a PrologTypeError once context is known
  */
 public class FutureTypeError extends FuturePrologError {
-    private final PrologAtomInterned type;
+    private final PrologAtomLike type;
     private final Term term;
 
     /**
@@ -20,7 +20,7 @@ public class FutureTypeError extends FuturePrologError {
      * @param type Atom providing describing type (usually expected type).
      * @param term Term that did not match expected type.
      */
-    public FutureTypeError(PrologAtomInterned type, Term term) {
+    public FutureTypeError(PrologAtomLike type, Term term) {
         super("Type expected to be: " + type.toString());
         this.type = type;
         this.term = term;
@@ -29,7 +29,7 @@ public class FutureTypeError extends FuturePrologError {
     /**
      * @return type name
      */
-    public PrologAtomInterned getType() {
+    public PrologAtomLike getType() {
         return type;
     }
 

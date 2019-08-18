@@ -330,12 +330,12 @@ public final class Matchers {
             }
             CompoundTerm term = (CompoundTerm)o;
             Term actualFunctor = term.functor();
-            if (!(actualFunctor instanceof PrologAtomInterned)) {
+            if (!(actualFunctor.isAtom())) {
                 mismatch.appendText("functor not atom");
                 return false;
             }
-            if (!functor.equals(((PrologAtomInterned) actualFunctor).name())) {
-                mismatch.appendText("functor name mismatch, was '" + ((PrologAtomInterned)actualFunctor).name() + "'");
+            if (!functor.equals(((PrologAtomLike) actualFunctor).name())) {
+                mismatch.appendText("functor name mismatch, was '" + ((PrologAtomLike)actualFunctor).name() + "'");
                 return false;
             }
             if (term.arity() != components.length) {

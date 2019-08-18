@@ -3,7 +3,6 @@
 //
 package prolog.bootstrap;
 
-import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
 import prolog.execution.Instruction;
 import prolog.functions.StackFunction;
@@ -29,9 +28,9 @@ import java.util.Map;
 public class Builtins {
 
     // Must be initialized before calling consult()
-    private static final HashMap<Predication, PredicateDefinition> builtins = new HashMap<>();
-    private static final HashMap<Atomic, VarArgDefinition> builtinVarArgs = new HashMap<>();
-    private static final HashMap<Predication, StackFunction> functions = new HashMap<>();
+    private static final HashMap<Predication.Interned, PredicateDefinition> builtins = new HashMap<>();
+    private static final HashMap<PrologAtomInterned, VarArgDefinition> builtinVarArgs = new HashMap<>();
+    private static final HashMap<Predication.Interned, StackFunction> functions = new HashMap<>();
 
     //
     // Add libraries to this list
@@ -71,7 +70,7 @@ public class Builtins {
      * @param predication Name/arity of predicate
      * @param definition  Definition of predicate
      */
-    public static <T extends PredicateDefinition> T define(Predication predication, T definition) {
+    public static <T extends PredicateDefinition> T define(Predication.Interned predication, T definition) {
         builtins.put(predication, definition);
         return definition;
     }
@@ -82,7 +81,7 @@ public class Builtins {
      * @param predication Name/arity of predicate
      * @param definition  Definition of predicate
      */
-    public static <T extends PredicateDefinition> T defineVarArg(Predication predication, T definition) {
+    public static <T extends PredicateDefinition> T defineVarArg(Predication.Interned predication, T definition) {
         builtinVarArgs.put(predication.functor(), new VarArgDefinition(predication, definition));
         return definition;
     }
@@ -94,7 +93,7 @@ public class Builtins {
      * @param predication Name/arity
      * @param onDemand    On-demand handler
      */
-    public static DemandLoadPredicate onDemand(Predication predication, LoadResourceOnDemand onDemand) {
+    public static DemandLoadPredicate onDemand(Predication.Interned predication, LoadResourceOnDemand onDemand) {
         DemandLoadPredicate definition = new DemandLoadPredicate(onDemand);
         return define(predication, definition);
     }
@@ -105,7 +104,7 @@ public class Builtins {
      * @param predication Name/arity. Arity is expected to be 2.
      * @param compare     Operation
      */
-    public static void defineCompare(Predication predication, StackFunction compare) {
+    public static void defineCompare(Predication.Interned predication, StackFunction compare) {
         define(predication, new BuiltinPredicateCompare(compare));
     }
 
@@ -115,7 +114,7 @@ public class Builtins {
      * @param predication Name/arity. Arity is expected to be 0.
      * @param instruction Singleton run-time implementation of predicate
      */
-    public static BuiltinPredicateSingleton define(Predication predication, Instruction instruction) {
+    public static BuiltinPredicateSingleton define(Predication.Interned predication, Instruction instruction) {
         return define(predication, new BuiltinPredicateSingleton(instruction));
     }
 
@@ -125,7 +124,7 @@ public class Builtins {
      * @param predication Name/arity
      * @param function    Proxy that operates on the stack
      */
-    public static StackFunction defineFunction(Predication predication, StackFunction function) {
+    public static StackFunction defineFunction(Predication.Interned predication, StackFunction function) {
         functions.put(predication, function);
         return function;
     }
@@ -135,7 +134,7 @@ public class Builtins {
      *
      * @return Builtin predicates
      */
-    public static Map<? extends Predication, ? extends PredicateDefinition> getPredicates() {
+    public static Map<Predication.Interned, PredicateDefinition> getPredicates() {
         return Collections.unmodifiableMap(builtins);
     }
 
@@ -144,7 +143,7 @@ public class Builtins {
      *
      * @return Builtin predicates
      */
-    public static Map<? extends Atomic, ? extends VarArgDefinition> getVarArgPredicates() {
+    public static Map<PrologAtomInterned, VarArgDefinition> getVarArgPredicates() {
         return Collections.unmodifiableMap(builtinVarArgs);
     }
 
@@ -153,7 +152,7 @@ public class Builtins {
      *
      * @return Builtin functions
      */
-    public static Map<? extends Predication, ? extends StackFunction> getFunctions() {
+    public static Map<Predication.Interned, StackFunction> getFunctions() {
         return Collections.unmodifiableMap(functions);
     }
 
@@ -164,9 +163,9 @@ public class Builtins {
      * @param arity Arity of predicate
      * @return Predication
      */
-    public static Predication predicate(String name, int arity) {
+    public static Predication.Interned predicate(String name, int arity) {
         PrologAtomInterned functor = Interned.internAtom(name);
-        return new Predication(functor, arity);
+        return new Predication.Interned(functor, arity);
     }
 
 }

@@ -5,9 +5,9 @@ package prolog.flags;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
-import prolog.execution.Environment;
 import prolog.expressions.Term;
 
 import java.math.BigInteger;
@@ -136,15 +136,14 @@ public class ReadableFlagEntry<T extends FlagsWithEnvironment> {
     /**
      * Helper to parse enums. Enum constants have prefix "ATOM_" followed by atom name.
      *
-     * @param environment Execution environment
-     * @param enumValue   Enum value to convert to atom
-     * @param <E>         Enum class
+     * @param <E>       Enum class
+     * @param enumValue Enum value to convert to atom
      * @return Atom
      */
-    private static <E extends Enum<E>> PrologAtomInterned parseEnum(Environment environment, E enumValue) {
+    private static <E extends Enum<E>> PrologAtomLike parseEnum(E enumValue) {
         String name = enumValue.name();
         if (name.startsWith("ATOM_")) {
-            return environment.internAtom(name.substring(5));
+            return new PrologAtom(name.substring(5));
         } else {
             throw new InternalError("Expecting prefix ATOM_ on " + name);
         }
@@ -159,7 +158,7 @@ public class ReadableFlagEntry<T extends FlagsWithEnvironment> {
      * @return self (for chaining)
      */
     <E extends Enum<E>> ReadableFlagEntry<T> readEnum(Class<E> cls, Function<T, E> onRead) {
-        return read(o -> parseEnum(o.environment(), onRead.apply(o)));
+        return read(o -> parseEnum(onRead.apply(o)));
     }
 
     /**

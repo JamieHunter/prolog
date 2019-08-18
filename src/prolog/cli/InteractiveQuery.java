@@ -8,6 +8,7 @@ import prolog.exceptions.PrologError;
 import prolog.execution.Environment;
 import prolog.execution.ExecutionState;
 import prolog.execution.Query;
+import prolog.flags.WriteOptions;
 import prolog.io.LogicalStream;
 import prolog.io.Prompt;
 import prolog.variables.BoundVariable;
@@ -84,7 +85,10 @@ public class InteractiveQuery extends Query {
      */
     private void reportVar(String name, BoundVariable value) throws IOException {
         OUT.write(environment, null, " " + name + " <- ");
-        OUT.write(environment, null, value.value(environment), null);
+        WriteOptions options = new WriteOptions(environment, null);
+        options.quoted = true;
+        options.numbervars = true;
+        OUT.write(environment, null, value.value(environment), options);
     }
 
     /**

@@ -4,7 +4,7 @@
 package prolog.exceptions;
 
 import prolog.bootstrap.Interned;
-import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologString;
 import prolog.execution.Environment;
 import prolog.expressions.CompoundTermImpl;
@@ -48,7 +48,7 @@ public class PrologError extends PrologThrowable {
      * @param atom Atom with formal error definition
      * @return atom
      */
-    public static Term formal(PrologAtomInterned atom) {
+    public static Term formal(PrologAtomLike atom) {
         return atom;
     }
 
@@ -59,7 +59,7 @@ public class PrologError extends PrologThrowable {
      * @param args    Error arguments
      * @return compound formal term
      */
-    public static Term formal(PrologAtomInterned functor, Term... args) {
+    public static Term formal(PrologAtomLike functor, Term... args) {
         final Term[] copy = args.clone();
         return new CompoundTermImpl(functor, copy);
     }

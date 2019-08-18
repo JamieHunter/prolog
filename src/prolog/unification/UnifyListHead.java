@@ -5,6 +5,7 @@ package prolog.unification;
 
 import prolog.bootstrap.Interned;
 import prolog.execution.LocalContext;
+import prolog.expressions.Term;
 
 /**
  * Optimized testing that target is a list head, singleton.
@@ -22,9 +23,9 @@ public final class UnifyListHead implements UnifyStep {
     @Override
     public UnifyIterator invoke(LocalContext context, UnifyIterator it) {
         if (it.listNext()) {
-            return it;
+            return it; // fast path
         }
-        if (it.next() == Interned.LIST_FUNCTOR && it.size() == 2) {
+        if (it.size() == 2 && it.next().compareTo(Interned.LIST_FUNCTOR) == 0) {
             return it;
         } else {
             return UnifyIterator.FAILED;

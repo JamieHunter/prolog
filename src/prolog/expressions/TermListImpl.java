@@ -8,6 +8,7 @@ import prolog.execution.CompileContext;
 import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
+import prolog.io.StructureWriter;
 import prolog.io.WriteContext;
 import prolog.predicates.PredicateDefinition;
 import prolog.predicates.Predication;
@@ -114,7 +115,7 @@ public class TermListImpl implements TermList {
      */
     @Override
     public TermList enumTerm(EnumTermStrategy strategy) {
-        return (TermList)strategy.visit(this);
+        return (TermList) strategy.visit(this);
     }
 
     /**
@@ -145,7 +146,7 @@ public class TermListImpl implements TermList {
      */
     @Override
     public TermList enumCompoundTerm(EnumTermStrategy strategy) {
-        for(int i = index; i < terms.length; i++) {
+        for (int i = index; i < terms.length; i++) {
             terms[i].enumTerm(strategy);
         }
         return this;
@@ -156,7 +157,7 @@ public class TermListImpl implements TermList {
      */
     @Override
     public void write(WriteContext context) throws IOException {
-        throw new InternalError("Unexpected call to write");
+        new StructureWriter(context).write(this);
     }
 
     /**

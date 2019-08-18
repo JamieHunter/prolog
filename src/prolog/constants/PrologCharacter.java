@@ -35,12 +35,6 @@ public class PrologCharacter extends PrologAtomLike {
         return String.valueOf(value);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void write(WriteContext context) throws IOException {
-        value(context.environment()).write(context);
-    }
-
     /**
      * Convert to character from atom or integer
      * @return Character

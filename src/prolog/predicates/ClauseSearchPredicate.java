@@ -34,7 +34,7 @@ public class ClauseSearchPredicate extends PredicateDefinition {
      *
      * @param predication Ignored
      */
-    public ClauseSearchPredicate(Predication predication) {
+    public ClauseSearchPredicate(Predication.Interned predication) {
     }
 
     /**

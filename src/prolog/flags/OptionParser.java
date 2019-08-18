@@ -12,9 +12,9 @@ import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
 
 /**
@@ -22,7 +22,7 @@ import java.util.function.BiConsumer;
  * as part of the bootstrap.
  */
 class OptionParser<T extends Flags> extends ParserBase<T, Void> {
-    private final Map<Atomic, BiConsumer<T, Term>> consumers = new HashMap<>();
+    private final Map<Atomic, BiConsumer<T, Term>> consumers = new TreeMap<>();
 
     /**
      * Applies list of flags to a flag structure.

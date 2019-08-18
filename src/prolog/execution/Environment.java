@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Runtime environment of Prolog. Note that in the current version, Environments are not thread safe. That is, only
@@ -47,17 +48,17 @@ public class Environment {
     // table of atoms for this instance
     private final HashMap<String, PrologAtomInterned> atomTable = new HashMap<>();
     // table of predicates for this instance
-    private final HashMap<Predication, PredicateDefinition> dictionary = new HashMap<>();
+    private final HashMap<Predication.Interned, PredicateDefinition> dictionary = new HashMap<>();
     // table of variable argument predicates for this instance
-    private final HashMap<Atomic, VarArgDefinition> varArgDictionary = new HashMap<>();
+    private final HashMap<PrologAtomInterned, VarArgDefinition> varArgDictionary = new HashMap<>();
     // table of functions functions
-    private final HashMap<Predication, StackFunction> functions = new HashMap<>();
+    private final HashMap<Predication.Interned, StackFunction> functions = new HashMap<>();
     // tables of operators for this instance
-    private final HashMap<Atomic, OperatorEntry> infixPostfixOperatorTable = new HashMap<>();
-    private final HashMap<Atomic, OperatorEntry> prefixOperatorTable = new HashMap<>();
+    private final TreeMap<Atomic, OperatorEntry> infixPostfixOperatorTable = new TreeMap<>();
+    private final TreeMap<Atomic, OperatorEntry> prefixOperatorTable = new TreeMap<>();
     // io, ID mappings
     private final HashMap<PrologInteger, LogicalStream> streamById = new HashMap<>();
-    private final HashMap<PrologAtomLike, LogicalStream> streamByAlias = new HashMap<>();
+    private final HashMap<PrologAtomInterned, LogicalStream> streamByAlias = new HashMap<>();
     // load group mappings
     private final HashMap<String, LoadGroup> loadGroups = new HashMap<>();
     // stacks
@@ -467,8 +468,8 @@ public class Environment {
      * @param predicate Actual predicate
      */
     public void setBuiltinPredicate(Atomic functor, int arity, BuiltInPredicate predicate) {
-        Predication key = new Predication(functor, arity);
-        dictionary.put(key, predicate);
+        Predication.Interned interned = new Predication.Interned(PrologAtomInterned.from(this, functor), arity);
+        dictionary.put(interned, predicate);
     }
 
     /**
@@ -478,9 +479,10 @@ public class Environment {
      * @return predicate definition
      */
     public PredicateDefinition lookupPredicate(Predication predication) {
-        PredicateDefinition entry = dictionary.get(predication);
+        Predication.Interned interned = predication.intern(this);
+        PredicateDefinition entry = dictionary.get(interned);
         if (entry == null) {
-            entry = lookupVarArgPredicate(predication);
+            entry = lookupVarArgPredicate(interned);
         }
         if (entry == null) {
             entry = MissingPredicate.MISSING_PREDICATE;
@@ -495,11 +497,12 @@ public class Environment {
      * @return variable-argument predicate, or null
      */
     private PredicateDefinition lookupVarArgPredicate(Predication predication) {
-        VarArgDefinition varArg = varArgDictionary.get(predication.functor());
+        Predication.Interned interned = predication.intern(this);
+        VarArgDefinition varArg = varArgDictionary.get(interned.functor());
         if (varArg == null) {
             return null;
         }
-        return varArg.lookup(predication);
+        return varArg.lookup(interned);
     }
 
     /**
@@ -509,7 +512,8 @@ public class Environment {
      * @return old definition
      */
     public PredicateDefinition abolishPredicate(Predication predication) {
-        PredicateDefinition entry = dictionary.remove(predication);
+        Predication.Interned interned = predication.intern(this);
+        PredicateDefinition entry = dictionary.remove(interned);
         if (entry == null) {
             return MissingPredicate.MISSING_PREDICATE;
         } else {
@@ -524,7 +528,7 @@ public class Environment {
      * @return StackFunction or null
      */
     public StackFunction lookupFunction(Predication predication) {
-        return functions.get(predication);
+        return functions.get(predication.intern(this));
     }
 
     /**
@@ -534,7 +538,8 @@ public class Environment {
      * @return predicate definition
      */
     public PredicateDefinition autoCreateDictionaryEntry(Predication predication) {
-        return dictionary.computeIfAbsent(predication, this::autoPredicate);
+        Predication.Interned interned = predication.intern(this);
+        return dictionary.computeIfAbsent(interned, this::autoPredicate);
     }
 
     /**
@@ -560,16 +565,17 @@ public class Environment {
      * @return predicate definition
      */
     public ClauseSearchPredicate createDictionaryEntry(Predication predication) {
-        PredicateDefinition entry = autoCreateDictionaryEntry(predication);
+        Predication.Interned interned = predication.intern(this);
+        PredicateDefinition entry = autoCreateDictionaryEntry(interned);
         if (entry instanceof ClauseSearchPredicate) {
             return (ClauseSearchPredicate) entry;
         } else if (entry instanceof DemandLoadPredicate) {
             // force replacement of demand-load predicates
-            ClauseSearchPredicate replace = new ClauseSearchPredicate(predication);
-            dictionary.put(predication, replace);
+            ClauseSearchPredicate replace = new ClauseSearchPredicate(interned);
+            dictionary.put(interned, replace);
             return replace;
         } else {
-            throw PrologPermissionError.error(this, "modify", "static_procedure", predication.term(),
+            throw PrologPermissionError.error(this, "modify", "static_procedure", interned.term(),
                     "Cannot override built-in procedure");
         }
     }
@@ -689,15 +695,18 @@ public class Environment {
      * @return stream or null if not found
      */
     public LogicalStream lookupStream(Atomic streamIdent) {
-        LogicalStream logicalStream = streamById.get(streamIdent);
-        if (logicalStream == null) {
-            logicalStream = streamByAlias.get(streamIdent);
+        if (streamIdent.isInteger()) {
+            return streamById.get(streamIdent);
+        } else if (streamIdent.isAtom()) {
+            return streamByAlias.get(PrologAtomInterned.from(this, streamIdent));
+        } else {
+            return null;
         }
-        return logicalStream;
     }
 
     /**
      * Retrieve a list of all open streams
+     *
      * @return all open streams
      */
     public Collection<LogicalStream> getOpenStreams() {
@@ -735,7 +744,7 @@ public class Environment {
      * @param stream Stream
      * @return previous stream with this alias, or null if none
      */
-    public LogicalStream addStreamAlias(PrologAtomLike alias, LogicalStream stream) {
+    public LogicalStream addStreamAlias(PrologAtomInterned alias, LogicalStream stream) {
         if (alias == null || stream == null) {
             return null;
         }
@@ -758,7 +767,7 @@ public class Environment {
      * @param alias  Stream alias (if null, becomes a no-op)
      * @param stream Stream - must match to delete
      */
-    public void removeStreamAlias(PrologAtomLike alias, LogicalStream stream) {
+    public void removeStreamAlias(PrologAtomInterned alias, LogicalStream stream) {
         if (alias == null || stream == null) {
             return;
         }

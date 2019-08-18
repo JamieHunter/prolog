@@ -3,7 +3,6 @@
 //
 package prolog.execution;
 
-import prolog.constants.PrologCodePoints;
 import prolog.constants.PrologStringAsList;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
@@ -30,6 +29,7 @@ public abstract class EnumTermStrategy {
 
     /**
      * Return environment for this enumerator
+     *
      * @return Environment
      */
     public Environment environment() {
@@ -39,7 +39,7 @@ public abstract class EnumTermStrategy {
     /**
      * Visitor that is typically used for copy-tree, de-duped.
      *
-     * @param src Original term
+     * @param src             Original term
      * @param mappingFunction Mutation
      * @return Replacement term
      */
@@ -50,7 +50,7 @@ public abstract class EnumTermStrategy {
     /**
      * Visit a single term. Mapping function is only called if term has not been seen before (copyVisitor)
      *
-     * @param src Source term
+     * @param src             Source term
      * @param mappingFunction src -> modified src (if used)
      * @return mapped term
      */
@@ -127,6 +127,7 @@ public abstract class EnumTermStrategy {
 
     /**
      * Override if grounded compound terms should be visited
+     *
      * @return true (default) if grounded compound terms should be skipped
      */
     public boolean pruneGroundedCompound() {

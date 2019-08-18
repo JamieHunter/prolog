@@ -3,7 +3,6 @@
 //
 package prolog.exceptions;
 
-import prolog.constants.PrologAtomInterned;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 import prolog.variables.Variable;

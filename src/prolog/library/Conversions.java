@@ -4,7 +4,7 @@
 package prolog.library;
 
 import prolog.bootstrap.Predicate;
-import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtom;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologChars;
 import prolog.constants.PrologCodePoints;
@@ -69,7 +69,7 @@ public class Conversions {
         if (!atom.isInstantiated()) {
             // construct atom, list must be grounded
             String text = TermList.extractString(environment, list);
-            PrologAtomInterned newAtom = environment.internAtom(text);
+            PrologAtom newAtom = new PrologAtom(text);
             if (!Unifier.unify(environment.getLocalContext(), atom, newAtom)) {
                 environment.backtrack();
             }

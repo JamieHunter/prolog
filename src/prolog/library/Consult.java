@@ -6,7 +6,7 @@ package prolog.library;
 import prolog.bootstrap.DemandLoad;
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtom;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologFloat;
 import prolog.constants.PrologNumber;
@@ -64,9 +64,10 @@ public final class Consult {
     /**
      * Given a load group identifier, determines if a load group by that identifier exists. If so,
      * unify the date/time. If not, fail.
+     *
      * @param environment Execution environment
-     * @param idTerm Id of group
-     * @param timeTerm Target of Date/Time (unified)
+     * @param idTerm      Id of group
+     * @param timeTerm    Target of Date/Time (unified)
      */
     @Predicate("$get_load_group_time")
     public static void getLoadGroupExists(Environment environment, Term idTerm, Term timeTerm) {
@@ -85,9 +86,9 @@ public final class Consult {
     /**
      * Create a new load group and establish as current
      *
-     * @param environment Execution environment
-     * @param idTerm Id of new group
-     * @param timeTerm Time of new group if instantiated
+     * @param environment    Execution environment
+     * @param idTerm         Id of new group
+     * @param timeTerm       Time of new group if instantiated
      * @param priorGroupTerm Unified with prior group for later restore
      */
     @Predicate("$begin_load_group")
@@ -95,7 +96,7 @@ public final class Consult {
         String id = convertId(environment, idTerm);
         PrologFloat time = convertTime(environment, timeTerm);
         LoadGroup priorGroup = environment.getLoadGroup();
-        PrologAtomInterned priorIdAtom = environment.internAtom(priorGroup.getId());
+        PrologAtom priorIdAtom = new PrologAtom(priorGroup.getId());
         if (!Unifier.unify(environment.getLocalContext(), priorGroupTerm, priorIdAtom)) {
             environment.backtrack();
             return;
@@ -107,7 +108,7 @@ public final class Consult {
      * Select and restore a previously known load group
      *
      * @param environment Execution environment
-     * @param idTerm Id of prior group
+     * @param idTerm      Id of prior group
      */
     @Predicate("$restore_load_group")
     public static void setLoadGroup(Environment environment, Term idTerm) {
@@ -122,6 +123,7 @@ public final class Consult {
 
     /**
      * Add goal to list of things to execute after text is loaded
+     *
      * @param environment
      * @param goal
      */
@@ -135,8 +137,9 @@ public final class Consult {
 
     /**
      * Execute all the initialization goals
+     *
      * @param environment Execution environment
-     * @param idTerm Id of load group
+     * @param idTerm      Id of load group
      */
     @Predicate("$do_initialization")
     public static void doInitialization(Environment environment, Term idTerm) {
@@ -150,7 +153,7 @@ public final class Consult {
         // Compile all the terms as if they were provided as a single ':-' at the end of the script
         CompileContext compiling = new CompileContext(environment);
         ListIterator<Term> iter = initialization.listIterator();
-        while(iter.hasNext()) {
+        while (iter.hasNext()) {
             Term term = iter.next();
             iter.remove();
             term.compile(compiling);
@@ -213,7 +216,7 @@ public final class Consult {
         if (!(time instanceof PrologNumber)) {
             throw PrologTypeError.numberExpected(environment, time);
         }
-        return ((PrologNumber)time).toPrologFloat();
+        return ((PrologNumber) time).toPrologFloat();
     }
 
 }

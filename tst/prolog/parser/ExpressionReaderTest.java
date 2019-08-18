@@ -147,7 +147,7 @@ public class ExpressionReaderTest {
         // Test came from an actual parse bug
         // ':-' is lower than ',' and is also a prefix
         // This parses in a non-obvious way
-        expect("'$x'(':-'(A), B) :- C.",
+        expect("'$x'(:- A, B) :- C.",
                 isCompoundTerm(":-",
                         isCompoundTerm("$x",
                                 isCompoundTerm(":-",

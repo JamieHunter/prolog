@@ -7,8 +7,8 @@ import prolog.constants.Atomic;
 import prolog.execution.OperatorEntry;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * All pre-defined operators with precedence.
@@ -17,8 +17,8 @@ public class Operators {
 
     // tables of default operators
     // Must be before the construction list below.
-    private static final HashMap<Atomic, OperatorEntry> infixPostfixOperatorTable = new HashMap<>();
-    private static final HashMap<Atomic, OperatorEntry> prefixOperatorTable = new HashMap<>();
+    private static final TreeMap<Atomic, OperatorEntry> infixPostfixOperatorTable = new TreeMap<>();
+    private static final TreeMap<Atomic, OperatorEntry> prefixOperatorTable = new TreeMap<>();
     public static final OperatorEntry COMMA;
 
     // List of default operators and precedence. Note that the precedence numbers are standardized

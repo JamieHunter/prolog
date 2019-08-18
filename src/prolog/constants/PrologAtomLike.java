@@ -85,7 +85,16 @@ public abstract class PrologAtomLike extends AtomicBase {
      */
     @Override
     public void write(WriteContext context) throws IOException {
-        new AtomWriter(context, this).write();
+        new AtomWriter(context).write(this);
+    }
+
+    /**
+     * Return true if this atom really needs to be quoted (used during parsing)
+     * @return true if atom needs to be quoted
+     */
+    public boolean needsQuoting() {
+        // reuse AtomWriter to make this determination
+        return AtomWriter.needsQuoting(this);
     }
 
     /**

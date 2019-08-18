@@ -6,10 +6,11 @@ package prolog.parser;
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Operators;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologEOF;
 import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologNumber;
+import prolog.constants.PrologQuotedAtom;
 import prolog.exceptions.PrologSyntaxError;
 import prolog.execution.Environment;
 import prolog.execution.OperatorEntry;
@@ -79,26 +80,26 @@ public final class ExpressionReader {
      * @param initialToken Initial token.
      * @return Resulting term of expression
      */
-    private Term read(PrologAtomInterned terminal, BooleanSupplier confirmTerminal, Term initialToken) {
+    private Term read(PrologAtomLike terminal, BooleanSupplier confirmTerminal, Term initialToken) {
         operators.push(OperatorEntry.TERMINAL); // adds a guard for handleEnd
         State oldState = state;
         try {
             state = State.ARG_OR_PREFIX;
             for (Term token = initialToken; token != PrologEOF.EOF; token = tokenizer.nextToken()) {
-                if (token == Interned.OPEN_BRACKET) {
+                if (is(token, Interned.OPEN_BRACKET)) {
                     if (state == State.OPERATOR) {
                         handleStructure();
                     } else {
                         handleBracketTerm();
                     }
-                } else if (token == Interned.OPEN_SQUARE_BRACKET) {
+                } else if (is(token, Interned.OPEN_SQUARE_BRACKET)) {
                     handleList();
-                } else if (token == Interned.OPEN_BRACES) {
-                    handleBraces();
-                } else if (token == terminal && confirmTerminal.getAsBoolean()) {
+                } else if (is(token, Interned.OPEN_BRACES)) {
+                    handleBracesTerm();
+                } else if (is(token, terminal) && confirmTerminal.getAsBoolean()) {
                     return handleEnd(terminal);
                 } else {
-                    handleTerm(token);
+                    handleTerm(token, !tokenizer.isNext('('));
                 }
             }
             // EOF
@@ -111,6 +112,33 @@ public final class ExpressionReader {
                     "EOF reached before term was completed, missing '" + terminal + "' ?");
         } finally {
             state = oldState;
+        }
+    }
+
+    /**
+     * Utility method - determine if term on left is the atom on the right
+     *
+     * @param term  Term under test
+     * @param other Atom to compare with
+     * @return true if term is the given atom
+     */
+    private boolean is(Term term, PrologAtomLike other) {
+        return term.isAtom() && term.compareTo(other) == 0;
+    }
+
+    /**
+     * Utility method, determine if term on left is unnecessarily quoted
+     *
+     * @param term Term under test
+     * @return true if unnecessarily quoted
+     */
+    private boolean isOverquotedAtom(Term term) {
+        if (term instanceof PrologQuotedAtom) {
+            // atom was read as quoted, return true if it didn't need to be quoted
+            return !((PrologQuotedAtom) term).needsQuoting();
+        } else {
+            // atom was not read as quoted, so doesn't matter
+            return false;
         }
     }
 
@@ -165,7 +193,7 @@ public final class ExpressionReader {
                 atom = list.get(0);
             }
         }
-        if (!(atom instanceof PrologAtomInterned)) {
+        if (!atom.isAtom()) {
             throw PrologSyntaxError.functorError(environment, "Functor expected before '('");
         }
         Term result = read(Interned.CLOSE_BRACKET, () -> true, tokenizer.nextToken());
@@ -181,20 +209,19 @@ public final class ExpressionReader {
      */
     private void handleBracketTerm() {
         Term result = read(Interned.CLOSE_BRACKET, () -> true, tokenizer.nextToken());
-        handleTerm(rewriteBracketedCommas(result));
+        handleTerm(rewriteBracketedCommas(result), false);
     }
 
     /**
-     * Handle content of '{' ... '}'
+     * Handle content of '{' ... '}' as a single term
      */
-    private void handleBraces() {
+    private void handleBracesTerm() {
         Term next = tokenizer.nextToken();
-        if (next == Interned.CLOSE_BRACES) {
-            handleTerm(Interned.EMPTY_BRACES_ATOM);
+        if (is(next, Interned.CLOSE_BRACES)) {
+            handleTerm(Interned.EMPTY_BRACES_ATOM, false);
         } else {
             Term nestedTerm = read(Interned.CLOSE_BRACES, () -> true, next);
-            handleTerm(nestedTerm);
-            throw new UnsupportedOperationException("NYI"); // not sure what to do here, yet
+            handleTerm(nestedTerm, false);
         }
     }
 
@@ -204,68 +231,59 @@ public final class ExpressionReader {
 
     private void handleList() {
         Term next = tokenizer.nextToken();
-        if (next == Interned.CLOSE_SQUARE_BRACKET) {
-            handleTerm(PrologEmptyList.EMPTY_LIST);
+        if (is(next, Interned.CLOSE_SQUARE_BRACKET)) {
+            handleTerm(PrologEmptyList.EMPTY_LIST, false);
         } else {
             Term nestedTerm = read(Interned.CLOSE_SQUARE_BRACKET, () -> true, next);
-            handleTerm(convertList(nestedTerm));
+            handleTerm(convertList(nestedTerm), false);
         }
     }
 
     /**
      * Handle self-identifying term, constant, operator, etc
      *
-     * @param term Self identifying term
+     * @param term                  Self identifying term
+     * @param allowAsPrefixOperator true if term is permitted to be a prefix operator, false otherwise
      */
-    private void handleTerm(Term term) {
-        OperatorEntry op = OperatorEntry.ARGUMENT;
-        if (term instanceof Atomic) {
-            if (state == State.OPERATOR) {
-                op = environment.getInfixPostfixOperator((Atomic) term);
-                // TODO: if operator is quoted, maybe allow as compound term (see SWI Prolog)
-                // See isNext() method of tokenizer to help with this
-            } else {
-                op = environment.getPrefixOperator((Atomic) term);
-                if (op == OperatorEntry.ARGUMENT) {
-                    op = environment.getInfixPostfixOperator((Atomic) term);
-                    if (op != OperatorEntry.ARGUMENT) {
-                        OperatorEntry lastOp = operators.peek();
-                        if (lastOp.getCode().isPrefix() &&
-                                (op == Operators.COMMA || lastOp.getPrecedence() < op.getPrecedence())) {
-                            // re-interpret last operator as non-operator
-                            operators.pop();
-                            state = State.OPERATOR;
-                        } else {
-                            op = OperatorEntry.ARGUMENT;
-                        }
-                    }
-                }
+    private void handleTerm(Term term, boolean allowAsPrefixOperator) {
+        OperatorEntry op1 = OperatorEntry.ARGUMENT; // prefix operator if it exists
+        OperatorEntry op2 = OperatorEntry.ARGUMENT; // infix/postfix operator if it exists
+        if (term.isAtom() && !isOverquotedAtom(term)) {
+            op2 = environment.getInfixPostfixOperator((Atomic) term);
+            if (state == State.ARG_OR_PREFIX && allowAsPrefixOperator) {
+                op1 = environment.getPrefixOperator((Atomic) term);
             }
         }
-
-        if (op == OperatorEntry.ARGUMENT) {
-            if (state == State.OPERATOR) {
-                // Syntax error, an operator was expected
-                throw PrologSyntaxError.expectedOperatorError(environment, "Unexpected term " + term + " where operator is expected");
-            } else {
-                // Given o1 x o2 y and at position x,
-                // We cannot differentiate between
-                // ((o1 x) o2 y) and
-                // (o1 (x o2 y))
-                // until we read more localContext
-                stack.push(term);
-                // only permit binary or postfix operators
+        if (state == State.ARG_OR_PREFIX && op2 != OperatorEntry.ARGUMENT && op1 == OperatorEntry.ARGUMENT) {
+            // consider if last operator was interpreted incorrectly
+            OperatorEntry lastOp = operators.peek();
+            if (lastOp.getCode().isPrefix() &&
+                    (op2 == Operators.COMMA || lastOp.getPrecedence() < op2.getPrecedence())) {
+                // re-interpret last operator as non-operator
+                operators.pop();
                 state = State.OPERATOR;
-                return;
             }
         }
+        if (state == State.OPERATOR && op2 == OperatorEntry.ARGUMENT) {
+            // Argument given at infix/postfix operator position - this is clearly an error
+            throw PrologSyntaxError.expectedOperatorError(environment, "Unexpected term " + term + " where operator is expected");
+        }
+        if (state == State.ARG_OR_PREFIX && op1 == OperatorEntry.ARGUMENT) {
+            // Argument given in arg/prefix position
+            // Given o1 x o2 y and at position x,
+            // We cannot differentiate between
+            // ((o1 x) o2 y) and
+            // (o1 (x o2 y))
+            // until we read more localContext
+            stack.push(term);
+            // only permit binary or postfix operators
+            state = State.OPERATOR;
+            return;
+        }
 
-        //
-        // At this point, we are looking at an operator
-        //
         if (state == State.ARG_OR_PREFIX) {
-            // Prefix operators just get pushed
-            operators.push(op);
+            // Operator op1 is valid
+            operators.push(op1);
             stack.push(term); // save the operator for unrolling
             // keep processing args and prefix operators
             return;
@@ -276,7 +294,7 @@ public final class ExpressionReader {
         //
         while (operators.peek() != OperatorEntry.TERMINAL) {
             OperatorEntry lastOp = operators.pop();
-            int compare = lastOp.compareTo(op);
+            int compare = lastOp.compareTo(op2);
             if (compare == 0) {
                 // cannot resolve left/right
                 throw new UnsupportedOperationException("NYI");
@@ -288,7 +306,7 @@ public final class ExpressionReader {
             }
             reduceOp(lastOp);
         }
-        if (op.getCode().isPostfix()) {
+        if (op2.getCode().isPostfix()) {
             // postfix operators are reduced immediately
             Atomic atom = (Atomic) term;
             Term theArg = stack.pop();
@@ -296,7 +314,7 @@ public final class ExpressionReader {
             state = State.OPERATOR; // still looking for operator
         } else {
             // infix operators have to wait until more parsing is done
-            operators.push(op);
+            operators.push(op2);
             stack.push(term); // save the infix operator
             state = State.ARG_OR_PREFIX; // expect argument next
         }
@@ -312,11 +330,11 @@ public final class ExpressionReader {
             Term theArg = stack.pop();
             Atomic atom = (Atomic) stack.pop();
             // +const or -const handled immediately
-            if (atom == Interned.MINUS_ATOM && theArg.isNumber()) {
+            if (is(atom, Interned.MINUS_ATOM) && theArg.isNumber()) {
                 // negate immediately
                 theArg = ((PrologNumber) theArg).negate();
                 stack.push(theArg);
-            } else if (atom == Interned.PLUS_ATOM && theArg.isNumber()) {
+            } else if (is(atom, Interned.PLUS_ATOM) && theArg.isNumber()) {
                 // eliminate +
                 stack.push(theArg);
             } else {
@@ -337,7 +355,7 @@ public final class ExpressionReader {
      *
      * @param terminal Expected terminal
      */
-    private void reinterpretLastOperator(PrologAtomInterned terminal) {
+    private void reinterpretLastOperator(PrologAtomLike terminal) {
         // consider (atom) scenario where atom was being interpreted as a prefix
         if (operators.peek() != OperatorEntry.TERMINAL) {
             OperatorEntry lastOp = operators.pop();
@@ -351,7 +369,7 @@ public final class ExpressionReader {
                     "Expected argument after '" + op.toString() + "'");
         } else {
             // initial position
-            if (terminal == Interned.DOT) {
+            if (is(terminal, Interned.DOT)) {
                 throw PrologSyntaxError.expectedSentenceError(environment, "Expected sentence");
             } else {
                 throw PrologSyntaxError.expectedArgumentError(environment, "Expected arg");
@@ -365,7 +383,7 @@ public final class ExpressionReader {
      * @param terminal Expected terminal
      * @return Completed term
      */
-    private Term handleEnd(PrologAtomInterned terminal) {
+    private Term handleEnd(PrologAtomLike terminal) {
         if (state == State.ARG_OR_PREFIX) {
             reinterpretLastOperator(terminal);
         }

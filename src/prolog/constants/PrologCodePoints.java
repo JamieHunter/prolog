@@ -9,6 +9,7 @@ import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.TermList;
 import prolog.expressions.Term;
+import prolog.io.StructureWriter;
 import prolog.io.TermWriter;
 import prolog.io.WriteContext;
 

@@ -95,13 +95,13 @@ public class PrologString extends AtomicBase {
      */
     @Override
     public void write(WriteContext context) throws IOException {
-        new TermWriter<PrologString>(context, this) {
+        new TermWriter<PrologString>(context) {
 
             @Override
-            public void write() throws IOException {
-                writeQuoted('"', term.get());
+            public void write(Term term) throws IOException {
+                writeQuoted('"', get());
             }
-        }.write();
+        }.write(this);
     }
 
     /**

@@ -41,7 +41,7 @@ public final class WriteContext {
     /**
      * @return options
      */
-    private WriteOptions options() {
+    public WriteOptions options() {
         return options;
     }
 
@@ -103,6 +103,16 @@ public final class WriteContext {
      */
     public void beginSafe() {
         safety = Safety.SAFE;
+    }
+
+    /**
+     * Used with unquoted atoms
+     */
+    public void beginUnknown() throws IOException {
+        if (safety.nextUnknown()) {
+            writeSpace();
+        }
+        safety = Safety.WS;
     }
 
     /**
@@ -196,6 +206,15 @@ public final class WriteContext {
          * @return true if whitespace is required
          */
         boolean nextQuoted() {
+            return ws();
+        }
+
+        /**
+         * Next token is unknown
+         *
+         * @return true if whitespace is required
+         */
+        boolean nextUnknown() {
             return ws();
         }
     }

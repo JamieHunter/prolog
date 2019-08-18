@@ -4,6 +4,7 @@
 package prolog.flags;
 
 import prolog.constants.Atomic;
+import prolog.constants.PrologAtomInterned;
 import prolog.execution.Environment;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
@@ -24,7 +25,8 @@ public class StreamProperties implements FlagsWithEnvironment {
     private static final ReadableParser<StreamProperties> parser = new ReadableParser<>();
 
     static {
-        parser.atomFlag(internAtom("alias"), (o, v) -> o.environment().addStreamAlias(v, o.binding)).
+        parser.atomFlag(internAtom("alias"), (o, v) -> o.environment().
+                addStreamAlias((PrologAtomInterned)v, o.binding)).
                 read(o -> o.binding.getAlias());
         parser.enumFlag(internAtom("buffer"), Buffering.class, (o, v) -> o.binding.setBufferMode(v)).
                 readEnum(Buffering.class, o -> o.binding.getBufferMode());

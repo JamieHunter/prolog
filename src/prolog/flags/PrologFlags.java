@@ -8,8 +8,8 @@ import prolog.constants.Atomic;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static prolog.bootstrap.Interned.internAtom;
 
@@ -81,7 +81,7 @@ public class PrologFlags implements FlagsWithEnvironment {
     public Unknown unknown = Unknown.ATOM_error;
 
     // Flags created via create_prolog_flag
-    private final Map<Atomic, Term> otherFlags = new HashMap<>();
+    private final Map<Atomic, Term> otherFlags = new TreeMap<>();
 
     /**
      * Create a new PrologFlags associated with a new environment

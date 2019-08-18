@@ -3,6 +3,7 @@
 //
 package prolog.bootstrap;
 
+import prolog.constants.PrologAtomInterned;
 import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
@@ -368,7 +369,7 @@ public class LibraryBase {
         // The same loader may be used for each predicate.
         LoadResourceOnDemand onDemand = new LoadResourceOnDemand(getClass(), resourceName);
         for (Predication p : ((Predication[]) value)) {
-            Builtins.onDemand(p, onDemand);
+            Builtins.onDemand(new Predication.Interned((PrologAtomInterned)p.functor(), p.arity()), onDemand);
         }
     }
 

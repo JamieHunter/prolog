@@ -3,6 +3,7 @@
 //
 package prolog.parser;
 
+import prolog.constants.PrologAtom;
 import prolog.exceptions.PrologSyntaxError;
 import prolog.expressions.Term;
 
@@ -76,8 +77,8 @@ class TokenParseCoreState extends ActiveParsingState {
         }
         match = matcher.group(Tokenizer.ATOM_TAG);
         if (match != null) {
-            // Simple atom is accepted as is
-            return finish(tokenizer.environment().internAtom(match));
+            // Simple atom is accepted as is (at this point, not interned)
+            return finish(new PrologAtom(match));
         }
         match = matcher.group(Tokenizer.FLOAT_TAG);
         if (match != null) {

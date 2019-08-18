@@ -5,7 +5,6 @@ package prolog.flags;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
 import prolog.exceptions.FutureFlagKeyError;

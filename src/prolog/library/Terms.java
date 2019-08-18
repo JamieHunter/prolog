@@ -5,7 +5,6 @@ package prolog.library;
 
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologInteger;
 import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologInstantiationError;
@@ -190,9 +189,9 @@ public class Terms {
      * unify functor with functor of struct, unify arity with arity of struct.
      *
      * @param environment Execution environment
-     * @param term     Term, typically instantiated
-     * @param name     Functor, typically uninstantiated
-     * @param arity    Arity, typically uninstantiated
+     * @param term        Term, typically instantiated
+     * @param name        Functor, typically uninstantiated
+     * @param arity       Arity, typically uninstantiated
      */
     @Predicate("functor")
     public static void functor(Environment environment, Term term, Term name, Term arity) {
@@ -225,7 +224,7 @@ public class Terms {
                 for (int i = 0; i < arityInt; i++) {
                     members[i] = new UnboundVariable("_", environment.nextVariableId()).resolve(context);
                 }
-                newStruct = new CompoundTermImpl((Atomic)name, members);
+                newStruct = new CompoundTermImpl((Atomic) name, members);
             }
             if (!term.instantiate(newStruct)) {
                 throw new UnsupportedOperationException("Unable to instantiate");

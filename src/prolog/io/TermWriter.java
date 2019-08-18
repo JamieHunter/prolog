@@ -16,17 +16,14 @@ import java.util.regex.Pattern;
  */
 public abstract class TermWriter<T extends Term> extends TokenRegex {
     protected final WriteContext context;
-    protected final T term;
     protected final PrologOutputStream output;
 
     /**
      * Create writer utility.
      * @param context Write context
-     * @param term Term being written
      */
-    protected TermWriter(WriteContext context, T term) {
+    protected TermWriter(WriteContext context) {
         this.context = context;
-        this.term = term;
         this.output = context.output();
     }
 
@@ -52,7 +49,7 @@ public abstract class TermWriter<T extends Term> extends TokenRegex {
      * Override with actual write functionality.
      * @throws IOException Thrown if there is an IO error
      */
-    public abstract void write() throws IOException;
+    public abstract void write(Term term) throws IOException;
 
     /**
      * Format a string correctly quoted

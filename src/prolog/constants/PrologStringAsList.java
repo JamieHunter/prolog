@@ -7,6 +7,7 @@ import prolog.execution.EnumTermStrategy;
 import prolog.execution.LocalContext;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
+import prolog.io.StructureWriter;
 import prolog.io.TermWriter;
 import prolog.io.WriteContext;
 
@@ -116,12 +117,7 @@ public abstract class PrologStringAsList implements TermList, Grounded {
      */
     @Override
     public void write(WriteContext context) throws IOException {
-        new TermWriter<PrologStringAsList>(context, this) {
-            @Override
-            public void write() throws IOException {
-                writeQuoted('`', value.toString());
-            }
-        }.write();
+        new StructureWriter(context).write(StructureWriter.NO_OPS, this);
     }
 
     /**

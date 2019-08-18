@@ -6,6 +6,10 @@ package prolog.constants;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
+import prolog.io.TermWriter;
+import prolog.io.WriteContext;
+
+import java.io.IOException;
 
 /**
  * Represents a list of characters (atoms of length 1).
@@ -48,5 +52,18 @@ public class PrologChars extends PrologStringAsList {
     @Override
     protected PrologStringAsList substring(CharSequence value) {
         return new PrologChars(value);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void write(WriteContext context) throws IOException {
+        new TermWriter<PrologStringAsList>(context) {
+            @Override
+            public void write(Term term) throws IOException {
+                writeQuoted('`', term.toString());
+            }
+        }.write(this);
     }
 }

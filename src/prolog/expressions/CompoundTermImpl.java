@@ -8,6 +8,7 @@ import prolog.execution.CompileContext;
 import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
+import prolog.io.StructureWriter;
 import prolog.io.WriteContext;
 import prolog.predicates.PredicateDefinition;
 import prolog.predicates.Predication;
@@ -193,7 +194,7 @@ public class CompoundTermImpl implements CompoundTerm {
      */
     @Override
     public CompoundTerm enumCompoundTerm(EnumTermStrategy strategy) {
-        for(Term t : members) {
+        for (Term t : members) {
             t.enumTerm(strategy);
         }
         return this;
@@ -204,7 +205,6 @@ public class CompoundTermImpl implements CompoundTerm {
      */
     @Override
     public void write(WriteContext context) throws IOException {
-        throw new InternalError("Unexpected call to write");
+        new StructureWriter(context).write(this);
     }
-
 }

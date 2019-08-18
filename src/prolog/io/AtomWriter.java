@@ -4,6 +4,7 @@
 package prolog.io;
 
 import prolog.constants.PrologAtomLike;
+import prolog.expressions.Term;
 
 import java.io.IOException;
 import java.util.regex.Matcher;
@@ -24,15 +25,16 @@ public class AtomWriter extends TermWriter<PrologAtomLike> {
                     group(SOLO_TAG, SOLO_GRAPHIC),
                     group(ALPHA_TAG, ALPHA_ATOM)), Pattern.DOTALL);
 
-    public AtomWriter(WriteContext context, PrologAtomLike prologAtom) {
-        super(context, prologAtom);
+    public AtomWriter(WriteContext context) {
+        super(context);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void write() throws IOException {
+    public void write(Term t) throws IOException {
+        PrologAtomLike term = (PrologAtomLike)t;
         Matcher m = ACCEPT_PATTERN.matcher(term.name());
         if (m.matches()) {
             if (m.group(GRAPHIC_TAG) != null) {
@@ -43,8 +45,33 @@ public class AtomWriter extends TermWriter<PrologAtomLike> {
                 context.beginAlphaNum();
             }
             output.write(term.name());
-            return;
+        } else if (context.options().quoted) {
+            writeQuoted('\'', term.name());
+        } else if (term.name().length() == 0) {
+            // write nothing
+        } else {
+            // guess if whitespace is required or not
+            char first = term.name().charAt(0);
+            char last = term.name().charAt(term.name().length()-1);
+            if (first <= 0x20) {
+                context.beginSafe();
+            } else {
+                context.beginUnknown();
+            }
+            output.write(term.name());
+            if (last <= 0x20) {
+                context.beginSafe();
+            }
         }
-        writeQuoted('\'', term.name());
+    }
+
+    /**
+     * Return true if this atom must be quoted to be interpreted correctly
+     * @param term Term to be tested
+     * @return true if quoting is required
+     */
+    public static boolean needsQuoting(PrologAtomLike term) {
+        Matcher m = ACCEPT_PATTERN.matcher(term.name());
+        return !m.matches();
     }
 }

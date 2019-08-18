@@ -115,7 +115,7 @@ public final class Dictionary {
         if (arityInt < 0) {
             throw PrologDomainError.notLessThanZero(environment, arity);
         }
-        Predication predication = new Predication(functorAtom, arityInt);
+        Predication.Interned predication = new Predication.Interned(functorAtom, arityInt);
         PredicateDefinition defn =
                 environment.lookupPredicate(predication);
         if (defn instanceof BuiltInPredicate) {
@@ -259,7 +259,7 @@ public final class Dictionary {
         if (!head.isInstantiated()) {
             throw PrologInstantiationError.error(environment, head);
         }
-        if (head instanceof PrologAtomInterned) {
+        if (head.isAtom()) {
             head = CompoundTerm.from((Atomic) head);
         }
         if (!(head instanceof CompoundTerm)) {
@@ -267,7 +267,9 @@ public final class Dictionary {
         }
         CompoundTerm compoundHead = (CompoundTerm) head;
         Unifier unifier = UnifyBuilder.from(compoundHead);
-        Predication predication = new Predication(compoundHead.functor(), compoundHead.arity());
+        Predication.Interned predication = new Predication.Interned(
+                PrologAtomInterned.from(environment,
+                        compoundHead.functor()), compoundHead.arity());
         // create library entry prior to compiling
         ClauseSearchPredicate dictionaryEntry =
                 environment.createDictionaryEntry(predication);
@@ -305,7 +307,7 @@ public final class Dictionary {
         Term arity = predicationCompound.get(1);
         PrologAtomInterned functorAtom = PrologAtomInterned.from(environment, functor);
         PrologInteger arityInt = PrologInteger.from(arity);
-        Predication predication = new Predication(functorAtom, arityInt.get().intValue());
+        Predication.Interned predication = new Predication.Interned(functorAtom, arityInt.get().intValue());
         // create library entry if needed
         PredicateDefinition entry = environment.autoCreateDictionaryEntry(predication);
         if (!(entry instanceof ClauseSearchPredicate)) {

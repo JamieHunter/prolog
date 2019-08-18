@@ -18,6 +18,15 @@ import java.io.IOException;
 public interface Term extends Comparable<Term> {
 
     /**
+     * @return true if this and other are equivalent (Prolog type equals vs Java equals)
+     * @param other other term to compare
+     * @return true if they are equivalent (sufficiently equal)
+     */
+    default boolean is(Term other) {
+        return this == other || compareTo(other) == 0;
+    }
+
+    /**
      * @return true if this term is considered an atom. By default, terms are not atoms.
      */
     default boolean isAtom() {

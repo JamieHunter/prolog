@@ -3,9 +3,10 @@
 //
 package prolog.predicates;
 
-import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
+import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologInteger;
+import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.DeferredCompoundTerm;
 import prolog.expressions.Term;
@@ -16,7 +17,7 @@ import java.math.BigInteger;
  * A predication is defined by the functor and arity.
  */
 public class Predication {
-    public static final Predication UNDEFINED = new Predication(Interned.UNKNOWN_ATOM, 0);
+    public static final Predication UNDEFINED = new Predication(prolog.bootstrap.Interned.UNKNOWN_ATOM, 0);
     private final Atomic functor;
     private final int arity;
 
@@ -29,6 +30,16 @@ public class Predication {
     public Predication(Atomic functor, int arity) {
         this.functor = functor;
         this.arity = arity;
+    }
+
+    /**
+     * Intern a predication
+     *
+     * @param environment Execution environment
+     * @return interned predication
+     */
+    public Predication.Interned intern(Environment environment) {
+        return new Predication.Interned(PrologAtomInterned.from(environment, functor), arity);
     }
 
     /**
@@ -50,7 +61,7 @@ public class Predication {
      */
     public CompoundTerm term() {
         return new DeferredCompoundTerm(
-                Interned.SLASH_ATOM,
+                prolog.bootstrap.Interned.SLASH_ATOM,
                 2,
                 () -> new Term[]{
                         functor,
@@ -89,5 +100,25 @@ public class Predication {
     @Override
     public String toString() {
         return functor.toString() + "/" + arity;
+    }
+
+    /**
+     * Predication that is guaranteed to be interned
+     */
+    public static class Interned extends Predication {
+
+        public Interned(PrologAtomInterned functor, int arity) {
+            super(functor, arity);
+        }
+
+        @Override
+        public Interned intern(Environment environment) {
+            return this;
+        }
+
+        @Override
+        public PrologAtomInterned functor() {
+            return (PrologAtomInterned) super.functor();
+        }
     }
 }

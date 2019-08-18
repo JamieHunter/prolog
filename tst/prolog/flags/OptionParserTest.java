@@ -20,6 +20,7 @@ import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static prolog.test.Matchers.isAtom;
 
 /**
  * Test the built-in processing of flag/option parameters. Note that there should be parity between this and
@@ -100,7 +101,7 @@ public class OptionParserTest implements Flags {
     @Test
     public void testAtomAny() {
         apply("[atom_flag = any].");
-        assertThat(atom_flag, is(environment.internAtom("any")));
+        assertThat(atom_flag, isAtom("any"));
     }
 
     @Test
