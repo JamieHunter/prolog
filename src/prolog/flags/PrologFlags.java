@@ -29,7 +29,7 @@ public class PrologFlags implements FlagsWithEnvironment {
         global.protectedFlag(internAtom("bounded")).
                 constant(Interned.FALSE_ATOM).protect();
         global.protectedFlag(internAtom("break_level")).
-                readInteger(o -> o.breakLevel).protect();
+                readInteger(o -> (long)o.breakLevel).protect();
         global.booleanFlag(internAtom("character_escapes"), (o, v) -> o.characterEscapes = v).
                 readBoolean(o -> o.characterEscapes).protect();
         global.booleanFlag(internAtom("char_conversion"),

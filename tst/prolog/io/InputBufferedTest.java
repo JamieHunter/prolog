@@ -65,7 +65,7 @@ public class InputBufferedTest {
             assertThat(c, is((int) testData[i]));
         }
         // Rewind
-        stream.restorePosition(pos);
+        stream.seekPosition(pos);
         // Expect to re-read what was just read
         for (int i = 6; i < 12; i++) {
             int c = stream.read();
@@ -78,7 +78,7 @@ public class InputBufferedTest {
             assertThat(c, is((int) testData[i]));
         }
         // Rewind again
-        stream.restorePosition(pos);
+        stream.seekPosition(pos);
         // And verify content again to end
         for (int i = 12; i < testData.length; i++) {
             int c = stream.read();
@@ -105,7 +105,7 @@ public class InputBufferedTest {
         assertPosition(13);
         assertArrays(target1, 'W', 'o', 'r', '\n', 'O', '\0', '\0', '\0', '\0', '\0');
         // Rewind
-        stream.restorePosition(pos);
+        stream.seekPosition(pos);
         assertPosition(6);
         // overwrite
         len = unsplitRead(target1, 3, 6);
@@ -120,7 +120,7 @@ public class InputBufferedTest {
         assertArrays(target1, 'W', 'o', 'r', 'W', 'o', 'r', 'T', 'w', 'o', '\n');
         stream.getPosition(pos);
         pos.setCharPos(pos.getCharPos().get() + 6);
-        stream.restorePosition(pos);
+        stream.seekPosition(pos);
         assertPosition(26);
         len = unsplitRead(target1, 1, 5);
         assertThat(len, is(5));
@@ -128,7 +128,7 @@ public class InputBufferedTest {
         assertArrays(target1, 'W', 'F', 'o', 'u', 'r', '\n', 'T', 'w', 'o', '\n');
         stream.getPosition(pos);
         pos.setCharPos(pos.getCharPos().get() - 6);
-        stream.restorePosition(pos);
+        stream.seekPosition(pos);
         assertPosition(25);
         len = unsplitRead(target1, 0, 1);
         assertThat(len, is(1));

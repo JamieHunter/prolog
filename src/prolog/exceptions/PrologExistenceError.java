@@ -30,6 +30,18 @@ public class PrologExistenceError extends PrologError {
     }
 
     /**
+     * Stream specifier is invalid (alias not allowed)
+     *
+     * @param environment Execution environment.
+     * @param target      Term with error
+     * @return Domain error (not thrown)
+     */
+    public static PrologExistenceError stream(Environment environment, Term target) {
+        return error(environment, Interned.STREAM_TYPE, target,
+                String.format("Stream %s not found", target), null);
+    }
+
+    /**
      * {@inheritDoc}
      */
     protected PrologExistenceError(Term formal, ErrorContext context, Throwable cause) {

@@ -59,7 +59,7 @@ public class ExecRunClause implements Instruction {
                     return;
                 default:
                     throw PrologExistenceError.error(environment,
-                            Interned.PROCEDURE, pred.term(), "Predicate not defined", null);
+                            Interned.PROCEDURE, pred.term(), String.format("Predicate %s not defined", pred.toString()), null);
             }
         }
         // Clauses are snapshot at time of call.

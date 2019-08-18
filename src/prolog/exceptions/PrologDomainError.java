@@ -4,7 +4,8 @@
 package prolog.exceptions;
 
 import prolog.bootstrap.Interned;
-import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomLike;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 
@@ -23,7 +24,7 @@ public class PrologDomainError extends PrologError {
      * @param cause       Exception that lead to this error
      * @return Domain error (not thrown)
      */
-    public static PrologDomainError error(Environment environment, PrologAtomInterned domain, Term target, Throwable cause) {
+    public static PrologDomainError error(Environment environment, PrologAtomLike domain, Term target, Throwable cause) {
         return new PrologDomainError(
                 formal(Interned.DOMAIN_ERROR_FUNCTOR, domain, target),
                 context(environment, "Domain error: " + domain.toString()),
@@ -38,8 +39,20 @@ public class PrologDomainError extends PrologError {
      * @param target      Term that has the error
      * @return Domain error (not thrown)
      */
-    public static PrologDomainError error(Environment environment, PrologAtomInterned domain, Term target) {
+    public static PrologDomainError error(Environment environment, PrologAtomLike domain, Term target) {
         return error(environment, domain, target, null);
+    }
+
+    /**
+     * Simplified error form, domain can be a string
+     *
+     * @param environment Execution environment.
+     * @param domain      Domain in error
+     * @param target      Term that has the error
+     * @return Domain error (not thrown)
+     */
+    public static PrologDomainError error(Environment environment, String domain, Term target) {
+        return error(environment, new PrologAtom(domain), target);
     }
 
     /**
@@ -87,7 +100,18 @@ public class PrologDomainError extends PrologError {
     }
 
     /**
-     * Stream specifier is invalid
+     * Stream specifier is invalid (alias not allowed)
+     *
+     * @param environment Execution environment.
+     * @param target      Term with error
+     * @return Domain error (not thrown)
+     */
+    public static PrologDomainError stream(Environment environment, Term target) {
+        return error(environment, Interned.STREAM_DOMAIN, target);
+    }
+
+    /**
+     * Stream specifier is invalid (alias is allowed)
      *
      * @param environment Execution environment.
      * @param target      Term with error
@@ -149,18 +173,18 @@ public class PrologDomainError extends PrologError {
      * @return Domain error (not thrown)
      */
     public static PrologDomainError readOption(Environment environment, Term target) {
-        return error(environment, environment.internAtom("read_option"), target);
+        return error(environment,  new PrologAtom("read_option"), target);
     }
 
     /**
-     * Invalid open option
+     * Invalid stream option
      *
      * @param environment Execution environment
      * @param target      Option with error
      * @return Domain error (not thrown)
      */
-    public static PrologDomainError openOption(Environment environment, Term target) {
-        return error(environment, environment.internAtom("open_option"), target);
+    public static PrologDomainError streamOption(Environment environment, Term target) {
+        return error(environment, new PrologAtom("stream_option"), target);
     }
 
     /**

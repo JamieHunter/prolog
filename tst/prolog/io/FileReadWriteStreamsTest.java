@@ -184,7 +184,7 @@ public class FileReadWriteStreamsTest {
     private void setPosition(long position) throws IOException {
         Position pos = new Position();
         pos.setBytePos(position);
-        boolean success = stream.restorePosition(pos);
+        boolean success = stream.seekPosition(pos);
         assertThat(success, is(true));
     }
 

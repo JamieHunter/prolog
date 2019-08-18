@@ -3,6 +3,8 @@
 //
 package prolog.io;
 
+import prolog.flags.CloseOptions;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -96,11 +98,13 @@ public class OutputEncoderFilter extends FilteredOutputStream {
      * {@inheritDoc}
      */
     @Override
-    public synchronized void close() throws IOException {
+    public void close(CloseOptions options) throws IOException {
         if (nextChar == IoUtility.EOF) {
-            return;
+            return; // already closed
         }
+
         this.flushLeftoverChar((CharBuffer) null, true);
+        assert (nextChar == NO_CHAR);
 
         try {
             for (; ; ) {
@@ -109,7 +113,8 @@ public class OutputEncoderFilter extends FilteredOutputStream {
                     if (this.bb.position() > 0) {
                         this.writeBytes();
                     }
-                    super.close();
+                    super.close(options);
+                    nextChar = IoUtility.EOF;
                     return;
                 }
 
@@ -165,7 +170,7 @@ public class OutputEncoderFilter extends FilteredOutputStream {
                 }
             }
 
-            this.nextChar = closing ? IoUtility.EOF : NO_CHAR;
+            this.nextChar = NO_CHAR;
         }
     }
 

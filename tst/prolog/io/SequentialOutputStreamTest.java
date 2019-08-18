@@ -81,7 +81,7 @@ public class SequentialOutputStreamTest {
         Position pos = new Position();
         stream.getPosition(pos);
         stream.write("Data");
-        boolean changed = stream.restorePosition(pos);
+        boolean changed = stream.seekPosition(pos);
         assertThat(changed, is(false));
     }
 }

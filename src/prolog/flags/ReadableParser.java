@@ -4,12 +4,17 @@
 package prolog.flags;
 
 import prolog.constants.Atomic;
+import prolog.exceptions.FutureFlagError;
 import prolog.exceptions.FutureFlagKeyError;
 import prolog.expressions.Term;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * Class that helps configure and access read/write flags object.
@@ -77,6 +82,28 @@ class ReadableParser<T extends FlagsWithEnvironment> extends ParserBase<T, Reada
             return entry.getOnRead().apply(obj);
         }
         throw new FutureFlagKeyError(key);
+    }
+
+    /**
+     * Return all names/values
+     * @return collection of all flag names with values
+     */
+    Map<Atomic, Term> getAll(T obj) {
+        TreeMap<Atomic, Term> all = new TreeMap<>();
+        for(Map.Entry<Atomic, ReadableFlagEntry<T>> e : flags.entrySet()) {
+            try {
+                Function<T, Term> func = e.getValue().getOnRead();
+                if (func != null) {
+                    Term v = func.apply(obj);
+                    if (v != null) {
+                        all.put(e.getKey(), v);
+                    }
+                }
+            } catch(FutureFlagError ffe) {
+                // ignore
+            }
+        }
+        return all;
     }
 
     /**

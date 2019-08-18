@@ -3,6 +3,8 @@
 //
 package prolog.io;
 
+import prolog.flags.CloseOptions;
+
 import java.io.IOException;
 
 /**
@@ -68,7 +70,39 @@ public class FilteredInputStream implements PrologInputStream {
      * {@inheritDoc}
      */
     @Override
-    public void close() throws IOException {
-        stream.close();
+    public void close(CloseOptions options) throws IOException {
+        stream.close(options);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean approveClose(CloseOptions options) {
+        return stream.approveClose(options);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void getPosition(Position position) throws IOException {
+        stream.getPosition(position);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean seekPosition(Position position) throws IOException {
+        return stream.seekPosition(position);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setKnownPosition(Position position) {
+        stream.setKnownPosition(position);
     }
 }

@@ -8,6 +8,9 @@ import prolog.execution.Environment;
 import prolog.expressions.Term;
 import prolog.io.LogicalStream;
 
+import java.util.List;
+import java.util.Map;
+
 import static prolog.bootstrap.Interned.internAtom;
 
 /**
@@ -34,7 +37,7 @@ public class StreamProperties implements FlagsWithEnvironment {
                 readEnum(Encoding.class, o -> o.binding.getEncoding());
         parser.enumFlag(internAtom("eof_action"), EofAction.class, (o, v) -> o.binding.setEofAction(v)).
                 readEnum(EofAction.class, o -> o.binding.getEofAction());
-        parser.other(internAtom("file_name"), (o, v) -> o.binding.setFileName(v)).
+        parser.other(internAtom("file_name"), (o, v) -> o.binding.setObjectTerm(v)).
                 read(o -> o.binding.getFileName());
         parser.protectedFlag(internAtom("input")).
                 readBoolean(o -> o.binding.isInput());
@@ -61,15 +64,18 @@ public class StreamProperties implements FlagsWithEnvironment {
 
     private final Environment environment;
     private final LogicalStream binding;
+    private final Atomic streamIdent;
+    private static List<Term> propertyNames;
 
     /**
      * Create a new PrologFlags associated with a new environment
      *
      * @param binding Prolog stream
      */
-    public StreamProperties(Environment environment, LogicalStream binding) {
+    public StreamProperties(Environment environment, LogicalStream binding, Atomic streamIdent) {
         this.environment = environment;
         this.binding = binding;
+        this.streamIdent = streamIdent;
     }
 
     @Override
@@ -88,6 +94,14 @@ public class StreamProperties implements FlagsWithEnvironment {
      */
     public Term get(Atomic key) {
         return parser.get(this, key);
+    }
+
+    /**
+     * Retrieve all properties for this stream
+     * @return map of all properties
+     */
+    public Map<Atomic,Term> getAll() {
+        return parser.getAll(this);
     }
 
     /**

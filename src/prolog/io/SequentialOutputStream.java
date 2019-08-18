@@ -3,6 +3,8 @@
 //
 package prolog.io;
 
+import prolog.flags.CloseOptions;
+
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -13,6 +15,7 @@ public class SequentialOutputStream implements PrologOutputStream {
 
     private final OutputStream stream;
     private long pos = 0;
+    private boolean closed = false;
 
     public SequentialOutputStream(OutputStream stream) {
         this.stream = stream;
@@ -57,7 +60,10 @@ public class SequentialOutputStream implements PrologOutputStream {
      * {@inheritDoc}
      */
     @Override
-    public void close() throws IOException {
-        stream.close();
+    public synchronized void close(CloseOptions options) throws IOException {
+        if (!closed) {
+            stream.close();
+            closed = true;
+        }
     }
 }

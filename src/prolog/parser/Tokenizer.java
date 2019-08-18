@@ -210,7 +210,7 @@ public final class Tokenizer extends TokenRegex {
      * @throws IOException IO Exception
      */
     void consume(int chars) throws IOException {
-        if (!inputStream.restorePosition(mark)) {
+        if (!inputStream.seekPosition(mark)) {
             throw new UnsupportedOperationException("NYI - how to handle this?");
         }
         inputStream.advance(chars); // assume we can advance this many chars, if we can't we're at EOF anyway.
@@ -237,7 +237,7 @@ public final class Tokenizer extends TokenRegex {
         try {
             mark();
             int c = inputStream.read();
-            inputStream.restorePosition(mark);
+            inputStream.seekPosition(mark);
             return c == test;
         } catch (IOException ioe) {
             throw PrologError.systemError(environment, ioe);
@@ -257,7 +257,7 @@ public final class Tokenizer extends TokenRegex {
                     return;
                 }
                 if (c != ' ' && c != '\r' && c != '\t') {
-                    inputStream.restorePosition(mark);
+                    inputStream.seekPosition(mark);
                     break;
                 }
             }

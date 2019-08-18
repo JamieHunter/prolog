@@ -113,9 +113,31 @@ public class InputDecoderFilter extends FilteredInputStream {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void getPosition(Position position) throws IOException {
         position.setCharPos(charPos);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean seekPosition(Position position) throws IOException {
+        if (super.seekPosition(position)) {
+            this.setKnownPosition(position);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setKnownPosition(Position position) {
+        position.getCharPos().ifPresent(c -> charPos = c);
     }
 
     /**

@@ -83,7 +83,7 @@ public class OpenOptions implements Flags {
         try {
             parser.apply(environment, this, optionsTerm);
         } catch (FutureFlagError ffe) {
-            throw PrologDomainError.error(environment, environment.internAtom("open_option"), ffe.getTerm(), ffe);
+            throw PrologDomainError.streamOption(environment, ffe.getTerm());
         }
     }
 

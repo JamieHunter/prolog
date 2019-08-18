@@ -7,8 +7,8 @@ import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologInteger;
 import prolog.flags.StreamProperties;
 import prolog.io.LogicalStream;
-import prolog.io.SequentialInputStream;
-import prolog.io.SequentialOutputStream;
+import prolog.io.ProtectedSequentialInputStream;
+import prolog.io.ProtectedSequentialOutputStream;
 
 import java.math.BigInteger;
 import java.util.Collections;
@@ -38,7 +38,7 @@ public class DefaultIoBinding {
      */
     public static final LogicalStream USER_INPUT = new LogicalStream(
             new PrologInteger(BigInteger.valueOf(0)),
-            new SequentialInputStream(System.in),
+            new ProtectedSequentialInputStream(System.in),
             null,
             StreamProperties.OpenMode.ATOM_read
     );
@@ -48,7 +48,7 @@ public class DefaultIoBinding {
     public static final LogicalStream USER_OUTPUT = new LogicalStream(
             new PrologInteger(BigInteger.valueOf(1)),
             null,
-            new SequentialOutputStream(System.out),
+            new ProtectedSequentialOutputStream(System.out),
             StreamProperties.OpenMode.ATOM_write
     );
     /**
@@ -57,7 +57,7 @@ public class DefaultIoBinding {
     public static final LogicalStream USER_ERROR = new LogicalStream(
             new PrologInteger(BigInteger.valueOf(2)),
             null,
-            new SequentialOutputStream(System.err),
+            new ProtectedSequentialOutputStream(System.err),
             StreamProperties.OpenMode.ATOM_write);
 
     private static final Map<PrologInteger, LogicalStream> initialStreams = new HashMap<>();
@@ -68,13 +68,13 @@ public class DefaultIoBinding {
     //
     static {
         USER_INPUT.addAlias(USER_INPUT_STREAM);
-        USER_INPUT.setFileName(Interned.internAtom("(stdin)"));
+        USER_INPUT.setObjectTerm(USER_INPUT.getId());
         USER_INPUT.setBufferMode(StreamProperties.Buffering.ATOM_line);
         USER_OUTPUT.addAlias(USER_OUTPUT_STREAM);
-        USER_OUTPUT.setFileName(Interned.internAtom("(stdout)"));
+        USER_OUTPUT.setObjectTerm(USER_OUTPUT.getId());
         USER_INPUT.setBufferMode(StreamProperties.Buffering.ATOM_line);
         USER_ERROR.addAlias(USER_ERROR_STREAM);
-        USER_ERROR.setFileName(Interned.internAtom("(stderr)"));
+        USER_ERROR.setObjectTerm(USER_ERROR.getId());
         USER_INPUT.setBufferMode(StreamProperties.Buffering.ATOM_false);
         StreamProperties.NewLineMode newlineMode = StreamProperties.NewLineMode.ATOM_detect;
         for (LogicalStream stream : new LogicalStream[]{USER_INPUT, USER_OUTPUT, USER_ERROR}) {

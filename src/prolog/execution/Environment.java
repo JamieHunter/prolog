@@ -29,6 +29,7 @@ import prolog.predicates.VarArgDefinition;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -696,16 +697,34 @@ public class Environment {
     }
 
     /**
+     * Retrieve a list of all open streams
+     * @return all open streams
+     */
+    public Collection<LogicalStream> getOpenStreams() {
+        return streamById.values();
+    }
+
+    /**
      * Add stream by unique id
      *
      * @param id     Stream id
-     * @param stream Stream (null to delete)
+     * @param stream Stream
      */
     public void addStream(PrologInteger id, LogicalStream stream) {
         if (stream != null) {
             streamById.put(id, stream);
-        } else {
-            streamById.remove(id);
+        }
+    }
+
+    /**
+     * Remove stream by unique id
+     *
+     * @param id     Stream id
+     * @param stream Stream - must match to delete
+     */
+    public void removeStream(PrologInteger id, LogicalStream stream) {
+        if (stream != null) {
+            streamById.remove(id, stream);
         }
     }
 
@@ -713,19 +732,15 @@ public class Environment {
      * Add stream by unique id
      *
      * @param alias  Stream alias (if null, becomes a no-op)
-     * @param stream Stream, or null to remove
+     * @param stream Stream
      * @return previous stream with this alias, or null if none
      */
     public LogicalStream addStreamAlias(PrologAtomLike alias, LogicalStream stream) {
-        if (alias == null) {
+        if (alias == null || stream == null) {
             return null;
         }
         LogicalStream prior;
-        if (stream != null) {
-            prior = streamByAlias.put(alias, stream);
-        } else {
-            prior = streamByAlias.remove(alias);
-        }
+        prior = streamByAlias.put(alias, stream);
         if (prior != stream) {
             if (prior != null) {
                 prior.removeAlias(alias);
@@ -735,6 +750,20 @@ public class Environment {
             }
         }
         return prior;
+    }
+
+    /**
+     * Remove stream alias
+     *
+     * @param alias  Stream alias (if null, becomes a no-op)
+     * @param stream Stream - must match to delete
+     */
+    public void removeStreamAlias(PrologAtomLike alias, LogicalStream stream) {
+        if (alias == null || stream == null) {
+            return;
+        }
+        streamByAlias.remove(alias, stream);
+        stream.removeAlias(alias);
     }
 
     /**

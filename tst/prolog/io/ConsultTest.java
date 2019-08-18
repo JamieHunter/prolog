@@ -59,7 +59,7 @@ public class ConsultTest {
     private void checkLog(Matcher<? super Term> m) throws IOException {
         Term term;
         Environment environment = new Environment();
-        try(LogicalStream stream = StreamUtils.logicalFileStream(logFile.toPath(), StandardOpenOption.READ)) {
+        try(StreamUtils.TestLogicalStream stream = StreamUtils.logicalFileStream(environment, logFile.toPath(), StandardOpenOption.READ)) {
             term = stream.read(environment, null, new ReadOptions(environment, null));
         }
         assertThat(term, m);

@@ -3,6 +3,7 @@
 //
 package prolog.io;
 
+import prolog.flags.CloseOptions;
 import prolog.flags.StreamProperties;
 
 import java.io.IOException;
@@ -172,8 +173,8 @@ public class InputLineHandler extends FilteredInputStream {
      * {@inheritDoc}
      */
     @Override
-    public void close() throws IOException {
-        super.close();
+    public void close(CloseOptions options) throws IOException {
+        super.close(options);
         state = State.REGULAR;
         nextByte = NO_BYTE;
     }

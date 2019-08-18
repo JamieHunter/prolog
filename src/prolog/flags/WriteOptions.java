@@ -28,12 +28,12 @@ public class WriteOptions implements Flags {
         parser.booleanFlag(internAtom("dotlists"), (o, v) -> o.dotlists = v);
         parser.booleanFlag(internAtom("fullstop"), (o, v) -> o.fullstop = v);
         parser.booleanFlag(internAtom("ignore_ops"), (o, v) -> o.ignoreOps = v);
-        parser.intFlag(internAtom("max_depth"), (o, v) -> o.maxDepth = v);
+        parser.intFlag(internAtom("max_depth"), (o, v) -> o.maxDepth = (int)(long)v);
         parser.booleanFlag(internAtom("nl"), (o, v) -> o.nl = v);
         parser.booleanFlag(internAtom("no_lists"), (o, v) -> o.noLists = v);
         parser.booleanFlag(internAtom("numbervars"), (o, v) -> o.numbervars = v);
         parser.booleanFlag(internAtom("partial"), (o, v) -> o.partial = v);
-        parser.intFlag(internAtom("priority"), (o, v) -> o.priority = v);
+        parser.intFlag(internAtom("priority"), (o, v) -> o.priority = (int)(long)v);
         parser.booleanFlag(internAtom("quoted"), (o, v) -> o.quoted = v);
         parser.enumFlag(internAtom("spacing"), Spacing.class, (o, v) -> o.spacing = v);
         parser.other(internAtom("variable_names"), (o, v) -> o.variableNames = Optional.of(v));

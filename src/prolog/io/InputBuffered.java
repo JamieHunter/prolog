@@ -3,6 +3,7 @@
 //
 package prolog.io;
 
+import prolog.flags.CloseOptions;
 import prolog.utility.CircularBuffer;
 
 import java.io.IOException;
@@ -112,8 +113,8 @@ public class InputBuffered extends FilteredInputStream {
      * {@inheritDoc}
      */
     @Override
-    public void close() throws IOException {
-        super.close();
+    public void close(CloseOptions options) throws IOException {
+        super.close(options);
         buf.reset();
     }
 
@@ -129,7 +130,7 @@ public class InputBuffered extends FilteredInputStream {
      * {@inheritDoc}
      */
     @Override
-    public boolean restorePosition(Position position) throws IOException {
+    public boolean seekPosition(Position position) throws IOException {
         // Note, this does not call parent. Byte position meaningless with this filter
         Optional<Long> setPos = position.getCharPos();
         if (!setPos.isPresent()) {

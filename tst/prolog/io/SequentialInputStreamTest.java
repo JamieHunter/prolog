@@ -113,11 +113,11 @@ public class SequentialInputStreamTest {
         // Note, this is tested further in other classes
         Position pos = new Position();
         pos.setBytePos(1);
-        boolean changed = stream.restorePosition(pos);
+        boolean changed = stream.seekPosition(pos);
         assertThat(changed, is(false));
         pos = new Position();
         pos.setCharPos(1);
-        changed = stream.restorePosition(pos);
+        changed = stream.seekPosition(pos);
         assertThat(changed, is(false));
     }
 

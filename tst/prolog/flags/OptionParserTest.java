@@ -34,7 +34,7 @@ public class OptionParserTest implements Flags {
     private Environment environment = new Environment();
     private Boolean bool_flag = null;
     private PrologAtomLike atom_flag = null;
-    private Integer int_flag = null;
+    private Long int_flag = null;
     private SampleEnum enum_flag = null;
     private Set<SampleEnum> enum_set = null;
     private Term term_flag = null;

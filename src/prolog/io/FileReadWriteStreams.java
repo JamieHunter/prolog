@@ -3,6 +3,9 @@
 //
 package prolog.io;
 
+import prolog.flags.CloseOptions;
+
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -12,7 +15,7 @@ import java.util.Optional;
  * PrologInputStream/PrologOutputStream that wraps a Java file channel. This exposes two Prolog streams,
  * one for writing, one for reading, both accessing the same mutual file
  */
-public class FileReadWriteStreams implements PrologInputStream, PrologOutputStream {
+public class FileReadWriteStreams implements PrologInputStream, PrologOutputStream, Closeable {
 
     private final FileChannel channel;
     // TODO: Smarter buffer management, magic value
@@ -61,13 +64,14 @@ public class FileReadWriteStreams implements PrologInputStream, PrologOutputStre
         conditionalCommitWrite();
         buffer.put((byte) symbol);
     }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public void write(byte[] bbuf, int off, int len) throws IOException {
         ensureWriting();
-        while(len > 0) {
+        while (len > 0) {
             conditionalCommitWrite();
             int chunkLen = Math.min(len, buffer.remaining());
             buffer.put(bbuf, off, chunkLen);
@@ -141,13 +145,14 @@ public class FileReadWriteStreams implements PrologInputStream, PrologOutputStre
 
     /**
      * Write content of buffer to file
+     *
      * @throws IOException If IO error occurs
      */
     private void commitWrite() throws IOException {
         assert state == State.DIRTY_OUTPUT;
         if (buffer.position() > 0) {
             buffer.flip();
-            while(buffer.hasRemaining()) {
+            while (buffer.hasRemaining()) {
                 channel.write(buffer);
             }
             buffer.clear();
@@ -163,6 +168,7 @@ public class FileReadWriteStreams implements PrologInputStream, PrologOutputStre
 
     /**
      * Fill empty buffer providing something to read
+     *
      * @throws IOException If IO error occurs
      */
     private boolean readSome() throws IOException {
@@ -214,7 +220,7 @@ public class FileReadWriteStreams implements PrologInputStream, PrologOutputStre
      * {@inheritDoc}
      */
     @Override
-    public boolean restorePosition(Position position) throws IOException {
+    public boolean seekPosition(Position position) throws IOException {
         Optional<Long> pos = position.getBytePos();
         if (pos.isPresent()) {
             flush();
@@ -225,9 +231,11 @@ public class FileReadWriteStreams implements PrologInputStream, PrologOutputStre
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
+    public void close(CloseOptions options) throws IOException {
+        close();
+    }
+
     @Override
     public synchronized void close() throws IOException {
         if (state != State.CLOSED) {

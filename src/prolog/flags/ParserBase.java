@@ -109,10 +109,10 @@ public abstract class ParserBase<T extends Flags, R> {
      * @param consumer Specific value function
      * @return Option/Flag dependent
      */
-    public R intFlag(final Atomic key, final BiConsumer<T, Integer> consumer) {
+    public R intFlag(final Atomic key, final BiConsumer<T, Long> consumer) {
         return createKey(key, (obj, value) -> {
             if (value.isInteger()) {
-                consumer.accept(obj, ((PrologInteger) value).get().intValue());
+                consumer.accept(obj, ((PrologInteger) value).get().longValue());
             } else {
                 throw new FutureTypeError(Interned.INTEGER_TYPE, value);
             }

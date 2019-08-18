@@ -86,6 +86,7 @@ public final class Interned {
     public static final PrologAtomInterned NON_EMPTY_LIST_DOMAIN = internAtom("non_empty_list");
     public static final PrologAtomInterned OUT_OF_RANGE_DOMAIN = internAtom("out_of_range");
     public static final PrologAtomInterned STREAM_OR_ALIAS_DOMAIN = internAtom("stream_or_alias");
+    public static final PrologAtomInterned STREAM_DOMAIN = internAtom("stream");
     public static final PrologAtomInterned STREAM_PROPERTY_DOMAIN = internAtom("stream_property");
     public static final PrologAtomInterned PROCEDURE = internAtom("procedure");
     public static final PrologAtomInterned SOURCE_SINK_DOMAIN = internAtom("source_sink");

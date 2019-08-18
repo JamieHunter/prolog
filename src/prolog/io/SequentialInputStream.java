@@ -3,6 +3,8 @@
 //
 package prolog.io;
 
+import prolog.flags.CloseOptions;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -13,6 +15,7 @@ public class SequentialInputStream implements PrologInputStream {
 
     private final InputStream stream;
     private long pos = 0;
+    private boolean closed = false;
 
     public SequentialInputStream(InputStream stream) {
         this.stream = stream;
@@ -48,6 +51,9 @@ public class SequentialInputStream implements PrologInputStream {
         return stream.available();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public synchronized void getPosition(Position position) {
         position.setBytePos(pos); // lowest level only
@@ -58,7 +64,10 @@ public class SequentialInputStream implements PrologInputStream {
      * {@inheritDoc}
      */
     @Override
-    public void close() throws IOException {
-        stream.close();
+    public synchronized void close(CloseOptions options) throws IOException {
+        if (!closed) {
+            stream.close();
+            closed = true;
+        }
     }
 }

@@ -1,5 +1,8 @@
 package prolog.test;
 
+import prolog.constants.PrologInteger;
+import prolog.execution.Environment;
+import prolog.flags.CloseOptions;
 import prolog.flags.StreamProperties;
 import prolog.io.InputBuffered;
 import prolog.io.InputDecoderFilter;
@@ -10,6 +13,7 @@ import prolog.io.FileReadWriteStreams;
 import prolog.io.SequentialInputStream;
 
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.FileChannel;
@@ -53,8 +57,23 @@ public final class StreamUtils {
         return new FileReadWriteStreams(FileChannel.open(path, options));
     }
 
-    public static LogicalStream logicalFileStream(Path path, OpenOption... options) throws IOException {
+    public static TestLogicalStream logicalFileStream(Environment environment, Path path, OpenOption... options) throws IOException {
         FileReadWriteStreams stream = fileStream(path, options);
-        return new LogicalStream(LogicalStream.unique(), stream, stream, StreamProperties.OpenMode.ATOM_update);
+        return new TestLogicalStream(environment, LogicalStream.unique(), stream, stream, StreamProperties.OpenMode.ATOM_update);
+    }
+
+    public static class TestLogicalStream extends LogicalStream implements Closeable {
+
+        private final Environment environment;
+
+        public TestLogicalStream(Environment environment, PrologInteger id, PrologInputStream input, PrologOutputStream output, StreamProperties.OpenMode openMode) {
+            super(id, input, output, openMode);
+            this.environment = environment;
+        }
+
+        @Override
+        public void close() throws IOException {
+            close(new CloseOptions(environment, null));
+        }
     }
 }

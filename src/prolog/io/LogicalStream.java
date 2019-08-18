@@ -4,16 +4,25 @@
 package prolog.io;
 
 import prolog.constants.Atomic;
+import prolog.constants.PrologAtom;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologCharacter;
+import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologInteger;
+import prolog.exceptions.FutureFlagKeyError;
+import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.Environment;
+import prolog.expressions.CompoundTerm;
+import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
+import prolog.expressions.TermList;
+import prolog.expressions.TermListImpl;
+import prolog.flags.CloseOptions;
 import prolog.flags.ReadOptions;
 import prolog.flags.StreamProperties;
 import prolog.flags.WriteOptions;
@@ -29,6 +38,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -36,7 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Associates a constant with an input and output substream pair. Generally only one is used, but this allows
  * for a read/write logical stream.
  */
-public class LogicalStream implements Closeable {
+public class LogicalStream {
 
     // provides a unique identifier over lifetime of execution.
     private static final AtomicInteger counter = new AtomicInteger(1);
@@ -56,21 +66,18 @@ public class LogicalStream implements Closeable {
     private final PrologOutputStream baseOutput;
     private PrologInputStream input = null;
     private PrologOutputStream output = null;
-
+    private PositionTracker tracker = null;
     private List<PrologAtomLike> aliases = new ArrayList<>();
     private StreamProperties.OpenMode openMode;
     private StreamProperties.NewLineMode newLineMode = StreamProperties.NewLineMode.ATOM_detect;
     private StreamProperties.Buffering bufferMode = StreamProperties.Buffering.ATOM_full;
-    private Integer bufferSize = null;
+    private Long bufferSize = null;
     private boolean closeOnAbort = true;
     private boolean closeOnExec = true;
     private StreamProperties.Encoding encoding = StreamProperties.Encoding.ATOM_utf8;
     private StreamProperties.EofAction eofAction = StreamProperties.EofAction.ATOM_error;
     private StreamProperties.Type type = StreamProperties.Type.ATOM_text;
-    private Term fileName;
-    private int linePosition = 0;
-    private long charPosition = 0;
-    private long bytePosition = 0;
+    private Term fileName = PrologEmptyList.EMPTY_LIST;
     private boolean recordPosition = true;
     private boolean seekable = true;
     private boolean isTTY = false;
@@ -97,13 +104,18 @@ public class LogicalStream implements Closeable {
      *
      * @throws IOException IO Error
      */
-    public void close() throws IOException {
+    public boolean close(CloseOptions options) throws IOException {
+        if (!((input == null || input.approveClose(options))
+                && (output == null || output.approveClose(options)))) {
+            return false;
+        }
         if (input != null) {
-            input.close();
+            input.close(options);
         }
         if (output != null) {
-            output.close();
+            output.close(options);
         }
+        return true;
     }
 
     /**
@@ -160,6 +172,15 @@ public class LogicalStream implements Closeable {
     }
 
     /**
+     * @return Retrieve all aliases.
+     */
+    public ArrayList<PrologAtomLike> getAliases() {
+        ArrayList<PrologAtomLike> atoms = new ArrayList<>();
+        atoms.addAll(aliases);
+        return atoms;
+    }
+
+    /**
      * @param bufferMode New buffer mode
      */
     public void setBufferMode(StreamProperties.Buffering bufferMode) {
@@ -177,7 +198,7 @@ public class LogicalStream implements Closeable {
     /**
      * @param size New buffer size
      */
-    public void setBufferSize(int size) {
+    public void setBufferSize(long size) {
         if (bufferMode != StreamProperties.Buffering.ATOM_false) {
             bufferSize = size;
             this.ioChanged = true;
@@ -187,11 +208,11 @@ public class LogicalStream implements Closeable {
     /**
      * @return buffer size
      */
-    public Integer getBufferSize() {
+    public Long getBufferSize() {
         if (bufferSize != null) {
             return bufferSize;
         } else {
-            throw new UnsupportedOperationException("NYI");
+            throw new FutureFlagKeyError(new PrologAtom("buffer_size"));
         }
     }
 
@@ -262,7 +283,7 @@ public class LogicalStream implements Closeable {
     /**
      * @param fileName Change descriptive filename
      */
-    public void setFileName(Term fileName) {
+    public void setObjectTerm(Term fileName) {
         this.fileName = fileName;
     }
 
@@ -274,17 +295,14 @@ public class LogicalStream implements Closeable {
     }
 
     /**
-     * @param linePosition Set new line position
+     * @return Get open mode (used by current_stream)
      */
-    public void setLinePosition(int linePosition) {
-        this.linePosition = linePosition;
-    }
-
-    /**
-     * @return Current line position
-     */
-    public Integer getLinePosition() {
-        return linePosition;
+    public PrologAtomInterned getMode() {
+        if (isOutput()) {
+            return Io.OPEN_WRITE;
+        } else {
+            return Io.OPEN_READ;
+        }
     }
 
     /**
@@ -369,7 +387,87 @@ public class LogicalStream implements Closeable {
      * @return Term providing line/char/byte positions
      */
     public Term getPosition() {
-        throw new UnsupportedOperationException("NYI");
+        PrologStream stream = getStream();
+        Position pos = new Position();
+        try {
+            stream.getPosition(pos);
+            ArrayList<Term> terms = new ArrayList<>();
+            mapOptionalPosElement(terms, Io.BYTE_POS, pos.getBytePos());
+            mapOptionalPosElement(terms, Io.CHAR_POS, pos.getCharPos());
+            mapOptionalPosElement(terms, Io.COLUMN_POS, pos.getColumnPos());
+            mapOptionalPosElement(terms, Io.LINE_POS, pos.getLinePos());
+            return new TermListImpl(terms, PrologEmptyList.EMPTY_LIST);
+        } catch (IOException ioe) {
+            // TODO: correct error?
+            return PrologEmptyList.EMPTY_LIST;
+        }
+    }
+
+    public void restorePosition(Environment environment, Atomic streamIdent, Term positionTerm) {
+        PrologStream stream = getStream();
+        Position pos = new Position();
+        TermList.TermIterator iter = TermList.listIterator(positionTerm);
+        while (iter.hasNext()) {
+            Term element = iter.next();
+            if (!(element instanceof CompoundTerm)) {
+                throw PrologTypeError.compoundExpected(environment, element);
+            }
+            CompoundTerm posEl = (CompoundTerm) element;
+            if (posEl.functor() == Io.BYTE_POS && posEl.arity() == 1) {
+                pos.setBytePos(PrologInteger.from(posEl.get(0)).get().longValue());
+            } else if (posEl.functor() == Io.CHAR_POS && posEl.arity() == 1) {
+                pos.setCharPos(PrologInteger.from(posEl.get(0)).get().longValue());
+            } else if (posEl.functor() == Io.LINE_POS && posEl.arity() == 1) {
+                pos.setLinePos(PrologInteger.from(posEl.get(0)).get().longValue());
+            } else if (posEl.functor() == Io.COLUMN_POS && posEl.arity() == 1) {
+                pos.setColumnPos(PrologInteger.from(posEl.get(0)).get().longValue());
+            } else {
+                throw PrologDomainError.error(environment, "stream_position", positionTerm);
+            }
+        }
+        try {
+            if (stream.seekPosition(pos)) {
+                return;
+            }
+        } catch (IOException ioe) {
+            // ignore, error below
+        }
+        throw PrologPermissionError.error(environment, "modify", "position", streamIdent,
+                String.format("Cannot modify stream position on %s", streamIdent));
+    }
+
+    private static void mapOptionalPosElement(ArrayList<Term> list, Atomic name, Optional<Long> element) {
+        if (element.isPresent()) {
+            list.add(new CompoundTermImpl(name, new PrologInteger(BigInteger.valueOf(element.get()))));
+        }
+    }
+
+    /**
+     * @param linePosition Set new effective line position
+     */
+    public void setLinePosition(long linePosition) {
+        PrologStream stream = getStream();
+        Position pos = new Position();
+        pos.setLinePos(linePosition);
+        try {
+            stream.seekPosition(pos);
+        } catch (IOException ioe) {
+            // ignored
+        }
+    }
+
+    /**
+     * @return Current line position
+     */
+    public Long getLinePosition() {
+        PrologStream stream = getStream();
+        Position pos = new Position();
+        try {
+            stream.getPosition(pos);
+        } catch (IOException ioe) {
+            // ignored
+        }
+        return pos.getLinePos().orElse(0L);
     }
 
     /**
@@ -382,13 +480,16 @@ public class LogicalStream implements Closeable {
     /**
      * Change sequence of filters
      */
-    private void configure(Environment environment) {
+    private void configure() {
         ioChanged = false;
+        if (recordPosition && tracker == null) {
+            tracker = new PositionTracker();
+        }
         if (baseInput != null) {
-            input = configureInput(environment, baseInput);
+            input = configureInput(baseInput);
         }
         if (baseOutput != null) {
-            output = configureOutput(environment, baseOutput);
+            output = configureOutput(baseOutput);
         }
     }
 
@@ -410,7 +511,31 @@ public class LogicalStream implements Closeable {
         return null; // no charset encoding
     }
 
-    private PrologOutputStream configureOutput(Environment environment, PrologOutputStream source) {
+    private void assertText(Environment environment, PrologAtomLike action, Term streamIdent) {
+        if (type != StreamProperties.Type.ATOM_text) {
+            throw PrologPermissionError.error(environment, action, Io.BINARY_STREAM, streamIdent,
+                    String.format("Error %s to binary stream %s", action, streamIdent));
+        }
+    }
+
+    private void assertBinary(Environment environment, PrologAtomLike action, Term streamIdent) {
+        if (type != StreamProperties.Type.ATOM_binary) {
+            throw PrologPermissionError.error(environment, action, Io.TEXT_STREAM, streamIdent,
+                    String.format("Error %s to text stream %s", action, streamIdent));
+        }
+    }
+
+    private PrologOutputStream configureOutput(PrologOutputStream source) {
+        Position savedPos = null;
+        if (source != null) {
+            try {
+                Position pos = new Position();
+                source.getPosition(pos);
+                savedPos = pos;
+            } catch (IOException io) {
+                // ignored
+            }
+        }
         PrologOutputStream filtered = source;
         Charset cs = getCharset();
         if (cs != null) {
@@ -418,10 +543,26 @@ public class LogicalStream implements Closeable {
         }
         // TODO: layers to handle TTY
         // TODO: layers to handle buffering
+        if (recordPosition) {
+            filtered = new OutputPositionTracker(filtered, tracker);
+        }
+        if (savedPos != null) {
+            filtered.setKnownPosition(savedPos);
+        }
         return filtered;
     }
 
-    private PrologInputStream configureInput(Environment environment, PrologInputStream source) {
+    private PrologInputStream configureInput(PrologInputStream source) {
+        Position savedPos = null;
+        if (source != null) {
+            try {
+                Position pos = new Position();
+                source.getPosition(pos);
+                savedPos = pos;
+            } catch (IOException io) {
+                // ignored
+            }
+        }
         PrologInputStream filtered = source;
         // layers to handle TTY
         if (isTTY) {
@@ -435,6 +576,10 @@ public class LogicalStream implements Closeable {
             }
             // text is always line handled and buffered
             filtered = new InputBuffered(new InputLineHandler(filtered, newLineMode), -1);
+            if (recordPosition) {
+                // can only track position if it is not an IO stream
+                filtered = new InputPositionTracker(filtered, tracker);
+            }
         } else {
             // layer(s) to handle buffering
             switch (bufferMode) {
@@ -445,6 +590,9 @@ public class LogicalStream implements Closeable {
                     filtered = new InputBuffered(filtered, -1);
                     break;
             }
+        }
+        if (savedPos != null) {
+            filtered.setKnownPosition(savedPos);
         }
         return filtered;
     }
@@ -458,7 +606,7 @@ public class LogicalStream implements Closeable {
      */
     public PrologInputStream getInputStream(Environment environment, Atomic streamId) {
         if (ioChanged) {
-            configure(environment);
+            configure();
         }
         if (input != null) {
             return input;
@@ -470,7 +618,7 @@ public class LogicalStream implements Closeable {
         }
     }
 
-    /**
+    /*
      * Retrieve associated output substream.
      *
      * @param environment Execution environment
@@ -479,7 +627,7 @@ public class LogicalStream implements Closeable {
      */
     public PrologOutputStream getOutputStream(Environment environment, Atomic streamId) {
         if (ioChanged) {
-            configure(environment);
+            configure();
         }
         if (output != null) {
             return output;
@@ -492,12 +640,31 @@ public class LogicalStream implements Closeable {
     }
 
     /**
+     * /**
+     * Retrieve a reference to something seekable
+     *
+     * @return substream.
+     */
+    public PrologStream getStream() {
+        if (ioChanged) {
+            configure();
+        }
+        if (output != null) {
+            return output;
+        } else {
+            assert input != null;
+            return input;
+        }
+    }
+
+    /**
      * Get a single character from stream
      *
      * @param environment Execution environment
      * @param streamId    stream id for error reporting (or null if unknown)
      */
     public Atomic getChar(Environment environment, Atomic streamId) {
+        assertText(environment, Io.INPUT_ACTION, streamId);
         PrologInputStream input = getInputStream(environment, streamId);
         try {
             int c = input.read();
@@ -505,6 +672,46 @@ public class LogicalStream implements Closeable {
                 return Io.END_OF_FILE;
             }
             return new PrologCharacter((char) c);
+        } catch (IOException ioe) {
+            throw PrologError.systemError(environment, ioe);
+        }
+    }
+
+    /**
+     * Get a single character code from stream
+     *
+     * @param environment Execution environment
+     * @param streamId    stream id for error reporting (or null if unknown)
+     */
+    public Atomic getCode(Environment environment, Atomic streamId) {
+        assertText(environment, Io.INPUT_ACTION, streamId);
+        PrologInputStream input = getInputStream(environment, streamId);
+        try {
+            int c = input.read();
+            if (c < 0) {
+                return Io.END_OF_FILE;
+            }
+            return new PrologInteger(BigInteger.valueOf(c));
+        } catch (IOException ioe) {
+            throw PrologError.systemError(environment, ioe);
+        }
+    }
+
+    /**
+     * Get a single byte from stream
+     *
+     * @param environment Execution environment
+     * @param streamId    stream id for error reporting (or null if unknown)
+     */
+    public Atomic getByte(Environment environment, Atomic streamId) {
+        assertBinary(environment, Io.INPUT_ACTION, streamId);
+        PrologInputStream input = getInputStream(environment, streamId);
+        try {
+            int c = input.read();
+            if (c < 0) {
+                return Io.END_OF_FILE;
+            }
+            return new PrologInteger(BigInteger.valueOf(c));
         } catch (IOException ioe) {
             throw PrologError.systemError(environment, ioe);
         }
@@ -539,6 +746,22 @@ public class LogicalStream implements Closeable {
     }
 
     /**
+     * Internal write symbol
+     *
+     * @param environment Execution environment
+     * @param streamId    stream id for error reporting (or null if unknown)
+     * @param symbol      Symbol to write
+     */
+    public void write(Environment environment, Atomic streamId, int symbol) {
+        PrologOutputStream output = getOutputStream(environment, streamId);
+        try {
+            output.write(symbol);
+        } catch (IOException ioe) {
+            throw PrologError.systemError(environment, ioe);
+        }
+    }
+
+    /**
      * Put single character
      *
      * @param environment Execution environment
@@ -546,21 +769,44 @@ public class LogicalStream implements Closeable {
      * @param target      Character to write
      */
     public void putChar(Environment environment, Atomic streamId, Term target) {
+        assertText(environment, Io.OUTPUT_ACTION, streamId);
         if (!target.isInstantiated()) {
             throw PrologInstantiationError.error(environment, target);
         }
         String text;
         if (target.isInteger()) {
-            text = String.valueOf((char) PrologInteger.from(target).get().intValue());
+            int symbol = PrologInteger.from(target).get().intValue();
+            write(environment, streamId, symbol);
         } else if (target.isAtom()) {
             text = PrologAtomLike.from(target).name();
             if (text.length() != 1) {
                 throw PrologTypeError.characterExpected(environment, target);
             }
+            write(environment, streamId, text);
         } else {
             throw PrologTypeError.characterExpected(environment, target);
         }
-        write(environment, streamId, text);
+    }
+
+    /**
+     * Put single byte
+     *
+     * @param environment Execution environment
+     * @param streamId    Stream id for error reporting (or null if unknown)
+     * @param target      Byte to write
+     */
+    public void putByte(Environment environment, Atomic streamId, Term target) {
+        assertBinary(environment, Io.OUTPUT_ACTION, streamId);
+        if (!target.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, target);
+        }
+        int val = PrologInteger.from(target).get().intValue();
+        PrologOutputStream output = getOutputStream(environment, streamId);
+        try {
+            output.write(val);
+        } catch (IOException ioe) {
+            throw PrologError.systemError(environment, ioe);
+        }
     }
 
     /**
@@ -572,6 +818,7 @@ public class LogicalStream implements Closeable {
      * @return read line
      */
     public String readLine(Environment environment, Atomic streamId, ReadOptions options) {
+        assertText(environment, Io.INPUT_ACTION, streamId);
         PrologInputStream input = getInputStream(environment, streamId);
         if (options == null) {
             options = new ReadOptions(environment, null);
@@ -592,6 +839,7 @@ public class LogicalStream implements Closeable {
      * @return read token
      */
     public Term read(Environment environment, Atomic streamId, ReadOptions options) {
+        assertText(environment, Io.INPUT_ACTION, streamId);
         PrologInputStream input = getInputStream(environment, streamId);
         if (options == null) {
             options = new ReadOptions(environment, null);
@@ -610,6 +858,7 @@ public class LogicalStream implements Closeable {
      * @param optionsTerm Term providing options
      */
     public void read(Environment environment, Atomic streamId, Term target, Term optionsTerm) {
+        assertText(environment, Io.INPUT_ACTION, streamId);
         Term value = read(environment, streamId, new ReadOptions(environment, optionsTerm));
         if (!Unifier.unify(environment.getLocalContext(), target, value)) {
             environment.backtrack();
@@ -625,6 +874,7 @@ public class LogicalStream implements Closeable {
      * @param optionsTerm Term providing options
      */
     public void write(Environment environment, Atomic streamId, Term source, Term optionsTerm) {
+        assertText(environment, Io.OUTPUT_ACTION, streamId);
         PrologOutputStream output = getOutputStream(environment, streamId);
         if (!source.isInstantiated()) {
             throw PrologInstantiationError.error(environment, source);
@@ -647,6 +897,7 @@ public class LogicalStream implements Closeable {
      * @param streamId    Stream identifier (or null if unknown)
      */
     public void nl(Environment environment, Atomic streamId) {
+        assertText(environment, Io.OUTPUT_ACTION, streamId);
         PrologOutputStream output = getOutputStream(environment, streamId);
         try {
             // TODO: Need to consider text NL type
