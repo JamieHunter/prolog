@@ -112,7 +112,7 @@ public class OptionParserTest implements Flags {
     @Test
     public void testIntFlag() {
         apply("[int_flag(20)].");
-        assertThat(int_flag, is(20));
+        assertThat(int_flag, is(20L));
     }
 
     @Test
