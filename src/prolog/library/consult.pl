@@ -14,11 +14,11 @@ load_files([H|T], Op) :- !, once(load_files(H, Op)), load_files(T, Op).
 load_files(F, Op) :-
     !,
     select_option(expand(Expand), Op, RemOp, false),
-    Expand  = true ->
+    (Expand == true ->
         expand_file_name(F, FF),
         load_files(FF, [expand(false)|RemOp]) % recurse once
     ;
-        '$load_file'(F, RemOp)
+        '$load_file'(F, RemOp))
     .
 
 % load_files without any options
@@ -29,9 +29,15 @@ load_files(X) :- load_files(X, []).
     select_option(stream(Stream), Op, RemOp),
     nonvar(Stream),
     !,
-    '$load_condition'(Id, RemOp) ->
+    (
+        '$load_condition'(Id, RemOp)
+    ->
         '$load_stream_in_group'(Id, RemOp, Stream),
-        '$do_initialization'(Id).
+        '$do_initialization'(Id)
+    ;
+        true
+    )
+    .
 
 % Process as a single file (convert file to a stream)
 '$load_file'(File, Op) :-
@@ -42,14 +48,20 @@ load_files(X) :- load_files(X, []).
     select_option(modified(Modified), Op, Op1, DefModified),
     select_option(encoding(Encoding), Op1, Op2, DefEncoding),
     RemOp = [modified(Modified)|Op2],
-    '$load_condition'(AbsFile, RemOp) ->
+    (
+        '$load_condition'(AbsFile, RemOp)
+    ->
         % TODO: Controlled by flags
         % Actual open/load
         open(AbsFile, read, Stream, [encoding(Encoding)]),
         '$load_stream_in_group'(AbsFile, RemOp, Stream),
         close(Stream),
         % TODO: Controlled by flags
-        '$do_initialization'(AbsFile).
+        '$do_initialization'(AbsFile)
+    ;
+        true
+    )
+    .
 
 % Perform conditional checks on stream being loaded
 '$load_condition'(Id, Op) :-
@@ -61,9 +73,7 @@ load_files(X) :- load_files(X, []).
         \+('$get_load_group_time'(Id, _)) .
 '$load_condition_check'(changed, Id, Op) :-
     option(modified(Modified), Op, 0),
-    '$get_load_group_time'(Id, PrevTime) ->
-        PrevTime < Modified ;
-        true .
+    ('$get_load_group_time'(Id, PrevTime) -> PrevTime < Modified ; true ).
 
 % Change load group while stream is being loaded
 '$load_stream_in_group'(Id, Op, Stream) :-
@@ -83,9 +93,12 @@ load_files(X) :- load_files(X, []).
 '$consult_this'(Op, Stream, Disp) :-
     catch('$consult_read'(Stream, T), error(syntax_error(expected_sentence_error), Cause),
         (
-            Stream = user_input ->
-                T = end_of_file;
-                throw(error(syntax_error(expected_sentence_error), Cause))
+            %% if in a [user] session, typing '.' by itself ends the consult
+            Stream == user_input
+        ->
+            T = end_of_file
+        ;
+            throw(error(syntax_error(expected_sentence_error), Cause))
         )),
     '$consult_sentence'(Op, T, Disp).
 
@@ -101,11 +114,11 @@ load_files(X) :- load_files(X, []).
 '$consult_sentence'(Op, end_of_file, end_of_file).
 
 % internal - handle directive (call Goal)
-'$consult_sentence'(Op, (:-)(Goal), Disp) :-
+'$consult_sentence'(Op, ':-'(Goal), Disp) :-
     '$consult_goal'(Goal), Disp = 'directive'.
 
 % internal - handle query (call Goal)
-'$consult_sentence'(Op, (?-)(Goal), Disp) :-
+'$consult_sentence'(Op, '?-'(Goal), Disp) :-
     '$consult_goal'(Goal), Disp = 'query'.
 
 % internal - everything else is fact or clause
