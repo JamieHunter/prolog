@@ -255,7 +255,7 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
             case "yfx":
                 return Code.YFX;
         }
-        throw new FutureDomainError(Interned.OPERATOR_PRIORITY_DOMAIN, code);
+        throw new FutureDomainError(Interned.OPERATOR_SPECIFIER_DOMAIN, code);
     }
 
     /**

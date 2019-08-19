@@ -94,6 +94,7 @@ public final class Interned {
     public static final PrologAtomInterned SOURCE_SINK_DOMAIN = internAtom("source_sink");
     public static final PrologAtomInterned IO_MODE_DOMAIN = internAtom("io_mode");
     public static final PrologAtomInterned OPERATOR_PRIORITY_DOMAIN = internAtom("operator_priority");
+    public static final PrologAtomInterned OPERATOR_SPECIFIER_DOMAIN = internAtom("operator_specifier");
     public static final PrologAtomInterned CHARACTER_CODE_LIST_DOMAIN = internAtom("character_code_list");
     public static final PrologAtomInterned CHARACTER_CODE_REPRESENTATION = internAtom("character_code");
     public static final PrologAtomInterned ZERO_DIVISOR_EVALUATION = internAtom("zero_divisor");

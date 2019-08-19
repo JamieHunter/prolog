@@ -8,6 +8,8 @@ import prolog.bootstrap.Predicate;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologCharacter;
 import prolog.constants.PrologInteger;
+import prolog.exceptions.PrologDomainError;
+import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.execution.CompileContext;
 import prolog.execution.Environment;
@@ -37,7 +39,19 @@ public final class ParsingControl {
      */
     @Predicate("op")
     public static void op(Environment environment, Term precedence, Term type, Term name) {
+        if (!precedence.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, precedence);
+        }
+        if (!type.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, type);
+        }
+        if (!name.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, name);
+        }
         int precedenceInt = PrologInteger.from(precedence).get().intValue();
+        if (precedenceInt > 1200 || precedenceInt < 0) {
+            throw PrologDomainError.operatorPriority(environment, precedence);
+        }
         PrologAtomInterned nameAtom = PrologAtomInterned.from(environment, name);
         OperatorEntry.Code typeCode = OperatorEntry.parseCode(PrologAtomInterned.from(environment, type));
         boolean allowed = true;
