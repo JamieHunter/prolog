@@ -5,10 +5,8 @@ package prolog.parser;
 
 import prolog.constants.PrologAtom;
 import prolog.exceptions.PrologSyntaxError;
-import prolog.expressions.Term;
 
 import java.io.IOException;
-import java.util.regex.Matcher;
 
 /**
  * This state will parse a number of tokens directly. More complex tokens are delegated to dedicated parsers.
@@ -16,46 +14,11 @@ import java.util.regex.Matcher;
 /*package private*/
 class TokenParseCoreState extends ActiveParsingState {
 
-    private final Matcher matcher;
+    private final LineMatcher lineMatcher;
 
-    TokenParseCoreState(Tokenizer tokenizer, String text) {
+    TokenParseCoreState(Tokenizer tokenizer, LineMatcher lineMatcher) {
         super(tokenizer);
-        // TODO: Potential handling point for character conversion?
-        matcher = Tokenizer.CORE_PATTERN.matcher(text);
-    }
-
-    /**
-     * Move to next portion of text that has not yet been matched.
-     *
-     * @return self
-     */
-    private ParseState proceed() {
-        matcher.region(matcher.end(), matcher.regionEnd());
-        return this;
-    }
-
-    /**
-     * Complete token processing and return Term.
-     *
-     * @param term Term to be returned
-     * @return {@link TokenFinishedState}
-     * @throws IOException on IO error
-     */
-    private ParseState finish(Term term) throws IOException {
-        tokenizer.consume(matcher);
-        return ParseState.finish(term);
-    }
-
-    /**
-     * Transition to another state after comitting the token so far.
-     *
-     * @param next Next state
-     * @return next state
-     * @throws IOException on IO error
-     */
-    private ParseState enter(ParseState next) throws IOException {
-        tokenizer.consume(matcher);
-        return next;
+        this.lineMatcher = lineMatcher;
     }
 
     /**
@@ -66,70 +29,71 @@ class TokenParseCoreState extends ActiveParsingState {
      */
     @Override
     public ParseState next() throws IOException {
-        if (!matcher.lookingAt()) {
-            throw PrologSyntaxError.tokenError(tokenizer.environment(), "Failed to parse: " + tokenizer.readLine());
+        if (!lineMatcher.scanNext()) {
+            throw PrologSyntaxError.tokenError(tokenizer.environment(), "Failed to parse: " + tokenizer.errorLine());
         }
         String match;
-        match = matcher.group(Tokenizer.WS_TAG);
+        match = lineMatcher.group(Tokenizer.WS_TAG);
         if (match != null) {
             // trivial whitespace is ignored
-            return proceed();
+            return this;
         }
-        match = matcher.group(Tokenizer.ATOM_TAG);
+        match = lineMatcher.group(Tokenizer.ATOM_TAG);
         if (match != null) {
             // Simple atom is accepted as is (at this point, not interned)
-            return finish(new PrologAtom(match));
+            return ParseState.finish(new PrologAtom(match));
         }
-        match = matcher.group(Tokenizer.FLOAT_TAG);
+        match = lineMatcher.group(Tokenizer.FLOAT_TAG);
         if (match != null) {
             // Simple float is decoded and returned
-            return finish(tokenizer.parseFloat(match));
+            return ParseState.finish(tokenizer.parseFloat(match));
         }
-        match = matcher.group(Tokenizer.INTEGER_TAG);
+        match = lineMatcher.group(Tokenizer.INTEGER_TAG);
         if (match != null) {
             // Simple integer is decoded and returned
-            return finish(tokenizer.parseInteger(match));
+            return ParseState.finish(tokenizer.parseInteger(match));
         }
-        match = matcher.group(Tokenizer.VARIABLE_TAG);
+        match = lineMatcher.group(Tokenizer.VARIABLE_TAG);
         if (match != null) {
             // Variables are given identifiers per name
-            return finish(tokenizer.parseVariable(match));
+            return ParseState.finish(tokenizer.parseVariable(match));
         }
-        match = matcher.group(Tokenizer.ANON_VARIABLE_TAG);
+        match = lineMatcher.group(Tokenizer.ANON_VARIABLE_TAG);
         if (match != null) {
             // Anonymous variables are all given unique identifiers
-            return finish(tokenizer.parseAnonymousVariable(match));
+            return ParseState.finish(tokenizer.parseAnonymousVariable(match));
         }
-        match = matcher.group(Tokenizer.START_CODE_TAG);
+        match = lineMatcher.group(Tokenizer.START_CODE_TAG);
         if (match != null) {
             // Special parsing for character code
-            return enter(QuotedContextState.newCharCode(tokenizer));
+            return QuotedContextState.newCharCode(tokenizer, lineMatcher);
         }
-        match = matcher.group(Tokenizer.START_STRING_TAG);
+        match = lineMatcher.group(Tokenizer.START_STRING_TAG);
         if (match != null) {
             // Special parsing for quoted strings, quoted atoms etc.
-            return enter(QuotedContextState.newQuotedText(tokenizer, match));
+            return QuotedContextState.newQuotedText(tokenizer, lineMatcher, match);
         }
-        match = matcher.group(Tokenizer.START_LINE_COMMENT_TAG);
+        match = lineMatcher.group(Tokenizer.START_LINE_COMMENT_TAG);
         if (match != null) {
             // Special parsing for line comments
-            return enter(new LineCommentState(tokenizer));
+            return new LineCommentState(tokenizer, lineMatcher);
         }
-        match = matcher.group(Tokenizer.START_BLOCK_COMMENT_TAG);
+        match = lineMatcher.group(Tokenizer.START_BLOCK_COMMENT_TAG);
         if (match != null) {
             // Special parsing for block comments
-            return enter(new BlockCommentState(tokenizer));
+            return new BlockCommentState(tokenizer, lineMatcher);
         }
-        match = matcher.group(Tokenizer.CATCH_ALL_TAG);
+        match = lineMatcher.group(Tokenizer.CATCH_ALL_TAG);
         if (match != null) {
             if (match.length() == 0) {
-                // assume finish of line
-                tokenizer.mark();
-                return tokenizer.readLineAndParseToken();
+                if (tokenizer.newLine(lineMatcher)) {
+                    return this;
+                } else {
+                    return tokenizer.parseReachedEOF();
+                }
             }
         }
-        tokenizer.consume(matcher);
-        throw new InternalError("Unhandled lexical: " + tokenizer.readLine());
+        throw PrologSyntaxError.tokenError(tokenizer.environment(), "Unhandled lexical: " + tokenizer.errorLine());
     }
 
 }

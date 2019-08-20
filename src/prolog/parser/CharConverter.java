@@ -102,4 +102,25 @@ public class CharConverter {
         }
         return limit;
     }
+
+    /**
+     * Use conversion table to translate string to new format
+     * @param text Source text
+     * @return Translated text
+     */
+    public String translate(String text) {
+        StringBuilder builder = new StringBuilder();
+        char [] from = text.toCharArray();
+        char [] to = new char[from.length];
+        final char upper = (char)table.length;
+        for(int i = 0; i < from.length; i++) {
+            char c = from[i];
+            if (c < upper) {
+                c = table[c];
+            }
+            to[i] = c;
+        }
+        return new String(to);
+    }
+
 }

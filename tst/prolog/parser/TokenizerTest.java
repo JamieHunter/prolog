@@ -1,6 +1,7 @@
 package prolog.parser;
 
 import org.hamcrest.Matcher;
+import org.junit.Before;
 import org.junit.Test;
 import prolog.constants.PrologEOF;
 import prolog.execution.Environment;
@@ -19,8 +20,14 @@ import static prolog.test.Matchers.*;
 @SuppressWarnings("OctalInteger")
 public class TokenizerTest {
 
+    private Environment environment;
+
+    @Before
+    public void setEnvironment() {
+        environment = new Environment();
+    }
+
     private void expect(String text, Matcher<? super Term>... terms) {
-        Environment environment = new Environment();
         PrologInputStream stream = StreamUtils.bufferedString(text);
         Tokenizer tok = new Tokenizer(
                 environment,
@@ -139,5 +146,24 @@ public class TokenizerTest {
         expect("a /*123*/  b", isAtom("a"), isAtom("b"));
         expect("foo/*123\n456*/bar", isAtom("foo"), isAtom("bar"));
         expect("foo\n/*\n456\n*/\nbar", isAtom("foo"), isAtom("bar"));
+    }
+
+    @Test
+    public void testCharTranslation() {
+        environment.getFlags().charConversion = true;
+        environment.getCharConverter().add('f', 'F');
+        environment.getCharConverter().add('x', '.');
+        expect("foox", isUnboundVariable("Foo"), isAtom("."));
+        environment.getFlags().charConversion = false;
+        expect("foox", isAtom("foox"));
+        // This one is interesting, as it's not documented how this should be handled
+        environment.getCharConverter().add('#', '\'');
+        environment.getFlags().charConversion = true;
+        expect("foox #foox#' foox",
+                isUnboundVariable("Foo"),
+                isAtom("."),
+                isAtom("foox#"), // first '#' is translated, second '#' is not
+                isUnboundVariable("Foo"),
+                isAtom("."));
     }
 }

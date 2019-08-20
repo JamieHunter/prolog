@@ -10,7 +10,6 @@ import prolog.constants.PrologString;
 import prolog.exceptions.PrologSyntaxError;
 
 import java.io.IOException;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -19,10 +18,9 @@ import java.util.regex.Pattern;
 /*package*/
 class QuotedContextState extends ActiveParsingState {
     private final StringBuilder builder = new StringBuilder();
-    private final Pattern pattern;
     private final String quote;
     private final boolean once;
-    private Matcher matcher = null;
+    private LineMatcher lineMatcher;
 
     /**
      * Determine regex to use based on string quote.
@@ -49,8 +47,8 @@ class QuotedContextState extends ActiveParsingState {
      * @param tokenizer Owning tokenizer
      * @return Next state
      */
-    static QuotedContextState newCharCode(Tokenizer tokenizer) {
-        return new QuotedContextState(tokenizer, "'", Tokenizer.CHAR_PATTERN, true);
+    static QuotedContextState newCharCode(Tokenizer tokenizer, LineMatcher top) {
+        return new QuotedContextState(tokenizer, top, "'", Tokenizer.CHAR_PATTERN, true);
     }
 
     /**
@@ -60,8 +58,8 @@ class QuotedContextState extends ActiveParsingState {
      * @param quote     Opening quote character
      * @return Next state
      */
-    static QuotedContextState newQuotedText(Tokenizer tokenizer, String quote) {
-        return new QuotedContextState(tokenizer, quote, selectString(quote), false);
+    static QuotedContextState newQuotedText(Tokenizer tokenizer, LineMatcher top, String quote) {
+        return new QuotedContextState(tokenizer, top, quote, selectString(quote), false);
     }
 
     /**
@@ -72,9 +70,9 @@ class QuotedContextState extends ActiveParsingState {
      * @param pattern   Pattern to use
      * @param once      true if single character
      */
-    private QuotedContextState(Tokenizer tokenizer, String quote, Pattern pattern, boolean once) {
+    private QuotedContextState(Tokenizer tokenizer, LineMatcher top, String quote, Pattern pattern, boolean once) {
         super(tokenizer);
-        this.pattern = pattern;
+        this.lineMatcher = top.split(pattern);
         this.quote = quote;
         this.once = once;
     }
@@ -98,11 +96,12 @@ class QuotedContextState extends ActiveParsingState {
      * @throws IOException on IO error
      */
     private ParseState proceed() throws IOException {
-        if (matcher.end() < 0 || matcher.end() == matcher.regionEnd() || once) {
+        if (once && builder.length() > 0) {
             return end();
+        } else {
+            lineMatcher.next();
+            return this;
         }
-        matcher.region(matcher.end(), matcher.regionEnd());
-        return this;
     }
 
     /**
@@ -112,7 +111,7 @@ class QuotedContextState extends ActiveParsingState {
      * @throws IOException on IO error
      */
     private ParseState end() throws IOException {
-        tokenizer.consume(matcher);
+        lineMatcher.end();
         if (once) {
             if (builder.length() > 0) {
                 return ParseState.finish(new PrologInteger(builder.substring(0, 1).charAt(0)));
@@ -139,23 +138,11 @@ class QuotedContextState extends ActiveParsingState {
      * @throws IOException on IO error
      */
     private ParseState nextLine(String text) throws IOException {
-        begin();
         builder.append(text);
-        return this;
-    }
-
-    /**
-     * Begin line
-     *
-     * @throws IOException on IO error
-     */
-    private void begin() throws IOException {
-        tokenizer.mark();
-        String line = tokenizer.readLine();
-        if (line == null) {
-            throw PrologSyntaxError.stringError(tokenizer.environment(), "Unterminated string at end of file");
+        if (!tokenizer.newLine(lineMatcher)) {
+            throw PrologSyntaxError.stringError(tokenizer.environment(), "EOF reached before terminating string: " + builder.toString());
         }
-        matcher = pattern.matcher(line);
+        return this;
     }
 
     /**
@@ -165,22 +152,19 @@ class QuotedContextState extends ActiveParsingState {
      * @throws IOException on IO error
      */
     public ParseState next() throws IOException {
-        if (matcher == null) {
-            begin();
-        }
-        if (!matcher.lookingAt()) {
-            throw PrologSyntaxError.stringError(tokenizer.environment(), "Failed to parse: " + tokenizer.readLine());
+        if (!lineMatcher.scanNext()) {
+            throw PrologSyntaxError.stringError(tokenizer.environment(), "Failed to parse: " + tokenizer.errorLine());
         }
         String match;
-        match = matcher.group(Tokenizer.STRING_CHAR_TAG);
+        match = lineMatcher.group(Tokenizer.STRING_CHAR_TAG);
         if (match != null) {
             return proceed(match);
         }
-        match = matcher.group(Tokenizer.META_ESCAPE_TAG);
+        match = lineMatcher.group(Tokenizer.META_ESCAPE_TAG);
         if (match != null) {
             return proceed(match.substring(1));
         }
-        match = matcher.group(Tokenizer.CONTROL_ESCAPE_TAG);
+        match = lineMatcher.group(Tokenizer.CONTROL_ESCAPE_TAG);
         if (match != null) {
             char c;
             switch (match.substring(1)) {
@@ -212,7 +196,7 @@ class QuotedContextState extends ActiveParsingState {
             builder.append(c);
             return proceed();
         }
-        match = matcher.group(Tokenizer.CODE_ESCAPE_TAG);
+        match = lineMatcher.group(Tokenizer.CODE_ESCAPE_TAG);
         if (match != null) {
             String code = match.substring(1, match.length() - 1); // strip \...\
             if (code.startsWith("x")) {
@@ -224,15 +208,15 @@ class QuotedContextState extends ActiveParsingState {
             }
             return proceed();
         }
-        match = matcher.group(Tokenizer.QUOTE_TAG);
+        match = lineMatcher.group(Tokenizer.QUOTE_TAG);
         if (match != null) {
             return proceed(quote);
         }
-        match = matcher.group(Tokenizer.BAD_BACKSLASH_TAG);
+        match = lineMatcher.group(Tokenizer.BAD_BACKSLASH_TAG);
         if (match != null) {
             throw PrologSyntaxError.stringError(tokenizer.environment(), "Error parsing string at '" + match + "'");
         }
-        match = matcher.group(Tokenizer.CATCH_ALL_TAG);
+        match = lineMatcher.group(Tokenizer.CATCH_ALL_TAG);
         if (match != null) {
             if (match.length() == 0) {
                 // assume finish of line
@@ -248,6 +232,6 @@ class QuotedContextState extends ActiveParsingState {
             }
         }
         // anything else is accepted
-        return proceed(matcher.group());
+        return proceed(lineMatcher.group());
     }
 }

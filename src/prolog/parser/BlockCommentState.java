@@ -6,6 +6,7 @@ package prolog.parser;
 import prolog.exceptions.PrologSyntaxError;
 
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 /**
  * Class to handle parsing a block comment.
@@ -13,30 +14,27 @@ import java.io.IOException;
 /*package*/
 class BlockCommentState extends ActiveParsingState {
 
+    private final LineMatcher lineMatcher;
+    private static final Pattern PATTERN = Pattern.compile("\\*\\/");
+
     /**
      * {@inheritDoc}
      */
-    BlockCommentState(Tokenizer tokenizer) {
+    BlockCommentState(Tokenizer tokenizer, LineMatcher lineMatcher) {
         super(tokenizer);
+        this.lineMatcher = lineMatcher.split(PATTERN);
     }
 
     /**
      * {@inheritDoc}
      */
     public ParseState next() throws IOException {
-        String line = tokenizer.readLine();
-        if (line == null) {
-            throw PrologSyntaxError.commentError(tokenizer.environment(), "End of file reached before finding '*/'");
+        while (lineMatcher.find() < 0) {
+            if (!tokenizer.newLine(lineMatcher)) {
+                throw PrologSyntaxError.commentError(tokenizer.environment(), "End of file reached before finding '*/'");
+            }
         }
-        int off = line.indexOf("*/");
-        if (off < 0) {
-            tokenizer.mark();
-            return this;
-        } else {
-            tokenizer.consume(off + 2);
-            tokenizer.mark();
-            // past comment
-            return tokenizer.readLineAndParseToken();
-        }
+        lineMatcher.end();
+        return tokenizer.parseAnyToken();
     }
 }

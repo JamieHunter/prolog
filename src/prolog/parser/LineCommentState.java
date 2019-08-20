@@ -13,7 +13,7 @@ class LineCommentState extends ActiveParsingState {
     /**
      * {@inheritDoc}
      */
-    LineCommentState(Tokenizer tokenizer) {
+    LineCommentState(Tokenizer tokenizer, LineMatcher parser) {
         super(tokenizer);
     }
 
@@ -21,8 +21,7 @@ class LineCommentState extends ActiveParsingState {
      * {@inheritDoc}
      */
     public ParseState next() throws IOException {
-        tokenizer.readLine(); // comment
-        tokenizer.mark(); // mark after comment
-        return tokenizer.readLineAndParseToken(); // next line
+        tokenizer.newLine(null); // comment to end of line
+        return tokenizer.parseAnyToken(); // handles EOF
     }
 }

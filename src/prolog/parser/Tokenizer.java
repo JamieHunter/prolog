@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -34,7 +34,11 @@ public final class Tokenizer extends TokenRegex {
     private final ReadOptions options;
     private final PrologInputStream inputStream;
     private final Map<String, UnboundVariable> variableMap = new HashMap<>();
-    private final Position mark = new Position();
+    private final Position startOfLine = new Position();
+    private final Position nextLine = new Position();
+    private final Position tokenMark = new Position();
+    private LineMatcher topLineMatcher = null;
+    private int matcherTokenMark = -1;
 
     // used for core pattern
     static final String WS_TAG = "ws";
@@ -133,32 +137,27 @@ public final class Tokenizer extends TokenRegex {
      */
     public Term nextToken() {
         try {
-            mark(); // note start to allow rewind
-            ParseState state = readLineAndParseToken(); // initial state
+            ParseState state;
+            if (beginLine()) {
+                state = parseAnyToken(); // initial state
+            } else {
+                state = parseReachedEOF();
+            }
 
             //
             // Run state-machine to parse a token
             while (!state.done()) {
                 state = state.next();
             }
+            commit();
             return state.term();
-        } catch (IOException ioe) {
-            throw PrologError.systemError(environment, ioe);
-        }
-    }
-
-    /**
-     * State machine - normal parsing, accept any token.
-     *
-     * @return next state
-     * @throws IOException on IO Error
-     */
-    ParseState readLineAndParseToken() throws IOException {
-        String line = readLine();
-        if (line == null) {
-            return parseReachedEOF();
-        } else {
-            return parseAnyToken(line);
+        } catch (IOException | RuntimeException e1) {
+            try {
+                commit();
+            } catch (IOException e2) {
+                // ignore
+            }
+            throw PrologError.convert(environment, e1);
         }
     }
 
@@ -174,70 +173,123 @@ public final class Tokenizer extends TokenRegex {
     /**
      * Typical initial state (or state after comments etc). Looking for any token.
      *
-     * @param line Line being parsed
      * @return First state
      */
-    ParseState parseAnyToken(String line) {
-        return new TokenParseCoreState(this, line);
+    ParseState parseAnyToken() {
+        return new TokenParseCoreState(this, topLineMatcher);
     }
 
     /**
-     * Sets mark at current cursor position (i.e. character next to be read).
+     * Line that was parsed so far at time error occurs
      *
-     * @throws IOException IO Error
+     * @return string indicating error line
      */
-    void mark() throws IOException {
-        inputStream.getPosition(mark);
+    public String errorLine() {
+        if (matcherTokenMark < 0) {
+            return "";
+        } else {
+            return topLineMatcher.toString().substring(matcherTokenMark);
+        }
     }
 
     /**
-     * Consider text between mark and finish of match as having been used.
-     * Mark/cursor is moved to after the match. It is important that
-     * the matcher is for the text following mark.
+     * Executed at end of parsing a token, move mark forward.
      *
-     * @param matcher Matcher successful match
      * @throws IOException IO Exception
      */
-    void consume(Matcher matcher) throws IOException {
-        consume(matcher.end());
+    protected void commit() throws IOException {
+        if (matcherTokenMark < 0) {
+            return;
+        }
+        topLineMatcher.next(); // make sure we're past all tokens
+        matcherTokenMark = topLineMatcher.at();
+        resetToLineStart();
+        inputStream.advance(matcherTokenMark);
+        inputStream.getPosition(tokenMark);
     }
 
     /**
-     * Consider text after mark as having been used.
-     * Mark/cursor is moved to after the match.
+     * Move input stream to start of line to reparse-line (or set position)
      *
-     * @param chars Number of characters after match to consume
-     * @throws IOException IO Exception
+     * @throws IOException on IO error
      */
-    void consume(int chars) throws IOException {
-        if (!inputStream.seekPosition(mark)) {
+    private void resetToLineStart() throws IOException {
+        if (!inputStream.seekPosition(startOfLine)) {
             throw new UnsupportedOperationException("NYI - how to handle this?");
         }
-        inputStream.advance(chars); // assume we can advance this many chars, if we can't we're at EOF anyway.
-        mark();
     }
 
     /**
-     * Read text from mark to finish of line. Mark is not moved. This is in preparation for the next match attempt.
+     * Move input stream to end of last token parse
      *
-     * @return Text to finish of line, or null if finish of file
+     * @throws IOException on IO error
+     */
+    void resetToMark() throws IOException {
+        if (!inputStream.seekPosition(tokenMark)) {
+            throw new UnsupportedOperationException("NYI - how to handle this?");
+        }
+    }
+
+    /**
+     * Read text from mark to finish of line if needed.
+     *
+     * @return true if text has been read
      * @throws IOException IO Exception
      */
-    String readLine() throws IOException {
-        return inputStream.readLine();
+    boolean beginLine() throws IOException {
+        if (topLineMatcher == null || topLineMatcher.atEnd()) {
+            Function<String, String> translator = TopLineMatcher::noTranslation;
+            if (environment().getFlags().charConversion) {
+                translator = environment().getCharConverter()::translate;
+            }
+            topLineMatcher = new TopLineMatcher(CORE_PATTERN, translator);
+            return newLine(topLineMatcher);
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * Move to the next line. Update LineMatcher with the new line
+     * @param current Current LineMatcher being used
+     * @return true if line read, false if EOF
+     * @throws IOException on IO error
+     */
+    boolean newLine(LineMatcher current) throws IOException {
+        if (current == null) {
+            current = topLineMatcher;
+        }
+        if (matcherTokenMark >= 0) {
+            inputStream.seekPosition(nextLine);
+        }
+        inputStream.getPosition(tokenMark);
+        inputStream.getPosition(startOfLine);
+        matcherTokenMark = 0;
+        String line = inputStream.readLine(); // read ahead of mark
+        if (line == null) {
+            current.setAtEnd();
+            return false;
+        } else {
+            inputStream.getPosition(nextLine);
+            current.newLine(line);
+            return true;
+        }
     }
 
     /**
      * Test to see if next character matches the one given
      *
      * @param test Character to test
-     * @return true if bracket
+     * @return true if matching character
      */
     public boolean isNext(char test) {
         try {
-            mark();
+            if (topLineMatcher == null) {
+                return false;
+            }
+            inputStream.seekPosition(tokenMark);
             int c = inputStream.read();
-            inputStream.seekPosition(mark);
+            inputStream.seekPosition(tokenMark);
             return c == test;
         } catch (IOException ioe) {
             throw PrologError.systemError(environment, ioe);
@@ -249,15 +301,16 @@ public final class Tokenizer extends TokenRegex {
      * through until and including end of line
      */
     public void skipEOLN() {
+        Position start = new Position();
         try {
+            inputStream.getPosition(start);
             for (; ; ) {
-                mark();
                 int c = inputStream.read();
                 if (c < 0 || c == '\n') {
                     return;
                 }
                 if (c != ' ' && c != '\r' && c != '\t') {
-                    inputStream.seekPosition(mark);
+                    inputStream.seekPosition(start);
                     break;
                 }
             }

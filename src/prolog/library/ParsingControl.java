@@ -107,6 +107,12 @@ public final class ParsingControl {
      */
     @Predicate("char_conversion")
     public static void charConversion(Environment environment, Term fromChar, Term toChar) {
+        if (!fromChar.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, fromChar);
+        }
+        if (!toChar.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, toChar);
+        }
         PrologCharacter source = PrologCharacter.from(environment, fromChar);
         PrologCharacter target = PrologCharacter.from(environment, toChar);
         environment.getCharConverter().add(source.get(), target.get());
