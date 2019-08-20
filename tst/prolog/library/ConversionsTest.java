@@ -44,12 +44,29 @@ public class ConversionsTest {
     }
 
     @Test
+    public void testCharCode() {
+        given()
+                .when("?- char_code('1', 0'1).")
+                .assertSuccess()
+                .andWhen("?- char_code('1', 0'2).")
+                .assertFailed()
+                .andWhen("?- char_code(a, X).")
+                .assertSuccess()
+                .variable("X", isInteger('a'))
+                .andWhen("?- char_code(X, 65).")
+                .assertSuccess()
+                .variable("X", isAtom("A"));
+    }
+
+    @Test
     public void testNumberChars() {
         given()
                 .when("?- number_chars(X, ['3', '.', '3', 'E', '+', '0', '1']).")
                 .assertSuccess()
                 .variable("X", isFloat(3.3e+01))
                 .andWhen("?- number_chars(33.0, ['3', '.', '3', 'E', '+', '0', '1']).")
+                .assertSuccess()
+                .andWhen("?- number_chars(-33.0, ['-','3', '.', '3', 'E', '+', '0', '1']).")
                 .assertSuccess()
                 .andWhen("?- number_chars(33.0, Y).")
                 .assertSuccess()

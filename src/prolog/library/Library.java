@@ -14,6 +14,7 @@ public final class Library extends LibraryBase {
         // List of classes to consult
         consult(Apply.class);
         consult(Arithmetic.class);
+        consult(Atom.class);
         consult(Collation.class);
         consult(CompareImpl.class);
         consult(Consult.class);

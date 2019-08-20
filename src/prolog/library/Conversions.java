@@ -6,10 +6,14 @@ package prolog.library;
 import prolog.bootstrap.Predicate;
 import prolog.constants.PrologAtom;
 import prolog.constants.PrologAtomLike;
+import prolog.constants.PrologCharacter;
 import prolog.constants.PrologChars;
 import prolog.constants.PrologCodePoints;
 import prolog.constants.PrologEOF;
 import prolog.constants.PrologEmptyList;
+import prolog.constants.PrologInteger;
+import prolog.constants.PrologNumber;
+import prolog.exceptions.PrologError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologSyntaxError;
 import prolog.exceptions.PrologTypeError;
@@ -32,7 +36,9 @@ import prolog.unification.Unifier;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class Conversions {
@@ -58,6 +64,40 @@ public class Conversions {
     }
 
     /**
+     * COnvert between atom character and character code
+     * @param environment Execution environment
+     * @param atomTerm Atom character
+     * @param codeTerm Code representation
+     */
+    @Predicate("char_code")
+    public static void charCode(Environment environment, Term atomTerm, Term codeTerm) {
+        if (atomTerm.isInstantiated()) {
+            String charString = "";
+
+            if (atomTerm.isAtom()) {
+                charString = PrologAtomLike.from(atomTerm).name();
+            }
+            if (charString.length() != 1) {
+                throw PrologTypeError.characterExpected(environment, atomTerm);
+            }
+            PrologInteger code = new PrologInteger(BigInteger.valueOf(charString.charAt(0)));
+            if(!Unifier.unify(environment.getLocalContext(), codeTerm, code)) {
+                environment.backtrack();
+            }
+            return;
+        } else if (codeTerm.isInstantiated()) {
+            int code = PrologInteger.from(codeTerm).get().intValue();
+            PrologCharacter chr = new PrologCharacter((char)code);
+            if(!Unifier.unify(environment.getLocalContext(), atomTerm, chr)) {
+                environment.backtrack();
+            }
+            return;
+        } else {
+            throw PrologInstantiationError.error(environment, atomTerm);
+        }
+    }
+
+    /**
      * Common code for atom_chars and atom_codes
      *
      * @param environment Execution environment
@@ -67,6 +107,9 @@ public class Conversions {
      */
     protected static void atomCharsCommon(Environment environment, Term atom, Term list, Function<String, Term> allocator) {
         if (!atom.isInstantiated()) {
+            if (!list.isInstantiated()) {
+                throw PrologInstantiationError.error(environment, atom);
+            }
             // construct atom, list must be grounded
             String text = TermList.extractString(environment, list);
             PrologAtom newAtom = new PrologAtom(text);
@@ -121,15 +164,49 @@ public class Conversions {
      * @param allocator   Defines how the deconstructed atom behaves
      */
     protected static void numberCharsCommon(Environment environment, Term number, Term list, Function<String, Term> allocator) {
-        Term parsedNumber = null;
+        PrologNumber parsedNumber = null;
         if (list.isGrounded()) {
             // construct number through parsing
             String text = TermList.extractString(environment, list);
-            Term t = parseSingleTerm(environment, text);
-            if (!t.isNumber()) {
-                throw PrologSyntaxError.tokenError(environment, "Expected to parse a number");
+            try {
+                parsedNumber = parseAndFoldInput(environment, text, new ParseAndFold<PrologNumber>() {
+                    long sign = 0;
+                    PrologNumber value = null;
+
+                    @Override
+                    public boolean accept(Term term) {
+                        if (term.isAtom()) {
+                            if (sign != 0) {
+                                throw PrologSyntaxError.tokenError(environment, "sign");
+                            }
+                            String val = PrologAtomLike.from(term).name();
+                            if (val.equals("-")) {
+                                sign = -1;
+                            } else if (val.equals("+")) {
+                                sign = 1;
+                            } else {
+                                throw PrologSyntaxError.tokenError(environment, "sign");
+                            }
+                            return false; // keep parsing
+                        } else if (term.isNumber()) {
+                            value = (PrologNumber) term;
+                            if (sign < 0) {
+                                value = value.negate();
+                            }
+                            return true; // done parsing
+                        } else {
+                            throw PrologSyntaxError.tokenError(environment, "other");
+                        }
+                    }
+
+                    @Override
+                    public PrologNumber get() {
+                        return value;
+                    }
+                });
+            } catch(PrologError pe) {
+                throw PrologSyntaxError.tokenError(environment, "Cannot parse " + text + " as a number");
             }
-            parsedNumber = t;
         }
         if (number.isInstantiated()) {
             if (!number.isNumber()) {
@@ -152,14 +229,32 @@ public class Conversions {
         }
     }
 
+    private interface ParseAndFold<R> {
+        /**
+         * Accept next term
+         * @param term Term read from input, guaranteed to not be end-of-file
+         * @return true if parsing complete, false otherwise
+         */
+        boolean accept(Term term);
+
+        /**
+         * @return parsed value
+         */
+        R get();
+    }
+
     /**
      * Convert string to term via parser
      *
      * @param environment Execution environment
      * @param text        Text to convert
-     * @return Term
+     * @param helper     Class to accept terms to generate a parsed value
+     * @param <R>           Return type
+     * @return resulting value
      */
-    private static Term parseSingleTerm(Environment environment, String text) {
+    private static <R> R parseAndFoldInput(Environment environment,
+                                           String text,
+                                           ParseAndFold<R> helper) {
         PrologInputStream stream =
                 new InputBuffered(
                         new InputDecoderFilter(
@@ -170,12 +265,22 @@ public class Conversions {
                 environment,
                 new ReadOptions(environment, null),
                 stream);
-        Term single = tok.nextToken();
-        Term end = tok.nextToken();
-        if (end != PrologEOF.EOF) {
-            throw PrologSyntaxError.tokenError(environment, "String was parsed as more than one token");
+        boolean done = false;
+        for(;;) {
+            Term term = tok.nextToken();
+            if (term == PrologEOF.EOF) {
+                if (done) {
+                    return helper.get();
+                }
+                break;
+            } else {
+                if (done) {
+                    break;
+                }
+            }
+            done = helper.accept(term);
         }
-        return single;
+        throw PrologSyntaxError.tokenError(environment, "String parsing error");
     }
 
     /**

@@ -149,7 +149,7 @@ test_sa :-
 
 test_atom_chars :-
 	test_val(atom_chars('', L), L, []),
-        test_val(atom_chars([], M), M, ['[', ']']),
+        test_val(atom_chars('[]', M), M, ['[', ']']),
         test_true(atom_chars('ant', ['a', 'n', 't'])),
         test_false(atom_chars('soap', ['s', 'o', 'p'])).
 
@@ -184,7 +184,7 @@ test_a_chars :-
 
 test_atom_codes :-
 	test_val(atom_codes('', L), L, []),
-        test_val(atom_codes([], M), M, [0'[, 0']]),
+        test_val(atom_codes('[]', M), M, [0'[, 0']]),
         test_true(atom_codes('ant', [0'a, 0'n, 0't])),
         test_true(atom_codes('abc\x20\def', [97, 98, 99, 32, 100, 101, 102]) ),
         test_false(atom_chars('soap', [0's, 0'o, 0'p])).
