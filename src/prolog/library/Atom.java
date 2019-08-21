@@ -7,6 +7,7 @@ import prolog.bootstrap.Predicate;
 import prolog.constants.PrologAtom;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
+import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
@@ -110,6 +111,28 @@ public final class Atom {
         throw PrologInstantiationError.error(environment, concatTerm);
     }
 
+    /**
+     * Given sub_atom(+Atom, ?Before, ?Length, ?After, ?SubAtom), identify all possible SubAtom's, and/or all possible
+     * Before/Length/After.
+     *
+     * @param environment Execution environment
+     * @param atomTerm Source atom, required
+     * @param beforeTerm Variable, or integer >= 0, number of characters before sub-atom
+     * @param lengthTerm Variable, or integer >=0, length of sub-atom
+     * @param afterTerm Variable, or integer >=0, number of characters after sub-atom
+     * @param subAtomTerm Variable, or defined sub-atom
+     */
+    @Predicate("sub_atom")
+    public static void atomConcat(Environment environment, Term atomTerm, Term beforeTerm, Term lengthTerm, Term afterTerm, Term subAtomTerm) {
+        String atomString;
+        if (atomTerm.isInstantiated()) {
+            atomString = PrologAtomLike.from(atomTerm).name();
+        } else {
+            throw PrologInstantiationError.error(environment, atomTerm);
+        }
+        new SubAtom(environment, atomString, beforeTerm, lengthTerm, afterTerm, subAtomTerm).next();
+    }
+
     private static class AtomConcat extends DecisionPoint {
 
         private final String concat;
@@ -143,5 +166,319 @@ public final class Atom {
                 environment.backtrack();
             }
         }
+    }
+
+    private static class SubAtom extends DecisionPoint {
+        private final String atomString;
+        private final Term beforeTerm;
+        private final Term lengthTerm;
+        private final Term afterTerm;
+        private final Term subAtomTerm;
+        private Integer beforeConstraint;
+        private Integer lengthConstraint;
+        private Integer afterConstraint;
+        private String subAtomConstraint;
+        private int offset;
+        private int length;
+        private int limit;
+        private Runnable algorithm = this::backtrack;
+
+        /**
+         * Create a new decision point associated with the environment. At time decision point is created, the local context,
+         * the catch point, the cut depth and the call stack are all snapshot and reused on each iteration of the decision
+         * point.
+         *
+         * @param environment Execution environment
+         */
+        protected SubAtom(Environment environment, String atomString, Term beforeTerm, Term lengthTerm, Term afterTerm, Term subAtomTerm) {
+            super(environment);
+            this.atomString = atomString;
+            this.beforeTerm = beforeTerm;
+            this.lengthTerm = lengthTerm;
+            this.afterTerm = afterTerm;
+            this.subAtomTerm = subAtomTerm;
+            int atomLen = atomString.length();
+            offset = -1; // to help identify errors in below logic
+            length = -1;
+            limit = -1;
+
+            if (beforeTerm.isInstantiated()) {
+                // TODO: bug, integer needs to be bounded
+                beforeConstraint = PrologInteger.from(beforeTerm).get().intValue();
+                if (beforeConstraint < 0) {
+                    throw PrologDomainError.notLessThanZero(environment, beforeTerm);
+                } else if (beforeConstraint > atomLen) {
+                    return; // not solvable
+                }
+            }
+            if (lengthTerm.isInstantiated()) {
+                // TODO: bug, integer needs to be bounded
+                lengthConstraint = PrologInteger.from(lengthTerm).get().intValue();
+                if (lengthConstraint < 0) {
+                    throw PrologDomainError.notLessThanZero(environment, lengthTerm);
+                } else if (lengthConstraint > atomLen) {
+                    return; // not solvable
+                }
+            }
+            if (afterTerm.isInstantiated()) {
+                // TODO: bug, integer needs to be bounded
+                afterConstraint = PrologInteger.from(afterTerm).get().intValue();
+                if (afterConstraint < 0) {
+                    throw PrologDomainError.notLessThanZero(environment, afterTerm);
+                } else if (afterConstraint > atomLen) {
+                    return; // not solvable
+                }
+            }
+            if (subAtomTerm.isInstantiated()) {
+                subAtomConstraint = PrologAtomLike.from(subAtomTerm).name();
+                if (lengthConstraint != null) {
+                    if (lengthConstraint != subAtomConstraint.length()) {
+                        return; // not solvable
+                    }
+                } else {
+                    // implied length constraint
+                    lengthConstraint = subAtomConstraint.length();
+                }
+            }
+            // infer additional constraints
+            if (beforeConstraint != null && lengthConstraint != null && afterConstraint == null) {
+                afterConstraint = atomLen - (beforeConstraint + lengthConstraint);
+                if (afterConstraint < 0 || afterConstraint > atomLen) {
+                    return; // not solvable
+                }
+            }
+            if (beforeConstraint != null && lengthConstraint == null && afterConstraint != null) {
+                lengthConstraint = atomLen - (beforeConstraint + afterConstraint);
+                if (lengthConstraint < 0 || lengthConstraint > atomLen) {
+                    return; // not solvable
+                }
+            }
+            if (beforeConstraint == null && lengthConstraint != null && afterConstraint != null) {
+                beforeConstraint = atomLen - (afterConstraint + lengthConstraint);
+                if (beforeConstraint < 0 || beforeConstraint > atomLen) {
+                    return; // not solvable
+                }
+            }
+            // Given the constraints (provided or inferred), determine the algorithm and starting condition
+            if (beforeConstraint != null && lengthConstraint != null && afterConstraint != null) {
+                int checkLen = beforeConstraint + lengthConstraint + afterConstraint;
+                if (checkLen != atomLen) {
+                    return; // not solvable
+                }
+                offset = limit = beforeConstraint;
+                length = lengthConstraint;
+                algorithm = this::fullyConstrained;
+                return;
+            }
+            if (beforeConstraint == null && afterConstraint != null) {
+                assert lengthConstraint == null;
+                algorithm = this::enumerateFixedRight;
+                offset = 0;
+                length = atomLen - afterConstraint; // starting length
+                limit = length;
+                return;
+            }
+            if (beforeConstraint != null && afterConstraint == null) {
+                assert lengthConstraint == null;
+                algorithm = this::enumerateFixedLeft;
+                offset = beforeConstraint;
+                length = 0;
+                limit = atomLen;
+                return;
+            }
+            assert beforeConstraint == null;
+            assert afterConstraint == null;
+            offset = 0;
+            if (lengthConstraint == null) {
+                limit = atomLen;
+                length = 0;
+                algorithm = this::enumerateAll;
+            } else if (lengthConstraint == 0) {
+                limit = atomLen;
+                length = 0;
+                algorithm = this::scanEmpty;
+            } else if (subAtomConstraint != null) {
+                length = lengthConstraint;
+                limit = atomLen-lengthConstraint;
+                algorithm = this::scanString;
+            } else {
+                length = lengthConstraint;
+                limit = atomLen-lengthConstraint;
+                algorithm = this::enumerateFixedLength;
+            }
+        }
+
+        /**
+         * All constraints applied, this only runs once
+         */
+        protected void fullyConstrained() {
+            String subAtom = atomString.substring(offset, offset+length);
+            unify(offset, subAtom);
+        }
+
+        /**
+         * Before is fixed, length and after are variable
+         */
+        protected void enumerateFixedLeft() {
+            int end = offset+length;
+            String subAtom = atomString.substring(offset, end);
+            if (end != limit) {
+                notLast();
+            }
+            unify(offset, subAtom);
+            length++;
+        }
+
+        /**
+         * After is fixed, length and before are variable
+         */
+        protected void enumerateFixedRight() {
+            int end = offset+length;
+            String subAtom = atomString.substring(offset, end);
+            if (offset != limit) {
+                notLast();
+            }
+            unify(offset, subAtom);
+            offset++;
+            length--;
+        }
+
+        /**
+         * Length is fixed, before and after are variable
+         */
+        protected void enumerateFixedLength() {
+            int end = offset+length;
+            String subAtom = atomString.substring(offset, end);
+            if (offset != limit) {
+                notLast();
+            }
+            unify(offset, subAtom);
+            offset++;
+        }
+
+        /**
+         * Completely unconstrained
+         */
+        protected void enumerateAll() {
+            int end = offset+length;
+            String subAtom = atomString.substring(offset, end);
+            if (offset != limit) {
+                notLast();
+            }
+            unify(offset, subAtom);
+            if (end == limit) {
+                offset++;
+                length = 0;
+            } else {
+                length ++;
+            }
+        }
+
+        /**
+         * Algorithm: start/end constraints are empty,
+         * String is empty string
+         */
+        protected void scanEmpty() {
+            if (offset == limit+1) {
+                forceBacktrack();
+                return;
+            }
+            if (offset != limit) {
+                notLast();
+            }
+            unify(offset, "");
+            offset++;
+        }
+
+        /**
+         * Algorithm: start/end constraints are empty,
+         * String is a provided string.
+         */
+        protected void scanString() {
+            for(;;) {
+                if (!scan()) {
+                    forceBacktrack();
+                    return;
+                }
+                if (atomString.substring(offset, offset + length).equals(subAtomConstraint)) {
+                    break;
+                }
+                offset++;
+            }
+            if (offset < limit) {
+                notLast();
+            }
+            unify(offset, subAtomConstraint);
+            offset++;
+        }
+
+        /**
+         * Helper for the scanString algorithm, find first character
+         * @return true if first character found
+         */
+        protected boolean scan() {
+            char c = subAtomConstraint.charAt(0);
+            while (offset <= limit) {
+                if (atomString.charAt(offset) == c) {
+                    return true;
+                }
+                offset++;
+            }
+            return false;
+        }
+
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        protected void next() {
+            environment.forward();
+            algorithm.run();
+        }
+
+        /**
+         * Algorithm: Determined we've already failed
+         */
+        protected void forceBacktrack() {
+            environment.backtrack();
+        }
+
+        /**
+         * Called to push decision point
+         */
+        protected void notLast() {
+            environment.pushDecisionPoint(this);
+        }
+
+        protected void unify(int before, String subAtom) {
+            int length = subAtom.length();
+            int after = atomString.length() - (length+before);
+            if (!beforeTerm.isInstantiated()) {
+                if (!beforeTerm.instantiate(new PrologInteger(BigInteger.valueOf(before)))) {
+                    forceBacktrack();
+                    return;
+                }
+            }
+            if (!lengthTerm.isInstantiated()) {
+                if (!lengthTerm.instantiate(new PrologInteger(BigInteger.valueOf(length)))) {
+                    forceBacktrack();
+                    return;
+                }
+            }
+            if (!afterTerm.isInstantiated()) {
+                if (!afterTerm.instantiate(new PrologInteger(BigInteger.valueOf(after)))) {
+                    forceBacktrack();
+                    return;
+                }
+            }
+            if (!subAtomTerm.isInstantiated()) {
+                if (!subAtomTerm.instantiate(new PrologAtom(subAtom))) {
+                    forceBacktrack();
+                    return;
+                }
+            }
+        }
+
     }
 }

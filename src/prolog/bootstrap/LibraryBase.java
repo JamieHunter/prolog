@@ -16,6 +16,7 @@ import prolog.predicates.BuiltinPredicateArity1;
 import prolog.predicates.BuiltinPredicateArity2;
 import prolog.predicates.BuiltinPredicateArity3;
 import prolog.predicates.BuiltinPredicateArity4;
+import prolog.predicates.BuiltinPredicateArity5;
 import prolog.predicates.BuiltinPredicateCompiles;
 import prolog.predicates.Predication;
 
@@ -48,6 +49,7 @@ public class LibraryBase {
             new Entry(BuiltinPredicateArity2.class, BuiltinPredicateArity2.Lambda.class),
             new Entry(BuiltinPredicateArity3.class, BuiltinPredicateArity3.Lambda.class),
             new Entry(BuiltinPredicateArity4.class, BuiltinPredicateArity4.Lambda.class),
+            new Entry(BuiltinPredicateArity5.class, BuiltinPredicateArity5.Lambda.class),
             // Extend as needed
     };
 
@@ -236,6 +238,9 @@ public class LibraryBase {
      * @param method Reflected method
      */
     private void handleExecutionMethod(String[] names, int arity, Method method) {
+        if (arity >= byArity.length) {
+            throw new InternalError("Arity larger than supported, add a new table entry");
+        }
         Entry entry = byArity[arity]; // If array out of bounds occurs, add new entries to array
 
         // Create a lambda function for execution, suitable for given arity
