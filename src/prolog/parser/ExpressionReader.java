@@ -116,14 +116,16 @@ public final class ExpressionReader {
     }
 
     /**
-     * Utility method - determine if term on left is the atom on the right
+     * Utility method - determine if term on left is the atom on the right - as this is used for syntactic elements,
+     * quoted atoms are excluded.
      *
      * @param term  Term under test
      * @param other Atom to compare with
      * @return true if term is the given atom
      */
     private boolean is(Term term, PrologAtomLike other) {
-        return term.isAtom() && term.compareTo(other) == 0;
+        return term.isAtom() && term.compareTo(other) == 0 &&
+                !(term instanceof PrologQuotedAtom);
     }
 
     /**

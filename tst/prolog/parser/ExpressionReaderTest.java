@@ -183,4 +183,20 @@ public class ExpressionReaderTest {
         expect("[-, '2','5'].",
                 isList(isAtom("-"), isAtom("2"), isAtom("5")));
     }
+
+    @Test
+    public void testQuotedBrackets() {
+        // From sec816.pl: test_val(atom_chars('[]', M), M, ['[', ']']),
+        // This was failing
+        expect("['[',']'].",
+                isList(
+                        isAtom("["),
+                        isAtom("]")));
+        expect("foo(['[',']']).",
+                isCompoundTerm(
+                        "foo",
+                        isList(
+                                isAtom("["),
+                                isAtom("]"))));
+    }
 }

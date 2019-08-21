@@ -149,6 +149,18 @@ public class TokenizerTest {
     }
 
     @Test
+    public void testQuotedBrackets() {
+        // From sec816.pl: test_val(atom_chars('[]', M), M, ['[', ']']),
+        // This was failing - not surprisingly
+        expect("['[',']']",
+                isAtom("["),
+                isAtom("["),
+                isAtom(","),
+                isAtom("]"),
+                isAtom("]"));
+    }
+
+    @Test
     public void testCharTranslation() {
         environment.getFlags().charConversion = true;
         environment.getCharConverter().add('f', 'F');
@@ -166,4 +178,5 @@ public class TokenizerTest {
                 isUnboundVariable("Foo"),
                 isAtom("."));
     }
+
 }
