@@ -165,10 +165,7 @@ public class Terms {
             throw PrologInstantiationError.error(environment, index);
         }
         PrologInteger indexInt = PrologInteger.from(index);
-        int i = indexInt.get().intValue();
-        if (i < 0) {
-            throw PrologDomainError.notLessThanZero(environment, indexInt);
-        }
+        int i = indexInt.notLessThanZero().toInteger();
         Term value = null;
         int arity = 0;
         if (struct instanceof CompoundTerm) {
@@ -208,10 +205,7 @@ public class Terms {
             if (!name.isAtomic()) {
                 throw PrologTypeError.atomicExpected(environment, name);
             }
-            int arityInt = PrologInteger.from(arity).get().intValue();
-            if (arityInt < 0) {
-                throw PrologDomainError.notLessThanZero(environment, arity);
-            }
+            int arityInt = PrologInteger.from(arity).notLessThanZero().toInteger();
             if (arityInt > 0 && !name.isAtom()) {
                 throw PrologTypeError.atomExpected(environment, name);
             }
@@ -236,7 +230,7 @@ public class Terms {
         }
         CompoundTerm comp = (CompoundTerm) term;
         if (!(Unifier.unify(context, name, comp.functor()) &&
-                Unifier.unify(context, arity, new PrologInteger(BigInteger.valueOf(comp.arity())))
+                Unifier.unify(context, arity, PrologInteger.from(comp.arity()))
         )) {
             environment.backtrack();
         }

@@ -54,6 +54,11 @@ public final class Arithmetic {
     @Function(value = "/", arity = 2)
     public static final BinaryFunction FLOAT_DIVIDE = binaryFloat(PrologFloat::divide);
     /**
+     * To-power-of.
+     */
+    @Function(value = "**", arity = 2)
+    public static final BinaryFunction TO_POWER_OF = binaryInteger(PrologNumber::power);
+    /**
      * Negate
      */
     @Function(value = "-", arity = 1)
@@ -79,10 +84,56 @@ public final class Arithmetic {
     @Function(value = "float", arity = 1)
     public static final UnaryFunction FLOAT = unary(PrologNumber::toPrologFloat);
     /**
-     * Convert number to integer
+     * Convert number to integer, by rounding down
+     */
+    @Function(value = "floor", arity = 1)
+    public static final UnaryFunction FLOOR = unary(PrologNumber::floor);
+    /**
+     * Convert number to integer, by rounding up
+     */
+    @Function(value = "ceiling", arity = 1)
+    public static final UnaryFunction CEILING = unary(PrologNumber::ceiling);
+    /**
+     * Convert number to integer by rounding to nearest
      */
     @Function(value = "round", arity = 1)
     public static final UnaryFunction ROUND = unary(PrologNumber::round);
+    /**
+     * Convert number to integer via truncation
+     */
+    @Function(value = "truncate", arity = 1)
+    public static final UnaryFunction TRUNCATE = unary(PrologNumber::toPrologInteger);
+
+    @Function(value = "sin", arity = 1)
+    public static final UnaryFunction SIN = unaryFloat(x -> PrologFloat.from(Math.sin(x)));
+
+    @Function(value = "cos", arity = 1)
+    public static final UnaryFunction COS = unaryFloat(x -> PrologFloat.from(Math.cos(x)));
+
+    @Function(value = "atan", arity = 1)
+    public static final UnaryFunction ATAN = unaryFloat(x -> PrologFloat.from(Math.atan(x)));
+
+    @Function(value = "log", arity = 1)
+    public static final UnaryFunction LOG = unaryFloat(x -> PrologFloat.from(Math.log(x)));
+
+    @Function(value = "exp", arity = 1)
+    public static final UnaryFunction EXP = unaryFloat(x -> PrologFloat.from(Math.exp(x)));
+
+    @Function(value = "/\\", arity = 2)
+    public static final BinaryFunction BIT_AND = binaryInteger((x,y) -> PrologInteger.from(x.get().and(y.get())));
+
+    @Function(value = "\\/", arity = 2)
+    public static final BinaryFunction BIT_OR = binaryInteger((x,y) -> PrologInteger.from(x.get().or(y.get())));
+
+    @Function(value = "<<", arity = 2)
+    public static final BinaryFunction BIT_SHIFT_LEFT = binaryInteger((x,y) -> PrologInteger.from(x.get().shiftLeft(y.toInteger())));
+
+    @Function(value = ">>", arity = 2)
+    public static final BinaryFunction BIT_SHIFT_RIGHT = binaryInteger((x,y) -> PrologInteger.from(x.get().shiftRight(y.toInteger())));
+
+    @Function(value = "\\", arity = 1)
+    public static final UnaryFunction BIT_INVERT = unaryInteger(x -> PrologInteger.from(x.not()));
+
     //
     // ========================================================
     //

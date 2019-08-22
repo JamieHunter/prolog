@@ -196,9 +196,9 @@ public class StructureWriter extends TermWriter<Term> {
      * @throws IOException if IO error
      */
     private void writeVar(Term varNum) throws IOException {
-        int vn = PrologInteger.from(varNum).get().intValue();
+        long vn = PrologInteger.from(varNum).toLong();
         char letter = (char) (vn % 26 + 'A');
-        int num = vn / 26;
+        long num = vn / 26;
         String name;
         if (num == 0) {
             name = String.format("%c", letter);

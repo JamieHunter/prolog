@@ -34,6 +34,6 @@ public final class SystemControl {
      */
     @Predicate("halt")
     public static void halt(Environment environment, Term exitCode) {
-        System.exit(PrologInteger.from(exitCode).get().intValue());
+        System.exit(PrologInteger.from(exitCode).toInteger());
     }
 }

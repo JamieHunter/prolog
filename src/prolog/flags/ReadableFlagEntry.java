@@ -110,7 +110,7 @@ public class ReadableFlagEntry<T extends FlagsWithEnvironment> {
      * @return self (for chaining)
      */
     ReadableFlagEntry<T> readInteger(Function<T, Long> onRead) {
-        return read(o -> new PrologInteger(BigInteger.valueOf(onRead.apply(o))));
+        return read(o -> PrologInteger.from(onRead.apply(o)));
     }
 
     /**

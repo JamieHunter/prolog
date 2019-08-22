@@ -231,7 +231,7 @@ test_char_code :-
 test_char_code_errors :-
 	error_test(char_code(X,Y), instantiation_error),
         error_test(char_code('ab', Y), type_error(character, 'ab')),
-        error_test(char_code(Char, 9999), representation_error(character_code)).
+        error_test(char_code(Char, 999999), representation_error(character_code)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

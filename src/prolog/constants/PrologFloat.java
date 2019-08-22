@@ -4,6 +4,7 @@
 package prolog.constants;
 
 import prolog.bootstrap.Interned;
+import prolog.exceptions.FutureDomainError;
 import prolog.exceptions.FutureEvaluationError;
 import prolog.expressions.Term;
 import prolog.expressions.TypeRank;
@@ -11,6 +12,7 @@ import prolog.io.WriteContext;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * A floating point number in Prolog. This is implemented using Java's Double. Note that
@@ -30,6 +32,15 @@ public final class PrologFloat extends AtomicBase implements PrologNumber {
     }
 
     /**
+     * Construct from a double - alternative syntax
+     *
+     * @param value Floating point value
+     */
+    public static PrologFloat from(double value) {
+        return new PrologFloat(value);
+    }
+
+    /**
      * Return floating point value as a double.
      *
      * @return value
@@ -45,6 +56,17 @@ public final class PrologFloat extends AtomicBase implements PrologNumber {
     @Override
     public String toString() {
         return String.valueOf(value);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PrologFloat notLessThanZero() {
+        if (value < 0) {
+            throw new FutureDomainError(Interned.NOT_LESS_THAN_ZERO_DOMAIN, this);
+        }
+        return this;
     }
 
     /**
@@ -83,6 +105,15 @@ public final class PrologFloat extends AtomicBase implements PrologNumber {
      * {@inheritDoc}
      */
     @Override
+    public PrologFloat power(PrologNumber right) {
+        double rightDouble = right.toPrologFloat().notLessThanZero().value;
+        return new PrologFloat(Math.pow(value, rightDouble));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public PrologAtomInterned lessThan(PrologNumber right) {
         return atomize(value < right.toPrologFloat().value);
     }
@@ -108,8 +139,34 @@ public final class PrologFloat extends AtomicBase implements PrologNumber {
      */
     @Override
     public PrologInteger round() {
+        double v = value;
+        if (v < 0) {
+            v = value - 0.5;
+        } else {
+            v = value + 0.5;
+        }
         return new PrologInteger(
-                BigDecimal.valueOf(value+0.5).toBigInteger()
+                BigDecimal.valueOf(v).toBigInteger()
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PrologInteger floor() {
+        return new PrologInteger(
+                BigDecimal.valueOf(Math.floor(value)).toBigInteger()
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PrologInteger ceiling() {
+        return new PrologInteger(
+                BigDecimal.valueOf(Math.ceil(value)).toBigInteger()
         );
     }
 
@@ -226,5 +283,4 @@ public final class PrologFloat extends AtomicBase implements PrologNumber {
     public int compareSameType(Term o) {
         return get().compareTo(((PrologFloat)o).get());
     }
-
 }

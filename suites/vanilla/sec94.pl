@@ -83,7 +83,7 @@ test_ones_complement :-
          error_test(X4 is \foo ,type_error(evaluable, foo/0)).
    
 test_ones_complement :-
-         log_nl, log( 'bitwise complement  \\/2 not supported.'),
+         log_nl, log( 'bitwise complement  \\/1 not supported.'),
          log_nl, log_nl.
 
 

@@ -243,7 +243,7 @@ public interface TermList extends CompoundTerm {
                 } else if (e instanceof PrologAtomLike) {
                     builder.append(((PrologAtomLike) e).name().charAt(0));
                 } else if (e instanceof PrologInteger) {
-                    builder.append((char) ((PrologInteger) e).get().intValue());
+                    builder.append(((PrologInteger) e).toChar());
                 } else if (!e.isInstantiated()) {
                     throw PrologInstantiationError.error(environment, list);
                 } else {

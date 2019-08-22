@@ -37,7 +37,7 @@ public class DefaultIoBinding {
      * Well defined user input stream.
      */
     public static final LogicalStream USER_INPUT = new LogicalStream(
-            new PrologInteger(BigInteger.valueOf(0)),
+            PrologInteger.from(BigInteger.ZERO),
             new ProtectedSequentialInputStream(System.in),
             null,
             StreamProperties.OpenMode.ATOM_read
@@ -46,7 +46,7 @@ public class DefaultIoBinding {
      * Well defined user output stream.
      */
     public static final LogicalStream USER_OUTPUT = new LogicalStream(
-            new PrologInteger(BigInteger.valueOf(1)),
+            PrologInteger.from(1),
             null,
             new ProtectedSequentialOutputStream(System.out),
             StreamProperties.OpenMode.ATOM_write
@@ -55,7 +55,7 @@ public class DefaultIoBinding {
      * Well defined user error output stream.
      */
     public static final LogicalStream USER_ERROR = new LogicalStream(
-            new PrologInteger(BigInteger.valueOf(2)),
+            PrologInteger.from(2),
             null,
             new ProtectedSequentialOutputStream(System.err),
             StreamProperties.OpenMode.ATOM_write);

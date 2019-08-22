@@ -130,7 +130,7 @@ public abstract class ParserBase<T extends Flags, R> {
     public R intFlag(final Atomic key, final BiConsumer<T, Long> consumer) {
         return createKey(key, (obj, value) -> {
             if (value.isInteger()) {
-                consumer.accept(obj, ((PrologInteger) value).get().longValue());
+                consumer.accept(obj, ((PrologInteger) value).toLong());
             } else {
                 throw new FutureTypeError(Interned.INTEGER_TYPE, value);
             }

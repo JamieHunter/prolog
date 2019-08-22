@@ -50,7 +50,7 @@ public class PrologCharacter extends PrologAtomLike {
             }
         }
         if (source instanceof PrologInteger) {
-            return new PrologCharacter((char)((PrologInteger)source).get().intValue());
+            return new PrologCharacter(((PrologInteger)source).toChar());
         }
         throw PrologTypeError.characterExpected(environment, source);
     }

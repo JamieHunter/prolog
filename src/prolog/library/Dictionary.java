@@ -111,10 +111,7 @@ public final class Dictionary {
             throw PrologInstantiationError.error(environment, functor);
         }
         PrologAtomInterned functorAtom = PrologAtomInterned.from(environment, functor);
-        int arityInt = PrologInteger.from(arity).get().intValue();
-        if (arityInt < 0) {
-            throw PrologDomainError.notLessThanZero(environment, arity);
-        }
+        int arityInt = PrologInteger.from(arity).notLessThanZero().toInteger();
         Predication.Interned predication = new Predication.Interned(functorAtom, arityInt);
         PredicateDefinition defn =
                 environment.lookupPredicate(predication);
@@ -307,7 +304,7 @@ public final class Dictionary {
         Term arity = predicationCompound.get(1);
         PrologAtomInterned functorAtom = PrologAtomInterned.from(environment, functor);
         PrologInteger arityInt = PrologInteger.from(arity);
-        Predication.Interned predication = new Predication.Interned(functorAtom, arityInt.get().intValue());
+        Predication.Interned predication = new Predication.Interned(functorAtom, arityInt.notLessThanZero().toInteger());
         // create library entry if needed
         PredicateDefinition entry = environment.autoCreateDictionaryEntry(predication);
         if (!(entry instanceof ClauseSearchPredicate)) {

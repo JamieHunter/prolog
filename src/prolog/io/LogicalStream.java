@@ -56,7 +56,7 @@ public class LogicalStream {
      */
     public static PrologInteger unique() {
         int n = counter.getAndIncrement();
-        return new PrologInteger(BigInteger.valueOf(n));
+        return PrologInteger.from(n);
     }
 
     private final PrologInteger id;
@@ -412,13 +412,13 @@ public class LogicalStream {
             }
             CompoundTerm posEl = (CompoundTerm) element;
             if (posEl.functor() == Io.BYTE_POS && posEl.arity() == 1) {
-                pos.setBytePos(PrologInteger.from(posEl.get(0)).get().longValue());
+                pos.setBytePos(PrologInteger.from(posEl.get(0)).notLessThanZero().toLong());
             } else if (posEl.functor() == Io.CHAR_POS && posEl.arity() == 1) {
-                pos.setCharPos(PrologInteger.from(posEl.get(0)).get().longValue());
+                pos.setCharPos(PrologInteger.from(posEl.get(0)).notLessThanZero().toLong());
             } else if (posEl.functor() == Io.LINE_POS && posEl.arity() == 1) {
-                pos.setLinePos(PrologInteger.from(posEl.get(0)).get().longValue());
+                pos.setLinePos(PrologInteger.from(posEl.get(0)).notLessThanZero().toLong());
             } else if (posEl.functor() == Io.COLUMN_POS && posEl.arity() == 1) {
-                pos.setColumnPos(PrologInteger.from(posEl.get(0)).get().longValue());
+                pos.setColumnPos(PrologInteger.from(posEl.get(0)).notLessThanZero().toLong());
             } else {
                 throw PrologDomainError.error(environment, "stream_position", positionTerm);
             }
@@ -436,7 +436,7 @@ public class LogicalStream {
 
     private static void mapOptionalPosElement(ArrayList<Term> list, Atomic name, Optional<Long> element) {
         if (element.isPresent()) {
-            list.add(new CompoundTermImpl(name, new PrologInteger(BigInteger.valueOf(element.get()))));
+            list.add(new CompoundTermImpl(name, PrologInteger.from(element.get())));
         }
     }
 
@@ -689,7 +689,7 @@ public class LogicalStream {
             if (c < 0) {
                 return Io.END_OF_FILE;
             }
-            return new PrologInteger(BigInteger.valueOf(c));
+            return PrologInteger.from(c);
         } catch (IOException ioe) {
             throw PrologError.systemError(environment, ioe);
         }
@@ -709,7 +709,7 @@ public class LogicalStream {
             if (c < 0) {
                 return Io.END_OF_FILE;
             }
-            return new PrologInteger(BigInteger.valueOf(c));
+            return PrologInteger.from(c);
         } catch (IOException ioe) {
             throw PrologError.systemError(environment, ioe);
         }
@@ -773,7 +773,7 @@ public class LogicalStream {
         }
         String text;
         if (target.isInteger()) {
-            int symbol = PrologInteger.from(target).get().intValue();
+            int symbol = PrologInteger.from(target).toChar();
             write(environment, streamId, symbol);
         } else if (target.isAtom()) {
             text = PrologAtomLike.from(target).name();
@@ -798,7 +798,7 @@ public class LogicalStream {
         if (!target.isInstantiated()) {
             throw PrologInstantiationError.error(environment, target);
         }
-        int val = PrologInteger.from(target).get().intValue();
+        int val = PrologInteger.from(target).toInteger();
         PrologOutputStream output = getOutputStream(environment, streamId);
         try {
             output.write(val);

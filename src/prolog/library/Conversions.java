@@ -80,13 +80,13 @@ public class Conversions {
             if (charString.length() != 1) {
                 throw PrologTypeError.characterExpected(environment, atomTerm);
             }
-            PrologInteger code = new PrologInteger(BigInteger.valueOf(charString.charAt(0)));
+            PrologInteger code = PrologInteger.from(charString.charAt(0));
             if(!Unifier.unify(environment.getLocalContext(), codeTerm, code)) {
                 environment.backtrack();
             }
             return;
         } else if (codeTerm.isInstantiated()) {
-            int code = PrologInteger.from(codeTerm).get().intValue();
+            int code = PrologInteger.from(codeTerm).toChar();
             PrologCharacter chr = new PrologCharacter((char)code);
             if(!Unifier.unify(environment.getLocalContext(), atomTerm, chr)) {
                 environment.backtrack();

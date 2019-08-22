@@ -109,10 +109,7 @@ public final class Lists {
         int specifiedLength;
         if (length.isInstantiated() && !list.isInstantiated()) {
             // case 1, generate list from length
-            specifiedLength = PrologInteger.from(length).get().intValue();
-            if (specifiedLength < 0) {
-                throw new IndexOutOfBoundsException("Length of list < 0");
-            }
+            specifiedLength = PrologInteger.from(length).notLessThanZero().toInteger();
             // compute anonymous list
             Term[] members = new Term[specifiedLength];
             LocalContext context = environment.getLocalContext();
@@ -129,7 +126,7 @@ public final class Lists {
         if (list.isInstantiated()) {
             // case 2, unify lengths if list is specified
             calculatedLength = length(list);
-            Term genLen = new PrologInteger(BigInteger.valueOf(calculatedLength));
+            Term genLen = PrologInteger.from(calculatedLength);
             if (!Unifier.unify(environment.getLocalContext(), length, genLen)) {
                 environment.backtrack();
             }

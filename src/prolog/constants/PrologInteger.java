@@ -4,8 +4,10 @@
 package prolog.constants;
 
 import prolog.bootstrap.Interned;
+import prolog.exceptions.FutureDomainError;
 import prolog.exceptions.FutureEvaluationError;
 import prolog.exceptions.FutureTypeError;
+import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologEvaluationError;
 import prolog.expressions.Term;
 import prolog.expressions.TypeRank;
@@ -32,6 +34,24 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
     }
 
     /**
+     * Construct from BigInteger - alternative syntax
+     *
+     * @param value Integer value
+     */
+    public static PrologInteger from(BigInteger value) {
+        return new PrologInteger(value);
+    }
+
+    /**
+     * Construct from long - alternative syntax
+     *
+     * @param value Integer value
+     */
+    public static PrologInteger from(long value) {
+        return new PrologInteger(value);
+    }
+
+    /**
      * Construct from long value
      *
      * @param value Long value
@@ -46,6 +66,63 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
     @Override
     public BigInteger get() {
         return value;
+    }
+
+    /**
+     * Bounded long
+     * @return long value
+     */
+    public long toLong() {
+        if (value.compareTo(BigInteger.ZERO) > 0) {
+            if (value.compareTo(BigInteger.valueOf(Long.MAX_VALUE))> 0) {
+                throw new FutureDomainError(new PrologAtom("max_long"), this);
+            }
+        } else {
+            if (value.compareTo(BigInteger.valueOf(Long.MIN_VALUE))< 0) {
+                throw new FutureDomainError(new PrologAtom("min_long"), this);
+            }
+        }
+        return value.longValue();
+    }
+
+    /**
+     * Bounded integer
+     * @return integer value
+     */
+    public int toInteger() {
+        if (value.compareTo(BigInteger.ZERO) > 0) {
+            if (value.compareTo(BigInteger.valueOf(Integer.MAX_VALUE))> 0) {
+                throw new FutureDomainError(new PrologAtom("max_integer"), this);
+            }
+        } else {
+            if (value.compareTo(BigInteger.valueOf(Integer.MIN_VALUE))< 0) {
+                throw new FutureDomainError(new PrologAtom("min_integer"), this);
+            }
+        }
+        return value.intValue();
+    }
+
+    /**
+     * Bounded character
+     * @return character value
+     */
+    public char toChar() {
+        notLessThanZero();
+        if (value.compareTo(BigInteger.valueOf(Character.MAX_VALUE))> 0) {
+            throw new FutureDomainError(Interned.CHARACTER_CODE_REPRESENTATION, this);
+        }
+        return (char)value.intValue();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PrologInteger notLessThanZero() {
+        if (value.compareTo(BigInteger.ZERO) < 0) {
+            throw new FutureDomainError(Interned.NOT_LESS_THAN_ZERO_DOMAIN, this);
+        }
+        return this;
     }
 
     /**
@@ -107,6 +184,15 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
     /**
      * {@inheritDoc}
      */
+    @Override
+    public PrologInteger power(PrologNumber right) {
+        int rightInt = right.toPrologInteger().notLessThanZero().toInteger();
+        return new PrologInteger(value.pow(rightInt));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public PrologInteger divide(PrologInteger right) {
         try {
             return new PrologInteger(value.divide(right.value));
@@ -122,14 +208,13 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
         BigInteger leftVal = value;
         BigInteger rightVal = right.value;
         int cmp = rightVal.compareTo(BigInteger.ZERO);
-        if (cmp == 0) {
+        if (cmp > 0) {
+            return new PrologInteger(leftVal.mod(rightVal));
+        } else if (cmp < 0) {
+            return new PrologInteger(leftVal.mod(rightVal.negate()).negate());
+        } else {
             throw new FutureEvaluationError(Interned.ZERO_DIVISOR_EVALUATION, "Division by zero");
         }
-        if (cmp < 0) {
-            leftVal = leftVal.negate();
-            rightVal = rightVal.negate();
-        }
-        return new PrologInteger(leftVal.mod(rightVal));
     }
 
     /**

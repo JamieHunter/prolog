@@ -58,7 +58,7 @@ public class ExecFindOp implements Instruction {
         }
         if (boundPrecedence.isInstantiated()) {
             // type check, but not processed until iteration
-            PrologInteger.from(boundPrecedence).get().intValue();
+            PrologInteger.from(boundPrecedence).toInteger();
         }
         ArrayList<OperatorEntry> searchList = new ArrayList<>();
         // Apply constraints to search list. Ideally this will be one entry

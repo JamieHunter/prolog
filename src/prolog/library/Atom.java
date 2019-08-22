@@ -46,7 +46,7 @@ public final class Atom {
             }
             return;
         }
-        PrologInteger length = new PrologInteger(BigInteger.valueOf(atom.name().length()));
+        PrologInteger length = PrologInteger.from(atom.name().length());
         if (!Unifier.unify(environment.getLocalContext(), lengthTerm, length)) {
             environment.backtrack();
         }
@@ -203,29 +203,21 @@ public final class Atom {
             limit = -1;
 
             if (beforeTerm.isInstantiated()) {
-                // TODO: bug, integer needs to be bounded
-                beforeConstraint = PrologInteger.from(beforeTerm).get().intValue();
-                if (beforeConstraint < 0) {
-                    throw PrologDomainError.notLessThanZero(environment, beforeTerm);
-                } else if (beforeConstraint > atomLen) {
+                beforeConstraint = PrologInteger.from(beforeTerm).notLessThanZero().toInteger();
+                if (beforeConstraint > atomLen) {
                     return; // not solvable
                 }
             }
             if (lengthTerm.isInstantiated()) {
-                // TODO: bug, integer needs to be bounded
-                lengthConstraint = PrologInteger.from(lengthTerm).get().intValue();
-                if (lengthConstraint < 0) {
-                    throw PrologDomainError.notLessThanZero(environment, lengthTerm);
-                } else if (lengthConstraint > atomLen) {
+                lengthConstraint = PrologInteger.from(lengthTerm).notLessThanZero().toInteger();
+                if (lengthConstraint > atomLen) {
                     return; // not solvable
                 }
             }
             if (afterTerm.isInstantiated()) {
                 // TODO: bug, integer needs to be bounded
-                afterConstraint = PrologInteger.from(afterTerm).get().intValue();
-                if (afterConstraint < 0) {
-                    throw PrologDomainError.notLessThanZero(environment, afterTerm);
-                } else if (afterConstraint > atomLen) {
+                afterConstraint = PrologInteger.from(afterTerm).notLessThanZero().toInteger();
+                if (afterConstraint > atomLen) {
                     return; // not solvable
                 }
             }
@@ -455,19 +447,19 @@ public final class Atom {
             int length = subAtom.length();
             int after = atomString.length() - (length+before);
             if (!beforeTerm.isInstantiated()) {
-                if (!beforeTerm.instantiate(new PrologInteger(BigInteger.valueOf(before)))) {
+                if (!beforeTerm.instantiate(PrologInteger.from(before))) {
                     forceBacktrack();
                     return;
                 }
             }
             if (!lengthTerm.isInstantiated()) {
-                if (!lengthTerm.instantiate(new PrologInteger(BigInteger.valueOf(length)))) {
+                if (!lengthTerm.instantiate(PrologInteger.from(length))) {
                     forceBacktrack();
                     return;
                 }
             }
             if (!afterTerm.isInstantiated()) {
-                if (!afterTerm.instantiate(new PrologInteger(BigInteger.valueOf(after)))) {
+                if (!afterTerm.instantiate(PrologInteger.from(after))) {
                     forceBacktrack();
                     return;
                 }

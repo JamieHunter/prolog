@@ -48,7 +48,7 @@ public final class ParsingControl {
         if (!name.isInstantiated()) {
             throw PrologInstantiationError.error(environment, name);
         }
-        int precedenceInt = PrologInteger.from(precedence).get().intValue();
+        int precedenceInt = PrologInteger.from(precedence).toInteger();
         if (precedenceInt > 1200 || precedenceInt < 0) {
             throw PrologDomainError.operatorPriority(environment, precedence);
         }

@@ -24,6 +24,12 @@ public interface PrologNumber extends Atomic {
     }
 
     /**
+     * Guards the number throwing an error if number is less than zero.
+     * @return this number
+     */
+    PrologNumber notLessThanZero();
+
+    /**
      * Promote other constant in light of this constant
      *
      * @param other constant to be promoted
@@ -78,12 +84,38 @@ public interface PrologNumber extends Atomic {
     }
 
     /**
+     * Round this number to an integer
+     *
+     * @return round
+     */
+    default PrologInteger floor() {
+        return toPrologInteger();
+    }
+
+    /**
+     * Round this number to an integer
+     *
+     * @return round
+     */
+    default PrologInteger ceiling() {
+        return toPrologInteger();
+    }
+
+    /**
      * Multiply this number with the other number
      *
      * @param right Other number
      * @return product
      */
     PrologNumber multiply(PrologNumber right);
+
+    /**
+     * Raise this number to power of the other number
+     *
+     * @param right Other number
+     * @return power
+     */
+    PrologNumber power(PrologNumber right);
 
     /**
      * Convert number to an integer

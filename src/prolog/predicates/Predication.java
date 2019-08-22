@@ -65,7 +65,7 @@ public class Predication {
                 2,
                 () -> new Term[]{
                         functor,
-                        new PrologInteger(BigInteger.valueOf(arity))
+                        PrologInteger.from(arity)
                 });
     }
 
