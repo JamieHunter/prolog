@@ -158,11 +158,13 @@ public interface TermList extends CompoundTerm {
         public boolean hasNext() {
             if (next == PrologEmptyList.EMPTY_LIST) {
                 return false;
-            }
-            if (CompoundTerm.termIsA(next, Interned.LIST_FUNCTOR, 2)) {
+            } else if (isList(next)) {
                 return true;
+            } else if (!next.isInstantiated()) {
+                throw new FutureInstantiationError(next);
+            } else {
+                throw new FutureTypeError(Interned.LIST_TYPE, origList);
             }
-            throw new FutureTypeError(Interned.LIST_TYPE, origList);
         }
 
         @Override
@@ -187,22 +189,20 @@ public interface TermList extends CompoundTerm {
         Term origList = list;
         ArrayList<Term> arr = new ArrayList<>();
         while (list != PrologEmptyList.EMPTY_LIST) {
+            if (!list.isInstantiated()) {
+                throw new FutureInstantiationError(list);
+            }
             if (list instanceof TermList) {
                 ((TermList) list).copyMembers(arr);
                 list = ((TermList) list).lastTail();
-            } else if (CompoundTerm.termIsA(list, Interned.LIST_FUNCTOR, 2)) {
+            } else if (isList(list)) {
                 arr.add(((CompoundTerm) list).get(0));
                 list = ((CompoundTerm) list).get(1);
+            } else if (!list.isInstantiated()) {
+                throw new FutureInstantiationError(list);
             } else {
-                arr.add(list);
-                break;
+                throw new FutureTypeError(Interned.LIST_TYPE, origList);
             }
-        }
-        if (!list.isInstantiated()) {
-            throw new FutureInstantiationError(list);
-        }
-        if (!isList(list)) {
-            throw new FutureTypeError(Interned.LIST_TYPE, origList);
         }
         return arr;
     }
@@ -249,6 +249,8 @@ public interface TermList extends CompoundTerm {
                 } else {
                     throw PrologTypeError.characterExpected(environment, e);
                 }
+            } else if (!list.isInstantiated()) {
+                throw new FutureInstantiationError(list);
             } else {
                 throw PrologTypeError.listExpected(environment, origList);
             }

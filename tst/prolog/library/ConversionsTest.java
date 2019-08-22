@@ -70,7 +70,8 @@ public class ConversionsTest {
                 .assertSuccess()
                 .andWhen("?- number_chars(33.0, Y).")
                 .assertSuccess()
-                .variable("Y", isList(isAtom("3"), isAtom("3"), isAtom("."), isAtom("0")))
+                .variable("Y", isList(isAtom("3"), isAtom("3"), isAtom("."),
+                        isAtom("0"), isAtom("0"), isAtom("0"), isAtom("0")))
         ;
 
     }

@@ -59,6 +59,11 @@ public final class Arithmetic {
     @Function(value = "**", arity = 2)
     public static final BinaryFunction TO_POWER_OF = binaryInteger(PrologNumber::power);
     /**
+     * Integer to-power-of.
+     */
+    @Function(value = "^", arity = 2)
+    public static final BinaryFunction INTEGER_POWER = binaryInteger(PrologInteger::power);
+    /**
      * Negate
      */
     @Function(value = "-", arity = 1)

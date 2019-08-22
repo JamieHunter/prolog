@@ -1,7 +1,7 @@
 /* file atom_codes */
 
 [atom_codes('',L), [[L <-- []]]].
-[atom_codes([],L), [[L <-- [ 0'[, 0'] ]]]].
+[atom_codes('[]',L), [[L <-- [ 0'[, 0'] ]]]].
 [atom_codes('''',L), [[L <-- [ 39 ]]]].
 [atom_codes('iso',L), [[L <-- [ 0'i, 0's, 0'o ]]]].
 [atom_codes(A,[ 0'p, 0'r, 0'o, 0'l, 0'o, 0'g]), [[A <-- 'prolog']]].

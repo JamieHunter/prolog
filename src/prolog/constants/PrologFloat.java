@@ -265,7 +265,7 @@ public final class PrologFloat extends AtomicBase implements PrologNumber {
     @Override
     public void write(WriteContext context) throws IOException {
         context.beginAlphaNum();
-        context.write(String.valueOf(value));
+        context.write(String.format(context.environment().getFlags().floatFormat.name(), value));
     }
 
     /**

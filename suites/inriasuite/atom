@@ -4,7 +4,8 @@
 [atom('string'), success].
 [atom(a(b)), failure].
 [atom(Var), failure].
-[atom([]), success].
+[atom('[]'), success].
+[atom([]), failure].
 [atom(6), failure].
 [atom(3.3), failure].
 

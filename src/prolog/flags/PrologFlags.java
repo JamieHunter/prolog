@@ -5,6 +5,8 @@ package prolog.flags;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
+import prolog.constants.PrologAtom;
+import prolog.constants.PrologAtomLike;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 
@@ -37,6 +39,8 @@ public class PrologFlags implements FlagsWithEnvironment {
                 readOnOff(o -> o.debug).protect();
         global.enumFlag(internAtom("encoding"), StreamProperties.Encoding.class, (o, v) -> o.encoding = v).
                 readEnum(StreamProperties.Encoding.class, o -> o.encoding).protect();
+        global.atomFlag(internAtom("float_format"), (o, v) -> o.floatFormat = v).
+                read(o -> o.floatFormat).protect();
         global.protectedFlag(internAtom("integer_rounding_function")).
                 constant(internAtom("toward_zero")).protect();
         global.protectedFlag(internAtom("max_arity")).
@@ -75,6 +79,10 @@ public class PrologFlags implements FlagsWithEnvironment {
      * Default file encoding
      */
     public StreamProperties.Encoding encoding = StreamProperties.Encoding.ATOM_utf8;
+    /**
+     * Default float format
+     */
+    public PrologAtomLike floatFormat = new PrologAtom("%.6g");
     /**
      * What to do if a predicate is not found
      */
