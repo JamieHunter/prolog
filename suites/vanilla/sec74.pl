@@ -36,7 +36,7 @@
 :- discontiguous(noclauses/1).   % test to see if it exists.
 :- op(25, xfx, and).
 :- char_conversion('&', '%').
-:- initialization(go7_4).
+:- initialization(go_74).
 :- include('include.pl').  % contains the predicate included(here).
 :- ensure_loaded(utils_so).       % error_test/2
 :- set_prolog_flag(unknown, error).
@@ -77,7 +77,7 @@ test_multi :-
 %
 
 test_discontig :-
-	test_val(setof(X, d7_4(X), S), S , [dis1, dis2]),
+	test_val(setof(X, dis7_4(X), S), S , [dis1, dis2]),
         test_false( noclauses(X)).
 test_op :-
 	test_val((d7_4(X) and dis7_4(Y)), [X,Y], [d1, dis1]).
@@ -92,7 +92,7 @@ test_flag :-
 %   perform the tests.
 %
 
-go_74:-  log( 'Testing directives Section 7.4'),
+go_74:-  log( 'Testing directives Section 7.4 - via Initialization.'),
       log_nl,
       test_discontig,
       test_dyn,
@@ -100,7 +100,7 @@ go_74:-  log( 'Testing directives Section 7.4'),
       test_op,
       test_char_conv,
       test_flag,
-      log( 'Done testing section 7.4.'),
+      log( 'Done testing section 7.4 - via Initialization.'),
       log_nl.
 
 
