@@ -9,7 +9,6 @@ import prolog.bootstrap.Interned;
 import prolog.bootstrap.Operators;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
-import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
 import prolog.exceptions.PrologError;
 import prolog.exceptions.PrologPermissionError;
@@ -26,6 +25,8 @@ import prolog.predicates.MissingPredicate;
 import prolog.predicates.PredicateDefinition;
 import prolog.predicates.Predication;
 import prolog.predicates.VarArgDefinition;
+import prolog.utility.LinkNode;
+import prolog.utility.TrackableList;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -65,6 +66,7 @@ public class Environment {
     private final LinkedList<InstructionPointer> callStack = new LinkedList<>();
     private final LinkedList<Backtrack> backtrackStack = new LinkedList<>();
     private final LinkedList<Term> dataStack = new LinkedList<>();
+    private final TrackableList<Path> searchPath = new TrackableList<>();
     private LogicalStream inputStream = DefaultIoBinding.USER_INPUT;
     private LogicalStream outputStream = DefaultIoBinding.USER_OUTPUT;
     private Path cwd = Paths.get(".").normalize().toAbsolutePath();
@@ -854,5 +856,13 @@ public class Environment {
      */
     public CharConverter getCharConverter() {
         return charConverter;
+    }
+
+    /**
+     * Reference the search-path list used for recursive loads
+     * @return Search path
+     */
+    public TrackableList<Path> getSearchPath() {
+        return searchPath;
     }
 }

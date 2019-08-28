@@ -31,6 +31,14 @@ public class PrologError extends PrologThrowable {
         return new ErrorContext(predication, description);
     }
 
+    private static String throwableMessage(Throwable throwable) {
+        String msg = throwable.getMessage();
+        if (msg == null) {
+            msg = throwable.toString();
+        }
+        return msg;
+    }
+
     /**
      * Convert environment and Java throwable into an error context
      *
@@ -39,7 +47,7 @@ public class PrologError extends PrologThrowable {
      * @return ErrorContext (compound term)
      */
     public static ErrorContext context(Environment environment, Throwable throwable) {
-        return context(environment, throwable.getMessage());
+        return context(environment, throwableMessage(throwable));
     }
 
     /**

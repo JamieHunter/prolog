@@ -17,12 +17,17 @@ import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.Term;
 import prolog.instructions.ExecCallLocal;
+import prolog.instructions.ExecFinally;
 import prolog.io.LogicalStream;
 import prolog.io.Prompt;
 import prolog.predicates.LoadGroup;
 import prolog.predicates.Predication;
 import prolog.unification.Unifier;
+import prolog.utility.LinkNode;
+import prolog.utility.TrackableList;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -84,41 +89,51 @@ public final class Consult {
     }
 
     /**
-     * Create a new load group and establish as current
+     * Set load group. Restore it under any exist circumstance.
      *
-     * @param environment    Execution environment
-     * @param idTerm         Id of new group
-     * @param timeTerm       Time of new group if instantiated
-     * @param priorGroupTerm Unified with prior group for later restore
+     * @param environment Execution environment
+     * @param idTerm      Id of load group
+     * @param callable    Callable term
+     *
      */
-    @Predicate("$begin_load_group")
-    public static void beginLoadGroup(Environment environment, Term idTerm, Term timeTerm, Term priorGroupTerm) {
-        String id = convertId(environment, idTerm);
-        PrologFloat time = convertTime(environment, timeTerm);
-        LoadGroup priorGroup = environment.getLoadGroup();
-        PrologAtom priorIdAtom = new PrologAtom(priorGroup.getId());
-        if (!Unifier.unify(environment.getLocalContext(), priorGroupTerm, priorIdAtom)) {
-            environment.backtrack();
-            return;
-        }
-        environment.changeLoadGroup(new LoadGroup(id, time));
+    @Predicate("$load_group_scope")
+    public static void setLoadGroup(Environment environment, Term idTerm, Term timeTerm, Term callable) {
+        final String newId = convertId(environment, idTerm);
+        final PrologFloat time = convertTime(environment, timeTerm);
+        final LoadGroup priorGroup = environment.getLoadGroup();
+        final LoadGroup newGroup = new LoadGroup(newId, time);
+
+        new ExecFinally(environment, callable,
+                e -> {
+                    environment.changeLoadGroup(newGroup);
+                },
+                e -> {
+                    environment.changeLoadGroup(priorGroup);
+                }).invoke(environment);
     }
 
     /**
-     * Select and restore a previously known load group
+     * Add path to search path, remove it under any exit circumstance.
      *
      * @param environment Execution environment
-     * @param idTerm      Id of prior group
+     * @param pathTerm Search path to add
+     * @param callable Callable term
      */
-    @Predicate("$restore_load_group")
-    public static void setLoadGroup(Environment environment, Term idTerm) {
-        String id = convertId(environment, idTerm);
-        LoadGroup group = environment.getLoadGroup(id);
-        if (group == null) {
-            environment.backtrack();
-            return;
+    @Predicate("$file_search_scope")
+    public static void fileSearchScope(Environment environment, Term pathTerm, Term callable) {
+        Path path = Io.parsePathWithCWD(environment, pathTerm);
+        if (!Files.isDirectory(path)) {
+            path = path.getParent();
         }
-        environment.changeLoadGroup(group);
+        final LinkNode node = new LinkNode(path);
+
+        new ExecFinally(environment, callable,
+                e -> {
+                    environment.getSearchPath().addHead(node);
+                },
+                e -> {
+                    node.remove();
+                }).invoke(environment);
     }
 
     /**
@@ -148,6 +163,9 @@ public final class Consult {
             return;
         }
         LoadGroup group = environment.getLoadGroup(id);
+        if (group == null) {
+            return;
+        }
         List<Term> initialization = group.getInitialization();
 
         // Compile all the terms as if they were provided as a single ':-' at the end of the script

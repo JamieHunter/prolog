@@ -54,12 +54,17 @@ load_files(X) :- load_files(X, []).
         % TODO: Controlled by flags
         % Actual open/load
         open(AbsFile, read, Stream, [encoding(Encoding)]),
-        '$load_stream_in_group'(AbsFile, RemOp, Stream),
+        catch('$file_search_scope'(AbsFile,
+                '$load_stream_in_group'(AbsFile, RemOp, Stream)),
+                Error, (
+                    close(Stream), % make sure stream is closed on error
+                    throw(Error)
+                )),
         close(Stream),
         % TODO: Controlled by flags
         '$do_initialization'(AbsFile)
     ;
-        true
+        true % ignore in else-case
     )
     .
 
@@ -78,11 +83,7 @@ load_files(X) :- load_files(X, []).
 % Change load group while stream is being loaded
 '$load_stream_in_group'(Id, Op, Stream) :-
     option(modified(Modified), Op),
-    '$begin_load_group'(Id, Modified, PriorId),
-    catch('$load_stream'(Op, Stream), Error, (
-        '$restore_load_group'(PriorId),
-        throw(Error)
-        )).
+    '$load_group_scope'(Id, Modified, '$load_stream'(Op, Stream)).
 
 % internal - given a stream, load the stream until EOF
 '$load_stream'(Op, Stream) :-
@@ -152,11 +153,15 @@ ensure_loaded(F) :- load_files(F, [if(not_loaded)]).
 
 % include file into this context, effectively an inline insert
 % TODO: error if called outside of a load_file
-include(F) :-
+include(File) :-
     % Actual open/load
-    open(F, read, Stream),
-    '$load_stream'([], Stream),
+    absolute_file_name(File, AbsFile, [file_type(prolog)]),
+    open(AbsFile, read, Stream),
+    catch('$file_search_scope'(AbsFile, '$load_stream'([], Stream)),
+            Error, (
+                close(Stream), % make sure stream is closed on error
+                throw(Error)
+            )),
     close(Stream).
-
 
 % :- Make private ...

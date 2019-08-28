@@ -26,6 +26,9 @@ public class PrologString extends AtomicBase {
      * @param value String value
      */
     public PrologString(String value) {
+        if (value == null) {
+            throw new NullPointerException("Creating null string");
+        }
         this.value = value;
     }
 

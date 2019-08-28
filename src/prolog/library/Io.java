@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * File is referenced by {@link Library} to parse all annotations.
@@ -728,7 +729,7 @@ public final class Io {
      */
     @Predicate("time_file")
     public static void timeFile(Environment environment, Term fileName, Term timeTerm) {
-        Path path = parsePath(environment, fileName);
+        Path path = parsePathWithCWD(environment, fileName);
         PrologFloat time = Time.toPrologTime(path.toFile().lastModified());
         if (!Unifier.unify(environment.getLocalContext(), timeTerm, time)) {
             environment.backtrack();
@@ -838,7 +839,7 @@ public final class Io {
 
         OpenOption[] ops = op.toArray(new OpenOption[0]);
 
-        Path path = parsePath(environment, fileName);
+        Path path = parsePathWithCWD(environment, fileName);
         PrologAtomInterned aliasName = null;
         if (streamTarget.isInstantiated()) {
             if (!(streamTarget.isAtom())) {
@@ -905,15 +906,51 @@ public final class Io {
     }
 
     /**
-     * Convert a path parameter into an actual Path, not taking into account environment CWD.
+     * Convert a path parameter into an actual Path, taking into account environment CWD. No searching is performed.
      *
      * @param environment Execution environment
      * @param fileName    Term representing file name
      * @return Path to open
      */
-    private static Path parsePath(Environment environment, Term fileName) {
+    public static Path parsePathWithCWD(Environment environment, Term fileName) {
         Path basic = parsePathBasic(environment, fileName);
+        if (basic.isAbsolute()) {
+            return basic.normalize();
+        }
         return environment.getCWD().resolve(basic).normalize();
+    }
+
+    /**
+     * Enumerate path with alternative substitutions. A transform function is called for each potential path to
+     * accept (return actual path) or reject (return null).
+     *
+     * @param environment Execution environment
+     * @param fileName    Term representing file name
+     * @param transform   Validate and transform search path into actual path.
+     * @return Path to open, or null if path not validated via transform function
+     */
+    public static Path parsePathSearch(Environment environment, Term fileName, Function<Path,Path> transform) {
+        Path basic = parsePathBasic(environment, fileName);
+        if (basic.isAbsolute()) {
+            basic = transform.apply(basic);
+            if (basic != null) {
+                basic = basic.normalize();
+            }
+            return basic;
+        }
+        ListIterator<Path> search = environment.getSearchPath().listIterator();
+        while (search.hasNext()) {
+            Path path = search.next().resolve(basic);
+            path = transform.apply(path);
+            if (path != null) {
+                return path.normalize();
+            }
+        }
+        Path finalPath = transform.apply(environment.getCWD().resolve(basic));
+        if (finalPath != null) {
+            finalPath = finalPath.normalize();
+        }
+        return finalPath;
     }
 
     /**
@@ -956,34 +993,34 @@ public final class Io {
         if (CompoundTerm.termIsA(fileSpec, Interned.LIBRARY_FUNCTOR, 1)) {
             throw new UnsupportedOperationException("library(X) not yet handled");
         }
-        Path path = parsePath(environment, fileSpec);
-        Path usePath = null;
-        for (String ext : options.extensions) {
-            Path test = path.getParent().resolve(path.getFileName().toString() + ext);
-            try {
-                BasicFileAttributes attribs = Files.readAttributes(test, BasicFileAttributes.class);
-                if (options.type == AbsoluteFileNameOptions.FileType.ATOM_directory) {
 
-                    if (attribs.isDirectory()) {
-                        usePath = test.toRealPath();
-                        break;
+        Path usePath = parsePathSearch(environment, fileSpec, path -> {
+            for (String ext : options.extensions) {
+                Path test = path.getParent().resolve(path.getFileName().toString() + ext);
+                try {
+                    BasicFileAttributes attribs = Files.readAttributes(test, BasicFileAttributes.class);
+                    if (options.type == AbsoluteFileNameOptions.FileType.ATOM_directory) {
+
+                        if (attribs.isDirectory()) {
+                            return test.toRealPath();
+                        }
+                    } else {
+                        if (attribs.isRegularFile()) {
+                            return test.toRealPath();
+                        }
                     }
-                } else {
-                    if (attribs.isRegularFile()) {
-                        usePath = test.toRealPath();
-                        break;
-                    }
+                } catch (IOException e) {
+                    // ignore this test
                 }
-            } catch (IOException e) {
-                // ignore this test
             }
-        }
+            return null;
+        });
         if (usePath == null) {
+            usePath = parsePathWithCWD(environment, fileSpec);
             try {
-                usePath = path.toRealPath();
+                usePath = usePath.toRealPath();
             } catch (IOException e) {
-                // TODO: this can be improved
-                usePath = path;
+                // Ignore?
             }
         }
         return usePath;
