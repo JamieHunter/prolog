@@ -3,7 +3,7 @@
 //
 package prolog.expressions;
 
-import prolog.constants.Atomic;
+import prolog.constants.PrologAtomLike;
 import prolog.execution.EnumTermStrategy;
 import prolog.execution.LocalContext;
 import prolog.io.WriteContext;
@@ -17,7 +17,7 @@ import java.util.function.Supplier;
  * if it is needed.
  */
 public class DeferredCompoundTerm implements CompoundTerm, Container {
-    private final Atomic functor;
+    private final PrologAtomLike functor;
     private final int arity;
     private final Supplier<Term[]> supplier;
     private CompoundTerm cache;
@@ -29,7 +29,7 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
      * @param arity    Arity (as Supplier is not initially called)
      * @param supplier Supplier of arguments.
      */
-    public DeferredCompoundTerm(Atomic functor, int arity, Supplier<Term[]> supplier) {
+    public DeferredCompoundTerm(PrologAtomLike functor, int arity, Supplier<Term[]> supplier) {
         this.functor = functor;
         this.arity = arity;
         this.supplier = supplier;
@@ -97,7 +97,7 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
      * {@inheritDoc}
      */
     @Override
-    public Atomic functor() {
+    public PrologAtomLike functor() {
         return functor;
     }
 

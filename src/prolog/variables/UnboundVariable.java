@@ -3,10 +3,12 @@
 //
 package prolog.variables;
 
+import prolog.bootstrap.Interned;
 import prolog.execution.CompileContext;
 import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
+import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.instructions.ExecCall;
 import prolog.io.WriteContext;
@@ -130,6 +132,9 @@ public class UnboundVariable implements Variable {
     @Override
     public void compile(CompileContext compiling) {
         // A compiled variable is considered the same as compiling 'call'
-        compiling.add(new ExecCall(compiling.environment(), this));
+        compiling.add(new ExecCall(
+                compiling.environment(),
+                new CompoundTermImpl(Interned.CALL_FUNCTOR, this),
+                this));
     }
 }

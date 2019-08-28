@@ -71,7 +71,7 @@ public class InteractiveQuery extends Query {
      * @return Line of input
      * @throws IOException on IO error
      */
-    private String readLine() throws IOException {
+    private String readLine() {
         IN.setPrompt(environment, null, Prompt.NONE);
         return IN.readLine(environment, null, null);
     }

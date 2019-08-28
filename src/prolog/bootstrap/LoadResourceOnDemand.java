@@ -6,6 +6,7 @@ package prolog.bootstrap;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
+import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.flags.ReadOptions;
 import prolog.flags.StreamProperties;
@@ -65,6 +66,7 @@ public class LoadResourceOnDemand implements OnDemand {
                     final Term goalTerm = clause.get(0);
                     Instruction callable = new ExecCall(
                             environment,
+                            new CompoundTermImpl(Interned.CALL_FUNCTOR, goalTerm),
                             goalTerm);
                     callable.invoke(environment);
                     if (!environment.isForward()) {

@@ -5,6 +5,7 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
+import prolog.debugging.InstructionReflection;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
@@ -25,7 +26,7 @@ import prolog.unification.UnifyBuilder;
 /**
  * Find and retract matching clauses in a predicate.
  */
-public class ExecRetractClause implements Instruction {
+public class ExecRetractClause extends Traceable {
     private final Term clause;
 
     /**
@@ -33,7 +34,8 @@ public class ExecRetractClause implements Instruction {
      *
      * @param clause Parameter to retract
      */
-    public ExecRetractClause(Term clause) {
+    public ExecRetractClause(CompoundTerm source, Term clause) {
+        super(source);
         this.clause = clause;
     }
 

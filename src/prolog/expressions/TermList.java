@@ -4,7 +4,6 @@
 package prolog.expressions;
 
 import prolog.bootstrap.Interned;
-import prolog.constants.Atomic;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologCharacter;
 import prolog.constants.PrologEmptyList;
@@ -56,7 +55,7 @@ public interface TermList extends CompoundTerm {
      * @return Functor
      */
     @Override
-    default Atomic functor() {
+    default PrologAtomLike functor() {
         return Interned.LIST_FUNCTOR;
     }
 

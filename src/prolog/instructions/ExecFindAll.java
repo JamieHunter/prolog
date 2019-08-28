@@ -5,6 +5,7 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.PrologEmptyList;
+import prolog.debugging.InstructionReflection;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.CompileContext;
 import prolog.execution.CopyTerm;
@@ -13,6 +14,7 @@ import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
+import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.expressions.TermListImpl;
 import prolog.library.Control;
@@ -25,13 +27,14 @@ import java.util.List;
 /**
  * Find all possible solutions of a subgoal. This is overridden for bagof and setof implementations.
  */
-public class ExecFindAll implements Instruction {
+public class ExecFindAll extends Traceable {
     protected final Term template;
     private final Term callable;
     private final Term list;
     protected final Unifier listUnifier;
 
-    public ExecFindAll(Term template, Term callable, Term list) {
+    public ExecFindAll(CompoundTerm source, Term template, Term callable, Term list) {
+        super(source);
         this.template = template;
         this.callable = callable;
         this.list = list;
@@ -84,7 +87,8 @@ public class ExecFindAll implements Instruction {
             this.listUnifier = listUnifier;
             this.template = template;
             CompileContext compile = new CompileContext(environment);
-            compile.add(new ExecCall(environment, callable));
+            CompoundTerm findAllCall = new CompoundTermImpl(Interned.CALL_FUNCTOR, callable);
+            compile.add(new ExecCall(environment, findAllCall, callable));
             compile.add(e -> {
                 // success
                 builder.add(copyTemplate());

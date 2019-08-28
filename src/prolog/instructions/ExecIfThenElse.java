@@ -7,6 +7,7 @@ import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
+import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 
 /**
@@ -31,7 +32,7 @@ public class ExecIfThenElse extends ExecCall {
     public ExecIfThenElse(Environment environment, Term condition,
                           Instruction onSuccess, Instruction onFailed) {
 
-        super(environment, condition);
+        super(environment, null, condition);
         this.onSuccess = onSuccess;
         this.onFailed = onFailed;
     }

@@ -3,6 +3,7 @@
 //
 package prolog.instructions;
 
+import prolog.debugging.InstructionReflection;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;

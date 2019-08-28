@@ -63,7 +63,7 @@ public class LibraryBase {
         // force-load
         try {
             Class.forName(cls.getName()); // forces a class to be initialized
-        } catch(ClassNotFoundException e) {
+        } catch (ClassNotFoundException e) {
             throw new InternalError(e);
         }
         for (Method m : cls.getMethods()) {
@@ -113,8 +113,8 @@ public class LibraryBase {
     /**
      * Helper, ensures parameter type is exactly as described.
      *
-     * @param actual Actual parameter per reflection
-     * @param expected  Parameter type expected
+     * @param actual   Actual parameter per reflection
+     * @param expected Parameter type expected
      * @return true if match
      */
     private static boolean isParamType(Class<?> actual, Class<?> expected) {
@@ -123,10 +123,11 @@ public class LibraryBase {
 
     /**
      * Create a brief descriptive string for the member (vs member.toString())
+     *
      * @param member Reflected member
      * @return Brief descriptive string
      */
-    private static String describe(Member member, String ... names) {
+    private static String describe(Member member, String... names) {
         StringBuilder builder = new StringBuilder();
         builder.append(member.getDeclaringClass().getName());
         builder.append('.');
@@ -178,7 +179,7 @@ public class LibraryBase {
                 throw new InternalError(String.format("%s: Arity must be specified", describe(method, names)));
             }
             // Validation done, create a lambda from the method
-            handleCompileMethod(names, predicate.arity(), predicate.vararg(), method);
+            handleCompileMethod(names, predicate.arity(), predicate.vararg(), method, predicate.notrace());
         } else if (isParamType(paramTypes[0], Environment.class)) {
             // Execution style is method(Environment,Term,...)
             // method(Environment) is ok here, but a singleton Instruction would be more efficient.
@@ -189,7 +190,7 @@ public class LibraryBase {
             for (int i = 1; i < paramTypes.length; i++) {
                 if (!isParamType(paramTypes[i], Term.class)) {
                     throw new InternalError(String.format("%s: Expected %s(Environment,Term,...), but found %s at position %d",
-                            describe(method, names), method.getName(), paramTypes[i].getName(), i+1));
+                            describe(method, names), method.getName(), paramTypes[i].getName(), i + 1));
                 }
             }
             // If arity was specified, make sure they match
@@ -200,18 +201,19 @@ public class LibraryBase {
                 throw new InternalError(String.format("%s: Vararg not supported", describe(method, names)));
             }
             // Validation done, create a lambda from the method
-            handleExecutionMethod(names, arity, method);
+            handleExecutionMethod(names, arity, method, predicate.notrace());
         }
     }
 
     /**
      * Create predicates from method when the method is used to compile.
      *
-     * @param names  Names of predicates
-     * @param arity  Arity of predicate
-     * @param method Reflected method
+     * @param names   Names of predicates
+     * @param arity   Arity of predicate
+     * @param method  Reflected method
+     * @param notrace True if tracing disabled
      */
-    private void handleCompileMethod(String[] names, int arity, boolean vararg, Method method) {
+    private void handleCompileMethod(String[] names, int arity, boolean vararg, Method method, boolean notrace) {
         // One definition can be shared by all predicates.
         BuiltInPredicate defn =
                 new BuiltinPredicateCompiles(
@@ -220,7 +222,7 @@ public class LibraryBase {
                                 method)
                 );
         for (String name : names) {
-            Builtins.define(predicate(name, arity), defn);
+            Builtins.define(predicate(name, arity), defn, notrace);
         }
         if (vararg) {
             for (String name : names) {
@@ -233,11 +235,12 @@ public class LibraryBase {
      * Case when method is used to execute. Compilation simply compiles the instruction wrapping
      * this method.
      *
-     * @param names  Names of predicates
-     * @param arity  Arity of predicate
-     * @param method Reflected method
+     * @param names   Names of predicates
+     * @param arity   Arity of predicate
+     * @param method  Reflected method
+     * @param notrace True if tracing disabled
      */
-    private void handleExecutionMethod(String[] names, int arity, Method method) {
+    private void handleExecutionMethod(String[] names, int arity, Method method, boolean notrace) {
         if (arity >= byArity.length) {
             throw new InternalError("Arity larger than supported, add a new table entry");
         }
@@ -259,18 +262,19 @@ public class LibraryBase {
         }
         // One definition can be shared by all predicates.
         for (String name : names) {
-            Builtins.define(predicate(name, arity), defn);
+            Builtins.define(predicate(name, arity), defn, notrace);
         }
     }
 
     /**
      * Common functionality to validate names/arity and retrieve singleton field.
+     *
      * @param arity Arity of predicate (if predicate names), else 0.
      * @param field Reflected field
      * @param names Array of predicate names, or single resource name.
      * @return singleton
      */
-    private static Object getSingleton(int arity, Field field, String ... names) {
+    private static Object getSingleton(int arity, Field field, String... names) {
         if (names.length == 0) {
             // only applicable for predicate names
             throw new InternalError(String.format("%s: At least one name required", describe(field)));
@@ -314,7 +318,7 @@ public class LibraryBase {
         Instruction singleton = (Instruction) value;
         // Same singleton can be used for all predicates
         for (String name : names) {
-            Builtins.define(predicate(name, arity), singleton);
+            Builtins.define(predicate(name, arity), singleton, predicate.notrace());
         }
     }
 
@@ -322,7 +326,7 @@ public class LibraryBase {
      * CompareImpl Predicate described by singleton field
      *
      * @param compare Annotation
-     * @param field     Reflective Field
+     * @param field   Reflective Field
      */
     private void handleComparePredicateField(Compare compare, Field field) {
         String[] names = compare.value();
@@ -341,7 +345,7 @@ public class LibraryBase {
      * Arithmatic function described by singleton field
      *
      * @param function Annotation
-     * @param field     Reflective Field
+     * @param field    Reflective Field
      */
     private void handleFunctionField(Function function, Field field) {
         String[] names = function.value();
@@ -374,17 +378,17 @@ public class LibraryBase {
         // The same loader may be used for each predicate.
         LoadResourceOnDemand onDemand = new LoadResourceOnDemand(getClass(), resourceName);
         for (Predication p : ((Predication[]) value)) {
-            Builtins.onDemand(new Predication.Interned((PrologAtomInterned)p.functor(), p.arity()), onDemand);
+            Builtins.onDemand(new Predication.Interned((PrologAtomInterned) p.functor(), p.arity()), onDemand);
         }
     }
 
     /**
      * Creates a Lambda proxy to invoke static method.
      *
-     * @param lambdaClass  Class of lambda interface.
+     * @param lambdaClass      Class of lambda interface.
      * @param lambdaMethodName Name of method implemented in lambdaClass.
-     * @param method Reflected method of static method to call
-     * @param <T>    Type of interface (i.e. same as lambdaClass).
+     * @param method           Reflected method of static method to call
+     * @param <T>              Type of interface (i.e. same as lambdaClass).
      * @return callable interface
      */
     @SuppressWarnings("unchecked")

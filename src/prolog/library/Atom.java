@@ -7,6 +7,7 @@ import prolog.bootstrap.Predicate;
 import prolog.constants.PrologAtom;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
+import prolog.debugging.InstructionReflection;
 import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.execution.DecisionPoint;

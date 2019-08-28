@@ -10,6 +10,11 @@ import prolog.bootstrap.Operators;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologInteger;
+import prolog.debugging.ActiveDebugger;
+import prolog.debugging.DebuggerHook;
+import prolog.debugging.NoDebugger;
+import prolog.debugging.SpyPoints;
+import prolog.debugging.DebugStateChange;
 import prolog.exceptions.PrologError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.expressions.Term;
@@ -25,7 +30,6 @@ import prolog.predicates.MissingPredicate;
 import prolog.predicates.PredicateDefinition;
 import prolog.predicates.Predication;
 import prolog.predicates.VarArgDefinition;
-import prolog.utility.LinkNode;
 import prolog.utility.TrackableList;
 
 import java.nio.file.Path;
@@ -71,6 +75,8 @@ public class Environment {
     private LogicalStream outputStream = DefaultIoBinding.USER_OUTPUT;
     private Path cwd = Paths.get(".").normalize().toAbsolutePath();
     private CatchPoint catchPoint = CatchPoint.TERMINAL;
+    private DebuggerHook debuggerHook = NoDebugger.SELF;
+    private SpyPoints spyPoints = new SpyPoints(this);
     // state
     private ExecutionState executionState = ExecutionState.FORWARD;
     // terminals
@@ -170,8 +176,17 @@ public class Environment {
      * @param ip New IP
      */
     public void callIP(InstructionPointer ip) {
+        debuggerHook.pushIP(this.ip);
         callStack.push(this.ip);
         this.ip = ip;
+    }
+
+    /**
+     * Invoke instruction via debugger (when not part of next).
+     * @param instruction Instruction to invoke
+     */
+    public void invoke(Instruction instruction) {
+        debuggerHook.invoke(this, instruction);
     }
 
     /**
@@ -356,6 +371,7 @@ public class Environment {
      */
     public void pushDecisionPoint(DecisionPoint decisionPoint) {
         cutPoint.markDecisionPoint(backtrackStack.size());
+        debuggerHook.decisionPoint(decisionPoint);
         pushBacktrack(decisionPoint);
     }
 
@@ -424,7 +440,34 @@ public class Environment {
         ip = terminalIP;
         backtrackStack.push(backtrackTerminal);
         catchPoint = CatchPoint.TERMINAL;
+        debuggerHook.reset();
     }
+
+    /**
+     * When not debugging, iterate steps as quickly as possible
+     */
+    private void runNoDebugger() {
+        while (executionState == ExecutionState.FORWARD) {
+            ip.next();
+        }
+        while (executionState == ExecutionState.BACKTRACK) {
+            backtrackStack.poll().backtrack();
+        }
+    }
+
+    /**
+     * When debugging, iterate steps through hooks
+     */
+    private void runDebugger() {
+        while (executionState == ExecutionState.FORWARD &&
+                debuggerHook != NoDebugger.SELF) {
+            debuggerHook.forward(ip);
+        }
+        while (executionState == ExecutionState.BACKTRACK &&
+                debuggerHook != NoDebugger.SELF) {
+            debuggerHook.backtrack(backtrackStack.poll());
+        }
+   }
 
     /**
      * Main execution transition between FORWARD and BACKTRACK until a terminal state is hit.
@@ -435,15 +478,16 @@ public class Environment {
         // Tight loop handling forward and backtracking at the simplest level
         for (; ; ) {
             try {
-                while (executionState == ExecutionState.FORWARD) {
-                    ip.next();
-                }
-                while (executionState == ExecutionState.BACKTRACK) {
-                    backtrackStack.poll().backtrack();
+                if (debuggerHook == NoDebugger.SELF) {
+                    runNoDebugger();
+                } else {
+                    runDebugger();
                 }
                 if (executionState.isTerminal()) {
                     return executionState;
                 }
+            } catch(DebugStateChange e) {
+                // ignore, its purpose was to cause an iteration of this loop
             } catch (RuntimeException e) {
                 // convert Java exceptions into Prolog exceptions
                 throwing(PrologError.convert(this, e));
@@ -864,5 +908,42 @@ public class Environment {
      */
     public TrackableList<Path> getSearchPath() {
         return searchPath;
+    }
+
+    /**
+     * Indicate if environment debugger is enabled
+     * @return True if enabled
+     */
+    public boolean isDebuggerEnabled() {
+        return debuggerHook != NoDebugger.SELF;
+    }
+
+    /**
+     * Enable or disable debugger
+     * @param enabled True if debugger is enabled
+     */
+    public void enableDebugger(boolean enabled) {
+        if (enabled == isDebuggerEnabled()) {
+            return;
+        }
+        if (enabled) {
+            debuggerHook = new ActiveDebugger(this);
+        } else {
+            debuggerHook = NoDebugger.SELF;
+        }
+    }
+
+    /**
+     * @return Debugger hook
+     */
+    public DebuggerHook debugger() {
+        return debuggerHook;
+    }
+
+    /**
+     * @return Trace hook
+     */
+    public SpyPoints spyPoints() {
+        return spyPoints;
     }
 }

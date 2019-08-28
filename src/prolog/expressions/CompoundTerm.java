@@ -5,6 +5,8 @@ package prolog.expressions;
 
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
+import prolog.debugging.InstructionReflection;
 import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
@@ -15,7 +17,7 @@ import prolog.unification.UnifyIterator;
  * in Prolog, we permit it to be any Atomic value internally. We also permit a compound term with no members as a
  * zero-arity predicate head.
  */
-public interface CompoundTerm extends Term {
+public interface CompoundTerm extends Term, InstructionReflection {
 
     /**
      * Utility, create a compound term consisting of only a functor. As the functor is Atomic, the compound term is
@@ -66,6 +68,7 @@ public interface CompoundTerm extends Term {
 
     /**
      * Called by {@link EnumTermStrategy#visit(CompoundTerm)} for mutation
+     *
      * @param strategy Underlying strategy
      * @return new compound term
      */
@@ -73,6 +76,7 @@ public interface CompoundTerm extends Term {
 
     /**
      * Called by {@link EnumTermStrategy#visit(CompoundTerm)} for simple enumeration
+     *
      * @param strategy Underlying strategy
      * @return self
      */
@@ -98,7 +102,7 @@ public interface CompoundTerm extends Term {
      *
      * @return Functor
      */
-    Atomic functor();
+    PrologAtomLike functor();
 
     /**
      * Component of compound term at given index
@@ -127,7 +131,7 @@ public interface CompoundTerm extends Term {
     @Override
     default int compareSameType(Term o) {
         // per standard, arity precedes functor in ordering
-        CompoundTerm other = (CompoundTerm)o;
+        CompoundTerm other = (CompoundTerm) o;
         int comp = Integer.compare(arity(), other.arity());
         if (comp != 0) {
             return comp;
@@ -137,7 +141,7 @@ public interface CompoundTerm extends Term {
             return comp;
         }
         int a = arity();
-        for(int i = 0; i < a; i++) {
+        for (int i = 0; i < a; i++) {
             comp = get(i).compareTo(other.get(i));
             if (comp != 0) {
                 return comp;
@@ -146,4 +150,11 @@ public interface CompoundTerm extends Term {
         return comp;
     }
 
+    /**
+     * Reflection on a compound term is self
+     * @return self
+     */
+    default CompoundTerm reflect() {
+        return this;
+    }
 }

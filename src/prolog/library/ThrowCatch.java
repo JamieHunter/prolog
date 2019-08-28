@@ -25,14 +25,14 @@ public final class ThrowCatch {
      * via recoverTerm prior to continued execution.
      *
      * @param compiling Compiling context
-     * @param term Catch clause
+     * @param source Catch clause
      */
     @Predicate(value = "catch", arity = 3)
-    public static void prologCatch(CompileContext compiling, CompoundTerm term) {
-        Term callTerm = term.get(0);
-        Term matchTerm = term.get(1);
-        Term recoverTerm = term.get(2);
-        compiling.add(new ExecCatch(compiling.environment(), callTerm, matchTerm, recoverTerm));
+    public static void prologCatch(CompileContext compiling, CompoundTerm source) {
+        Term callTerm = source.get(0);
+        Term matchTerm = source.get(1);
+        Term recoverTerm = source.get(2);
+        compiling.add(new ExecCatch(compiling.environment(), source, callTerm, matchTerm, recoverTerm));
     }
 
     /**

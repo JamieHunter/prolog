@@ -4,6 +4,7 @@
 package prolog.expressions;
 
 import prolog.constants.Atomic;
+import prolog.constants.PrologAtomLike;
 import prolog.execution.CompileContext;
 import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
@@ -93,8 +94,8 @@ public class CompoundTermImpl implements CompoundTerm {
      * {@inheritDoc}
      */
     @Override
-    public Atomic functor() {
-        return (Atomic) members[0];
+    public PrologAtomLike functor() {
+        return (PrologAtomLike) members[0];
     }
 
     /**

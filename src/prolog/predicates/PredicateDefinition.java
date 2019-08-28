@@ -24,10 +24,15 @@ public abstract class PredicateDefinition {
     /**
      * @return true if dynamic inserts allowed.
      */
-    abstract public boolean isDynamic();
+    public abstract boolean isDynamic();
 
     /**
      * @return true if multifile behavior enabled.
      */
-    abstract public boolean isMultifile();
+    public abstract boolean isMultifile();
+
+    /**
+     * @return true if discontiguous behavior enabled.
+     */
+    public abstract boolean isDiscontiguous();
 }

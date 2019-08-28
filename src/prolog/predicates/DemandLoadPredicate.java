@@ -37,6 +37,14 @@ public class DemandLoadPredicate extends PredicateDefinition {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isDiscontiguous() {
+        return false;
+    }
+
+    /**
      * During compile, actively replace demand-load predicate with clause-search predicate and load definitions from
      * source file.
      *

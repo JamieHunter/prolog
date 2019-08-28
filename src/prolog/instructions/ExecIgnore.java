@@ -6,6 +6,7 @@ package prolog.instructions;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
+import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 
 /**
@@ -14,8 +15,8 @@ import prolog.expressions.Term;
  */
 public class ExecIgnore extends ExecCall {
 
-    public ExecIgnore(Environment environment, Term onceTerm) {
-        super(environment, onceTerm);
+    public ExecIgnore(Environment environment, CompoundTerm source, Term onceTerm) {
+        super(environment, source, onceTerm);
     }
 
     /**

@@ -4,6 +4,7 @@
 package prolog.instructions;
 
 import prolog.bootstrap.Interned;
+import prolog.debugging.InstructionReflection;
 import prolog.exceptions.PrologExistenceError;
 import prolog.execution.CutPoint;
 import prolog.execution.DecisionPoint;
@@ -23,7 +24,7 @@ import prolog.unification.Unifier;
 /**
  * Executes a predicate that consists of (or may consist of) a list of clauses.
  */
-public class ExecRunClause implements Instruction {
+public class ExecRunClause implements InstructionReflection, Instruction {
     private final Predication predication;
     private final ClauseSearchPredicate predicate;
     private final CompoundTerm term;
@@ -44,10 +45,19 @@ public class ExecRunClause implements Instruction {
     /**
      * {@inheritDoc}
      */
+    public CompoundTerm reflect() {
+        return term;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void invoke(Environment environment) {
         ClauseEntry [] clauses = predicate.getClauses();
-        if (clauses.length == 0 && !predicate.isDynamic()) {
+        if (clauses.length == 0 && !predicate.isDynamic() &&
+                !predicate.isMultifile() &&
+                !predicate.isDiscontiguous()) {
             Predication pred = new Predication(term.functor(), term.arity());
             switch(environment.getFlags().unknown) {
                 case ATOM_fail:
@@ -64,7 +74,7 @@ public class ExecRunClause implements Instruction {
         }
         // Clauses are snapshot at time of call.
         ClauseIterator iter =
-                new ClauseIterator(environment, predication, clauses, term.resolve(environment.getLocalContext()));
+                new ClauseIterator(environment, reflect(), predication, clauses, term.resolve(environment.getLocalContext()));
         iter.next();
     }
 
@@ -123,18 +133,28 @@ public class ExecRunClause implements Instruction {
     /**
      * Main clause iterator with state. This is kept on the backtracking stack.
      */
-    private static class ClauseIterator extends DecisionPoint {
+    private static class ClauseIterator extends DecisionPoint implements InstructionReflection {
 
         final Term term;
         final Predication key;
+        final CompoundTerm source;
         final ClauseEntry[] clauses;
         int index = 0;
 
-        private ClauseIterator(Environment environment, Predication key, ClauseEntry[] clauses, Term boundTerm) {
+        private ClauseIterator(Environment environment, CompoundTerm source, Predication key, ClauseEntry[] clauses, Term boundTerm) {
             super(environment);
+            this.source = source;
             this.key = key;
             this.term = boundTerm; // save the bound version of this structure
             this.clauses = clauses; // already a copy, no need to clone
+        }
+
+        /**
+         * {@inheritDoc}
+        */
+        @Override
+        public CompoundTerm reflect() {
+            return source;
         }
 
         /**
@@ -182,7 +202,7 @@ public class ExecRunClause implements Instruction {
             if (unifier.unify(newContext, term)) {
                 // Once unified, now execute, assume forward
                 environment.forward();
-                entry.getInstruction().invoke(environment); // this will push ClauseEnd onto stack
+                environment.invoke(entry.getInstruction()); // this will push ClauseEnd onto stack
             } else {
                 // failed to unify, keep backtracking (will re-enter this function)
                 environment.backtrack();

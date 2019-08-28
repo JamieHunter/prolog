@@ -5,6 +5,7 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
+import prolog.debugging.InstructionReflection;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
@@ -25,11 +26,12 @@ import prolog.unification.UnifyBuilder;
 /**
  * Find and enumerate matching clauses in a predicate.
  */
-public class ExecFindClause implements Instruction {
+public class ExecFindClause extends Traceable {
     private final Term head;
     private final Term body;
 
-    public ExecFindClause(Term head, Term body) {
+    public ExecFindClause(CompoundTerm source, Term head, Term body) {
+        super(source);
         this.head = head;
         this.body = body;
     }

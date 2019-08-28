@@ -131,39 +131,39 @@ public final class Dictionary {
      * Recursively match clauses
      *
      * @param compiling Compilation context
-     * @param term      The predicate template to retract
+     * @param source      The predicate template to retract
      */
     @Predicate(value = "retract", arity = 1)
-    public static void retract(CompileContext compiling, CompoundTerm term) {
-        Term clause = term.get(0);
-        compiling.add(new ExecRetractClause(clause));
+    public static void retract(CompileContext compiling, CompoundTerm source) {
+        Term clause = source.get(0);
+        compiling.add(new ExecRetractClause(source, clause));
     }
 
     /**
      * Recursively match and retract clauses.
      *
      * @param compiling Compilation context
-     * @param term      The predicate template to retract
+     * @param source      The predicate template to retract
      */
     @Predicate(value = "retractall", arity = 1)
-    public static void retractAll(CompileContext compiling, CompoundTerm term) {
+    public static void retractAll(CompileContext compiling, CompoundTerm source) {
         compiling.add(
                 new ExecExhaust(
                         compiling.environment(),
-                        c2 -> retract(c2, term)));
+                        c2 -> retract(c2, source)));
     }
 
     /**
      * Recursively match clauses
      *
      * @param compiling Compilation context
-     * @param term      The predicate to call
+     * @param source      The predicate to call
      */
     @Predicate(value = "clause", arity = 2)
-    public static void clause(CompileContext compiling, CompoundTerm term) {
-        Term head = term.get(0);
-        Term body = term.get(1);
-        compiling.add(new ExecFindClause(head, body));
+    public static void clause(CompileContext compiling, CompoundTerm source) {
+        Term head = source.get(0);
+        Term body = source.get(1);
+        compiling.add(new ExecFindClause(source, head, body));
     }
 
     /**
@@ -199,7 +199,7 @@ public final class Dictionary {
     @Predicate("discontiguous")
     public static void discontiguous(Environment environment, Term predicationTerm) {
         ClauseSearchPredicate predicate = lookupFromPredication(environment, predicationTerm);
-        // TODO: currently not used
+        predicate.setDiscontiguous(true);
     }
 
     // ==============================================

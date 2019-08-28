@@ -4,6 +4,8 @@
 package prolog.bootstrap;
 
 import prolog.constants.PrologAtomInterned;
+import prolog.debugging.InstructionLookup;
+import prolog.debugging.SpySpec;
 import prolog.execution.Instruction;
 import prolog.functions.StackFunction;
 import prolog.predicates.BuiltinPredicateCompare;
@@ -16,7 +18,9 @@ import prolog.predicates.VarArgDefinition;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Global map of built in predicates and functions that's used to bootstrap each environment. Collection of these
@@ -31,6 +35,8 @@ public class Builtins {
     private static final HashMap<Predication.Interned, PredicateDefinition> builtins = new HashMap<>();
     private static final HashMap<PrologAtomInterned, VarArgDefinition> builtinVarArgs = new HashMap<>();
     private static final HashMap<Predication.Interned, StackFunction> functions = new HashMap<>();
+    private static final HashSet<SpySpec> notraceSet = new HashSet<>();
+    private static final HashMap<Instruction, InstructionLookup> reverseLookups = new HashMap<>();
 
     //
     // Add libraries to this list
@@ -69,9 +75,13 @@ public class Builtins {
      *
      * @param predication Name/arity of predicate
      * @param definition  Definition of predicate
+     * @param notrace     true if invisible to trace
      */
-    public static <T extends PredicateDefinition> T define(Predication.Interned predication, T definition) {
+    public static <T extends PredicateDefinition> T define(Predication.Interned predication, T definition, boolean notrace) {
         builtins.put(predication, definition);
+        if (notrace) {
+            notrace(predication);
+        }
         return definition;
     }
 
@@ -95,7 +105,7 @@ public class Builtins {
      */
     public static DemandLoadPredicate onDemand(Predication.Interned predication, LoadResourceOnDemand onDemand) {
         DemandLoadPredicate definition = new DemandLoadPredicate(onDemand);
-        return define(predication, definition);
+        return define(predication, definition, false);
     }
 
     /**
@@ -105,7 +115,7 @@ public class Builtins {
      * @param compare     Operation
      */
     public static void defineCompare(Predication.Interned predication, StackFunction compare) {
-        define(predication, new BuiltinPredicateCompare(compare));
+        define(predication, new BuiltinPredicateCompare(compare), false);
     }
 
     /**
@@ -113,9 +123,31 @@ public class Builtins {
      *
      * @param predication Name/arity. Arity is expected to be 0.
      * @param instruction Singleton run-time implementation of predicate
+     * @param notrace     true if invisible to trace
      */
-    public static BuiltinPredicateSingleton define(Predication.Interned predication, Instruction instruction) {
-        return define(predication, new BuiltinPredicateSingleton(instruction));
+    public static BuiltinPredicateSingleton define(Predication.Interned predication, Instruction instruction, boolean notrace) {
+        BuiltinPredicateSingleton def = define(predication, new BuiltinPredicateSingleton(instruction), notrace);
+        addReverse(predication, instruction);
+        return def;
+    }
+
+    /**
+     * Helper to create a reverse lookup
+     * @param predication Predication to return from instruction
+     * @param instruction Singleton instruction
+     */
+    private static void addReverse(Predication.Interned predication, Instruction instruction) {
+        reverseLookups.computeIfAbsent(instruction, i -> new InstructionLookup(predication, instruction));
+    }
+
+    /**
+     * Add builtin predicate as no-trace
+     *
+     * @param predication Name/arity. Arity is expected to be 0.
+     */
+    public static void notrace(Predication.Interned predication) {
+        SpySpec spec = SpySpec.from(predication.functor(), predication.arity());
+        notraceSet.add(spec);
     }
 
     /**
@@ -154,6 +186,25 @@ public class Builtins {
      */
     public static Map<Predication.Interned, StackFunction> getFunctions() {
         return Collections.unmodifiableMap(functions);
+    }
+
+    /**
+     * Called from ActiveDebugger to determine if a predicate is in the ignore list
+     *
+     * @param spec Specification to test
+     * @return true if trace is disabled
+     */
+    public static boolean isNoTrace(SpySpec spec) {
+        return notraceSet.contains(spec);
+    }
+
+    /**
+     * Retrieve lookup given an instruction.
+     * @param inst Instruction to lookup
+     * @return information about instruction
+     */
+    public static InstructionLookup getLookup(Instruction inst) {
+        return reverseLookups.get(inst);
     }
 
     /**

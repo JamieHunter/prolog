@@ -10,6 +10,7 @@ import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.Term;
 
+import java.util.List;
 import java.util.function.BiFunction;
 
 /**
@@ -34,7 +35,7 @@ public class BinaryFunction implements StackFunction, Instruction {
      * @param compiling Compiling context
      */
     @Override
-    public void compile(CompileContext compiling) {
+    public void compile(List<Instruction> compiling) {
         compiling.add(this);
     }
 

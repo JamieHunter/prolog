@@ -27,7 +27,7 @@ import java.util.List;
  * Indirect call to a predicate, with cut behavior modification. This is further overridden for special once-like
  * variants.
  */
-public class ExecCall implements Instruction {
+public class ExecCall extends Traceable {
     protected final Environment environment;
     protected final Term callTerm;
     protected final Term args;
@@ -40,7 +40,8 @@ public class ExecCall implements Instruction {
      * @param environment Execution environment.
      * @param callTerm    Term to call. Not assumed to be grounded, might be a variable.
      */
-    public ExecCall(Environment environment, Term callTerm) {
+    public ExecCall(Environment environment, CompoundTerm source, Term callTerm) {
+        super(source);
         this.environment = environment;
         this.callTerm = callTerm;
         this.args = null;
@@ -67,7 +68,8 @@ public class ExecCall implements Instruction {
      * @param callTerm    Term to call. Not grounded, might be a variable, cannot be compound.
      * @param args        Arguments to be merged with functor, not assumed to be grounded.
      */
-    public ExecCall(Environment environment, Term callTerm, Term args) {
+    public ExecCall(Environment environment, CompoundTerm source, Term callTerm, Term args) {
+        super(source);
         this.environment = environment;
         this.callTerm = callTerm;
         this.args = args;
@@ -80,7 +82,8 @@ public class ExecCall implements Instruction {
      * @param environment Execution environment.
      * @param precompiled Term to call
      */
-    public ExecCall(Environment environment, Instruction precompiled) {
+    public ExecCall(Environment environment, CompoundTerm source, Instruction precompiled) {
+        super(source);
         this.environment = environment;
         this.callTerm = null;
         this.args = null;
@@ -106,7 +109,7 @@ public class ExecCall implements Instruction {
             for (int i = 0; i < callArg.arity(); i++) {
                 members.add(callArg.get(i));
             }
-        } else if (CompoundTerm.termIsA(args, Interned.LIST_FUNCTOR)) {
+        } else if (TermList.isList(args)) {
             List<Term> list = TermList.extractList(args);
             members.addAll(list);
         } else {
@@ -152,7 +155,7 @@ public class ExecCall implements Instruction {
         }
         preCall();
         // Execute code
-        nested.invoke(environment);
+        environment.invoke(nested);
     }
 
     /**

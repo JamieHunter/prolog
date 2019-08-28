@@ -31,4 +31,12 @@ public class MissingPredicate extends PredicateDefinition {
     public boolean isMultifile() {
         return false;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isDiscontiguous() {
+        return false;
+    }
 }

@@ -7,6 +7,7 @@ import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
+import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
 import prolog.unification.Unifier;
@@ -17,11 +18,12 @@ import java.util.List;
 /**
  * Find/enumerate elements within list
  */
-public class ExecMember implements Instruction {
+public class ExecMember extends Traceable {
     private final Term element;
     private final Term list;
 
-    public ExecMember(Term element, Term list) {
+    public ExecMember(CompoundTerm source, Term element, Term list) {
+        super(source);
         this.element = element;
         this.list = list;
     }

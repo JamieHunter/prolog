@@ -113,5 +113,17 @@ public final class ExecBlock implements Instruction {
             }
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public Instruction peek() {
+            if (iter == block.length) {
+                return tail;
+            } else {
+                return block[iter];
+            }
+        }
+
     }
 }

@@ -4,6 +4,7 @@
 package prolog.instructions;
 
 import prolog.execution.Environment;
+import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 
 /**
@@ -12,8 +13,8 @@ import prolog.expressions.Term;
  */
 public class ExecOnce extends ExecCall {
 
-    public ExecOnce(Environment environment, Term onceTerm) {
-        super(environment, onceTerm);
+    public ExecOnce(Environment environment, CompoundTerm source, Term onceTerm) {
+        super(environment, source, onceTerm);
     }
 
     /**

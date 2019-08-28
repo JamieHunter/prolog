@@ -5,6 +5,7 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.PrologEmptyList;
+import prolog.debugging.InstructionReflection;
 import prolog.execution.CopyTerm;
 import prolog.execution.EnumTermStrategy;
 import prolog.execution.DecisionPoint;
@@ -38,8 +39,8 @@ import java.util.function.Function;
  */
 public class ExecBagOf extends ExecFindAll {
 
-    public ExecBagOf(Term template, Term callable, Term list) {
-        super(template, callable, list);
+    public ExecBagOf(CompoundTerm callTerm, Term template, Term callable, Term list) {
+        super(callTerm, template, callable, list);
     }
 
     /**

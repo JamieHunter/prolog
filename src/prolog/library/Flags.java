@@ -5,6 +5,7 @@ package prolog.library;
 
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
+import prolog.debugging.InstructionReflection;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.DecisionPoint;

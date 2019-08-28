@@ -5,6 +5,7 @@ package prolog.instructions;
 
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
+import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.unification.Unifier;
 import prolog.variables.Variable;
@@ -12,7 +13,7 @@ import prolog.variables.Variable;
 /**
  * Unify when one or both terms are variables (common simple unification)
  */
-public class ExecUnifyInstantiate implements Instruction {
+public class ExecUnifyInstantiate extends Traceable {
 
     private final Variable var;
     private final Term other;
@@ -23,7 +24,8 @@ public class ExecUnifyInstantiate implements Instruction {
      * @param var   First term, always a variable.
      * @param other Second term
      */
-    public ExecUnifyInstantiate(Variable var, Term other) {
+    public ExecUnifyInstantiate(CompoundTerm source, Variable var, Term other) {
+        super(source);
         this.var = var;
         this.other = other;
     }

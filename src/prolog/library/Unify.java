@@ -5,10 +5,11 @@ package prolog.library;
 
 import prolog.bootstrap.Predicate;
 import prolog.execution.CompileContext;
+import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.functions.CompileMathExpression;
-import prolog.instructions.ExecPopAndInstantiate;
+import prolog.instructions.ExecIs;
 import prolog.instructions.ExecUnifyCompounds;
 import prolog.instructions.ExecUnifyInstantiate;
 import prolog.unification.Unifier;
@@ -27,23 +28,23 @@ public final class Unify {
      * Compiles unification to an applicable unify instruction
      *
      * @param compiling Compilation context
-     * @param term      The '=' term
+     * @param source      The '=' term
      */
     @Predicate(value = "=", arity = 2)
-    public static void unify(CompileContext compiling, CompoundTerm term) {
+    public static void unify(CompileContext compiling, CompoundTerm source) {
         //
         // Optimizes selection of unifier depending on if one or both terms are variables, structures and/or atomic.
         //
-        Term left = term.get(0);
-        Term right = term.get(1);
+        Term left = source.get(0);
+        Term right = source.get(1);
 
         if (!left.isInstantiated()) {
-            compiling.add(new ExecUnifyInstantiate((Variable) left, right));
+            compiling.add(new ExecUnifyInstantiate(source, (Variable) left, right));
             return;
         }
         if (!right.isInstantiated()) {
             // prefer variable on 'left'
-            compiling.add(new ExecUnifyInstantiate((Variable) right, left));
+            compiling.add(new ExecUnifyInstantiate(source, (Variable) right, left));
             return;
         }
         if (left.isGrounded() && right.isGrounded()) {
@@ -65,7 +66,7 @@ public final class Unify {
         }
         if (left instanceof CompoundTerm && right instanceof CompoundTerm) {
             // unify compound terms (including lists)
-            compiling.add(new ExecUnifyCompounds((CompoundTerm) left, (CompoundTerm) right));
+            compiling.add(new ExecUnifyCompounds(source, (CompoundTerm) left, (CompoundTerm) right));
             return;
         }
         // any other combination never unifies
@@ -78,14 +79,15 @@ public final class Unify {
      * Instantiate variable from expression
      *
      * @param compiling Compilation context
-     * @param term      The 'is' term
+     * @param source      The 'is' term
      */
     @Predicate(value = "is", arity = 2)
-    public static void is(CompileContext compiling, CompoundTerm term) {
-        Term left = term.get(0);
-        Term right = term.get(1);
-        new CompileMathExpression(compiling).compile(right);
-        compiling.add(new ExecPopAndInstantiate(left));
+    public static void is(CompileContext compiling, CompoundTerm source) {
+        Term left = source.get(0);
+        Term right = source.get(1);
+        CompileMathExpression expr = new CompileMathExpression(compiling.environment()).compile(right);
+        // TODO: most of this instruction will execute before this step
+        compiling.add(new ExecIs(source, expr, left));
     }
 
 }

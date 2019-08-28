@@ -21,6 +21,7 @@ public class ClauseSearchPredicate extends PredicateDefinition {
     private static final ClauseEntry[] ELEMENT_ARRAY_TYPE = new ClauseEntry[0];
     private boolean isDynamic = false;
     private boolean isMultifile = false;
+    private boolean isDiscontiguous = false;
     private LoadGroup loadGroup = null;
 
     /**
@@ -56,6 +57,15 @@ public class ClauseSearchPredicate extends PredicateDefinition {
     }
 
     /**
+     * Allow reference before definition / behave like dynamic?
+     *
+     * @param discontiguous Discontiguous definitions
+     */
+    public void setDiscontiguous(boolean discontiguous) {
+        this.isDiscontiguous = discontiguous;
+    }
+
+    /**
      * True if dynamic inserts are enabled.
      *
      * @return flag
@@ -73,6 +83,16 @@ public class ClauseSearchPredicate extends PredicateDefinition {
     @Override
     public boolean isMultifile() {
         return isMultifile;
+    }
+
+    /**
+     * True if discontiguous behavior is enabled.
+     *
+     * @return flag
+     */
+    @Override
+    public boolean isDiscontiguous() {
+        return isDiscontiguous;
     }
 
 

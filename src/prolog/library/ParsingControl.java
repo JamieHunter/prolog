@@ -94,7 +94,7 @@ public final class ParsingControl {
         Term precedence = compound.get(0);
         Term type = compound.get(1);
         Term name = compound.get(2);
-        compiling.add(new ExecFindOp(precedence, type, name));
+        compiling.add(new ExecFindOp(compound, precedence, type, name));
     }
 
     /**
@@ -129,6 +129,6 @@ public final class ParsingControl {
         // this is a search predicate, though rarely used to find more than one
         Term fromChar = compound.get(0);
         Term toChar = compound.get(1);
-        compiling.add(new ExecFindCharConversion(fromChar, toChar));
+        compiling.add(new ExecFindCharConversion(compound, fromChar, toChar));
     }
 }

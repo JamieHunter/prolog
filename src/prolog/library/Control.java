@@ -36,7 +36,7 @@ public final class Control {
     /**
      * True is actually a no-op. When compiling, just don't compile the instruction.
      */
-    @Predicate(value = "true", arity = 0)
+    @Predicate(value = "true", arity = 0, notrace = true)
     public static void truePredicate(CompileContext compiling, CompoundTerm trueTerm) {
         // compile nothing!
         // The block being compiled by compiling will replace the block with TRUE if the TRUE instruction is needed.
@@ -51,7 +51,7 @@ public final class Control {
     /**
      * False is a singleton instruction
      */
-    @Predicate({"false", "fail"})
+    @Predicate(value = {"false", "fail"}, notrace = true)
     public static final Instruction FALSE = Environment::backtrack;
 
     /**
@@ -64,18 +64,18 @@ public final class Control {
      * When cut is executed, it trims all decision points within the current cut cutScope,
      * and sets mode to indicate this is now deterministic
      */
-    @Predicate("!")
+    @Predicate(value = "!", notrace = true)
     public static final Instruction CUT = Environment::cutDecisionPoints;
 
     /**
      * Parse a ',' tree into a single conjunction (block) entry.
      *
      * @param compiling Compilation context
-     * @param term      Initial ',' term
+     * @param source      Initial ',' term
      */
-    @Predicate(value = ",", arity = 2)
-    public static void conjunction(CompileContext compiling, CompoundTerm term) {
-        Term iter = term;
+    @Predicate(value = ",", arity = 2, notrace = true)
+    public static void conjunction(CompileContext compiling, CompoundTerm source) {
+        Term iter = source;
         // Note that ','(','(a,b),','(c,d)) will do the right thing here
         // compiling into block {a,b,c,d)
         while (CompoundTerm.termIsA(iter, Interned.COMMA_FUNCTOR, 2)) {
@@ -90,15 +90,15 @@ public final class Control {
      * IF-THEN Construct.
      *
      * @param compiling Compiling context
-     * @param term      Initial '-&gt;' term.
+     * @param source      Initial '-&gt;' term.
      */
-    @Predicate(value = "->", arity = 2)
-    public static void ifThen(CompileContext compiling, CompoundTerm term) {
+    @Predicate(value = "->", arity = 2, notrace = true)
+    public static void ifThen(CompileContext compiling, CompoundTerm source) {
         // IF-THEN construct, see IF-THEN-ELSE construct
         compiling.add(new ExecIfThenElse(
                 compiling.environment(),
-                term.get(0),
-                ExecBlock.from(compiling.environment(), term.get(1)),
+                source.get(0),
+                ExecBlock.from(compiling.environment(), source.get(1)),
                 Control.FALSE));
     }
 
@@ -107,13 +107,13 @@ public final class Control {
      * Nested ';' are parsed into a single disjunction entry.
      *
      * @param compiling Compilation context
-     * @param term      Initial ';' term
+     * @param source      Initial ';' term
      */
-    @Predicate(value = ";", arity = 2)
-    public static void disjunction(CompileContext compiling, CompoundTerm term) {
+    @Predicate(value = ";", arity = 2, notrace = true)
+    public static void disjunction(CompileContext compiling, CompoundTerm source) {
         Environment environment = compiling.environment();
         ArrayList<Instruction> alternates = new ArrayList<>();
-        if (CompoundTerm.termIsA(term.get(0), Interned.IF_FUNCTOR, 2)) {
+        if (CompoundTerm.termIsA(source.get(0), Interned.IF_FUNCTOR, 2)) {
             // IF-THEN-ELSE construct
             // Note that the meaning of ';' here is different to ';' outside of this construct.
             // To understand that, consider the term ((A -> B ; C) ; D)
@@ -122,16 +122,16 @@ public final class Control {
             // In neither case is A re-executed, there is an implicit (once(A)).
             // Note that (A -> B ; C ; D) is the same as (A -> B; (C ; D)) not ((A -> B ; C); D)
             // but should be avoided anyway.
-            CompoundTerm ifThen = (CompoundTerm) term.get(0);
+            CompoundTerm ifThen = (CompoundTerm) source.get(0);
             // Cond -> Then ; Else
             compiling.add(new ExecIfThenElse(
                     environment,
                     ifThen.get(0), // Cond
                     ExecBlock.from(compiling.environment(), ifThen.get(1)), // Then
-                    ExecBlock.from(compiling.environment(), term.get(1)))); // Else
+                    ExecBlock.from(compiling.environment(), source.get(1)))); // Else
         } else {
             // Disjunction construct
-            Term iter = term;
+            Term iter = source;
             while (CompoundTerm.termIsA(iter, Interned.SEMICOLON_FUNCTOR, 2)) {
                 Term blockTerm = ((CompoundTerm) iter).get(0);
                 alternates.add(ExecBlock.from(environment, blockTerm));
@@ -146,55 +146,55 @@ public final class Control {
      * Call is a scoped execution block.
      *
      * @param compiling Compiling context
-     * @param term      Call term.
+     * @param source      Call term.
      */
     @Predicate(value = "call", arity = 1)
-    public static void call(CompileContext compiling, CompoundTerm term) {
-        Term callTerm = term.get(0);
+    public static void call(CompileContext compiling, CompoundTerm source) {
+        Term callTerm = source.get(0);
         // while p1,call(p2),p3 may seem the same as p1,p2,p3,
         // cut behavior is modified by the call
-        compiling.add(new ExecCall(compiling.environment(), callTerm));
+        compiling.add(new ExecCall(compiling.environment(), source, callTerm));
     }
 
     /**
      * Apply is similar to call, but appends a list of arguments to the goal
      *
      * @param compiling Compiling context
-     * @param term      Call term.
+     * @param source      Call term.
      */
     @Predicate(value = "apply", arity = 2)
-    public static void apply(CompileContext compiling, CompoundTerm term) {
-        Term callTerm = term.get(0);
-        Term argTerm = term.get(1);
+    public static void apply(CompileContext compiling, CompoundTerm source) {
+        Term callTerm = source.get(0);
+        Term argTerm = source.get(1);
         // This is similar to call/2 but the parameters passed as a list, handling of both
         // get deferred - this will "break" if the compound term call() is used
         // TODO: Type validation
-        compiling.add(new ExecCall(compiling.environment(), callTerm, argTerm));
+        compiling.add(new ExecCall(compiling.environment(), source, callTerm, argTerm));
     }
 
     /**
      * Cross between call and apply
      *
      * @param compiling Compiling context
-     * @param term      Call term.
+     * @param source      Call term.
      */
     @Predicate(value = "call", arity = 2, vararg = true)
-    public static void call2(CompileContext compiling, CompoundTerm term) {
-        Term functorTerm = term.get(0);
-        Term[] members = new Term[term.arity()];
-        for (int i = 1; i < term.arity(); i++) {
-            members[i] = term.get(i);
+    public static void call2(CompileContext compiling, CompoundTerm source) {
+        Term functorTerm = source.get(0);
+        Term[] members = new Term[source.arity()];
+        for (int i = 1; i < source.arity(); i++) {
+            members[i] = source.get(i);
         }
         if (functorTerm.isAtom()) {
             // this is a variation of call/1
             members[0] = functorTerm;
-            compiling.add(new ExecCall(compiling.environment(), new CompoundTermImpl(members)));
+            compiling.add(new ExecCall(compiling.environment(), source, new CompoundTermImpl(members)));
         } else {
             // this needs deferred handling, and is similar to apply
-            members[0] = term.functor();
+            members[0] = source.functor();
             Term argTerm = new CompoundTermImpl(members);
             // call(X,Y) maps to term X and compound call(Y)
-            compiling.add(new ExecCall(compiling.environment(), functorTerm, new CompoundTermImpl(members)));
+            compiling.add(new ExecCall(compiling.environment(), source, functorTerm, new CompoundTermImpl(members)));
         }
     }
 
@@ -202,11 +202,11 @@ public final class Control {
      * Not provable.
      *
      * @param compiling Compilation context
-     * @param term      The predicate to call
+     * @param source      The predicate to call
      */
-    @Predicate(value = {"\\+", "not"}, arity = 1)
-    public static void notProvable(CompileContext compiling, CompoundTerm term) {
-        Term callTerm = term.get(0);
+    @Predicate(value = {"\\+", "not"}, arity = 1, notrace = true)
+    public static void notProvable(CompileContext compiling, CompoundTerm source) {
+        Term callTerm = source.get(0);
         final Environment environment = compiling.environment();
         compiling.add(
                 new ExecIfThenElse(
@@ -221,24 +221,24 @@ public final class Control {
      * Variation of call with an implied cut immediately after a successful call
      *
      * @param compiling Compilation context
-     * @param term      The predicate to call
+     * @param source      The predicate to call
      */
     @Predicate(value = "once", arity = 1)
-    public static void once(CompileContext compiling, CompoundTerm term) {
-        Term callTerm = term.get(0);
-        compiling.add(new ExecOnce(compiling.environment(), callTerm));
+    public static void once(CompileContext compiling, CompoundTerm source) {
+        Term callTerm = source.get(0);
+        compiling.add(new ExecOnce(compiling.environment(), source, callTerm));
     }
 
     /**
      * Variation of call but always succeeds
      *
      * @param compiling Compilation context
-     * @param term      The predicate to call
+     * @param source      The predicate to call
      */
     @Predicate(value = "ignore", arity = 1)
-    public static void ignore(CompileContext compiling, CompoundTerm term) {
-        Term callTerm = term.get(0);
-        compiling.add(new ExecIgnore(compiling.environment(), callTerm));
+    public static void ignore(CompileContext compiling, CompoundTerm source) {
+        Term callTerm = source.get(0);
+        compiling.add(new ExecIgnore(compiling.environment(), source, callTerm));
     }
 
     /**
@@ -249,14 +249,14 @@ public final class Control {
      * the list is unified with List.
      *
      * @param compiling Compiling context
-     * @param term      Contains the arguments
+     * @param source      Contains the arguments
      */
     @Predicate(value = "findall", arity = 3)
-    public static void findall(CompileContext compiling, CompoundTerm term) {
-        Term template = term.get(0);
-        Term callable = term.get(1);
-        Term list = term.get(2);
-        compiling.add(new ExecFindAll(template, callable, list));
+    public static void findall(CompileContext compiling, CompoundTerm source) {
+        Term template = source.get(0);
+        Term callable = source.get(1);
+        Term list = source.get(2);
+        compiling.add(new ExecFindAll(source, template, callable, list));
     }
 
     /**
@@ -267,14 +267,14 @@ public final class Control {
      * there are no free variables, bagof degenerates to be almost the same as findall.
      *
      * @param compiling Compiling context
-     * @param term      Contains the arguments
+     * @param source      Contains the arguments
      */
     @Predicate(value = "bagof", arity = 3)
-    public static void bagof(CompileContext compiling, CompoundTerm term) {
-        Term variable = term.get(0);
-        Term callable = term.get(1);
-        Term list = term.get(2);
-        compiling.add(new ExecBagOf(variable, callable, list));
+    public static void bagof(CompileContext compiling, CompoundTerm source) {
+        Term variable = source.get(0);
+        Term callable = source.get(1);
+        Term list = source.get(2);
+        compiling.add(new ExecBagOf(source, variable, callable, list));
     }
 
     /**
@@ -282,13 +282,13 @@ public final class Control {
      * Given setof(Term, Goal, List), Each List produced is further collated - sorted and deduplicated.
      *
      * @param compiling Compiling context
-     * @param term      Contains the arguments
+     * @param source      Contains the arguments
      */
     @Predicate(value = "setof", arity = 3)
-    public static void setof(CompileContext compiling, CompoundTerm term) {
-        Term variable = term.get(0);
-        Term callable = term.get(1);
-        Term list = term.get(2);
-        compiling.add(new ExecSetOf(variable, callable, list));
+    public static void setof(CompileContext compiling, CompoundTerm source) {
+        Term variable = source.get(0);
+        Term callable = source.get(1);
+        Term list = source.get(2);
+        compiling.add(new ExecSetOf(source, variable, callable, list));
     }
 }

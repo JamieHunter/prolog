@@ -3,12 +3,15 @@
 //
 package prolog.instructions;
 
+import prolog.bootstrap.Interned;
 import prolog.execution.CatchPoint;
 import prolog.execution.CutPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.InstructionPointer;
 import prolog.execution.LocalContext;
+import prolog.expressions.CompoundTerm;
+import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.unification.Unifier;
 import prolog.unification.UnifyBuilder;
@@ -29,10 +32,11 @@ public class ExecCatch extends ExecCall {
      * @param matchTerm   Term that is unified with the thrown term.
      * @param recoverTerm Call-like term used if an error was caught, per {@link ExecCall}.
      */
-    public ExecCatch(Environment environment, Term callTerm, Term matchTerm, Term recoverTerm) {
-        super(environment, callTerm);
+    public ExecCatch(Environment environment, CompoundTerm source, Term callTerm, Term matchTerm, Term recoverTerm) {
+        super(environment, source, callTerm);
         this.unifier = UnifyBuilder.from(matchTerm);
-        this.recover = new ExecCall(environment, recoverTerm);
+        CompoundTerm callRecover = new CompoundTermImpl(Interned.CALL_FUNCTOR, callTerm);
+        this.recover = new ExecCall(environment, callRecover, recoverTerm);
     }
 
     /**

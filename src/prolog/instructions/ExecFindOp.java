@@ -12,6 +12,7 @@ import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
 import prolog.execution.OperatorEntry;
+import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.unification.Unifier;
 import prolog.unification.UnifyBuilder;
@@ -23,12 +24,13 @@ import java.util.Map;
 /**
  * Find and enumerate matching operators.
  */
-public class ExecFindOp implements Instruction {
+public class ExecFindOp extends Traceable {
     private final Term nameTerm;
     private final Term precedenceTerm;
     private final Term typeTerm;
 
-    public ExecFindOp(Term precedenceTerm, Term typeTerm, Term nameTerm) {
+    public ExecFindOp(CompoundTerm source, Term precedenceTerm, Term typeTerm, Term nameTerm) {
+        super(source);
         this.precedenceTerm = precedenceTerm;
         this.typeTerm = typeTerm;
         this.nameTerm = nameTerm;

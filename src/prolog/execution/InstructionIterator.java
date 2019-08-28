@@ -3,10 +3,12 @@
 //
 package prolog.execution;
 
+import prolog.debugging.InstructionReporter;
+
 /**
  * Instruction iterator is an abstract instruction pointer that maintains location state.
  */
-public abstract class InstructionIterator implements InstructionPointer, Cloneable {
+public abstract class InstructionIterator implements InstructionPointer, InstructionReporter, Cloneable {
 
     protected final Environment environment;
 

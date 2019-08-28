@@ -3,6 +3,8 @@
 //
 package prolog.execution;
 
+import prolog.debugging.InstructionReflection;
+
 import java.util.ListIterator;
 
 /**

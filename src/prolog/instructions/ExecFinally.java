@@ -3,11 +3,14 @@
 //
 package prolog.instructions;
 
+import prolog.bootstrap.Interned;
+import prolog.debugging.InstructionReflection;
 import prolog.execution.CatchPoint;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
+import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 
 /**
@@ -23,15 +26,17 @@ public class ExecFinally extends ExecCall {
      * Create an if-else call.
      *
      * @param environment Execution environment
-     * @param condition   Term to evaluate as the condition
+     * @param callable    Term to evaluate
      * @param onBefore    Instruction to execute once hooks have been inserted
      * @param onFinally   Instruction to execute regardless of exit condition
      */
-    public ExecFinally(Environment environment, Term condition,
+    public ExecFinally(Environment environment, Term callable,
                        Instruction onBefore,
                        Instruction onFinally) {
 
-        super(environment, condition);
+        super(environment,
+                new CompoundTermImpl(Interned.CALL_FUNCTOR, callable),
+                callable);
         this.onBefore = onBefore;
         this.onFinally = onFinally;
     }

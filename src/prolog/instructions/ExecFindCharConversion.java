@@ -4,21 +4,24 @@
 package prolog.instructions;
 
 import prolog.constants.PrologCharacter;
+import prolog.debugging.InstructionReflection;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
+import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.parser.CharConverter;
 
 /**
  * Find and enumerate character conversions
  */
-public class ExecFindCharConversion implements Instruction {
+public class ExecFindCharConversion extends Traceable {
     private final Term fromTerm;
     private final Term toTerm;
 
-    public ExecFindCharConversion(Term fromTerm, Term toTerm) {
+    public ExecFindCharConversion(CompoundTerm source, Term fromTerm, Term toTerm) {
+        super(source);
         this.fromTerm = fromTerm;
         this.toTerm = toTerm;
     }
@@ -71,7 +74,8 @@ public class ExecFindCharConversion implements Instruction {
         final Character charTo;
         int index;
 
-        TableIterator(Environment environment, CharConverter converter,
+        TableIterator(Environment environment,
+                      CharConverter converter,
                       int start,
                       int limit,
                       Character charFrom,

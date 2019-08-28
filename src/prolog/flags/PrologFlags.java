@@ -35,8 +35,8 @@ public class PrologFlags implements FlagsWithEnvironment {
                 readBoolean(o -> o.characterEscapes).protect();
         global.onOffFlag(internAtom("char_conversion"), (o, v) -> o.charConversion = v).
                 readOnOff(o -> o.charConversion).protect();
-        global.onOffFlag(internAtom("debug"), (o, v) -> o.debug = v).
-                readOnOff(o -> o.debug).protect();
+        global.onOffFlag(internAtom("debug"), (o, v) -> { o.environment.enableDebugger(v); }).
+                readOnOff(o -> o.environment.isDebuggerEnabled()).protect();
         global.enumFlag(internAtom("encoding"), StreamProperties.Encoding.class, (o, v) -> o.encoding = v).
                 readEnum(StreamProperties.Encoding.class, o -> o.encoding).protect();
         global.atomFlag(internAtom("float_format"), (o, v) -> o.floatFormat = v).
@@ -71,10 +71,6 @@ public class PrologFlags implements FlagsWithEnvironment {
      * Handling of character conversion
      */
     public boolean charConversion = false;
-    /**
-     * Mode to make prolog more debuggable
-     */
-    public boolean debug = false;
     /**
      * Default file encoding
      */

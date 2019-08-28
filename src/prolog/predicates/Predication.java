@@ -5,6 +5,7 @@ package prolog.predicates;
 
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
 import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
@@ -18,7 +19,7 @@ import java.math.BigInteger;
  */
 public class Predication {
     public static final Predication UNDEFINED = new Predication(prolog.bootstrap.Interned.UNKNOWN_ATOM, 0);
-    private final Atomic functor;
+    private final PrologAtomLike functor;
     private final int arity;
 
     /**
@@ -27,7 +28,7 @@ public class Predication {
      * @param functor Functor atom
      * @param arity   Arity - 0 indicates simple atom, 1 or more indicates compound term
      */
-    public Predication(Atomic functor, int arity) {
+    public Predication(PrologAtomLike functor, int arity) {
         this.functor = functor;
         this.arity = arity;
     }
@@ -45,7 +46,7 @@ public class Predication {
     /**
      * @return Functor
      */
-    public Atomic functor() {
+    public PrologAtomLike functor() {
         return functor;
     }
 

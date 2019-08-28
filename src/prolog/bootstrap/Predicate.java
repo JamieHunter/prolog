@@ -45,4 +45,9 @@ public @interface Predicate {
      * @return Vararg if specified (true if enabled).
      */
     boolean vararg() default false;
+
+    /**
+     * @return true if predicate is invisible from trace
+     */
+    boolean notrace() default false;
 }

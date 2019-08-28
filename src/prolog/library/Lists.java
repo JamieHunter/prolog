@@ -138,13 +138,13 @@ public final class Lists {
     /**
      * Determine if a term is a member of a list
      * @param compiling Compiling context
-     * @param params Contains (term,list)
+     * @param source Source term member(term,list)
      */
     @Predicate(value = "member", arity = 2)
-    public static void member(CompileContext compiling, CompoundTerm params) {
-        Term element = params.get(0);
-        Term list = params.get(1);
-        compiling.add(new ExecMember(element, list));
+    public static void member(CompileContext compiling, CompoundTerm source) {
+        Term element = source.get(0);
+        Term list = source.get(1);
+        compiling.add(new ExecMember(source, element, list));
     }
 
     // ====================================================================
