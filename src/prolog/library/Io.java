@@ -7,6 +7,7 @@ import prolog.bootstrap.DefaultIoBinding;
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
+import prolog.constants.PrologAtom;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologEmptyList;
@@ -736,18 +737,40 @@ public final class Io {
         }
     }
 
+    /**
+     * Find an absolute filename from a searchable filename (relative, maybe on search path).
+     *
+     * @param environment Execution environment
+     * @param fileSpec Specification of file
+     * @param fileName Absolute file name.
+     */
     @Predicate("absolute_file_name")
     public static void absoluteFileName(Environment environment, Term fileSpec, Term fileName) {
         Path path = absoluteFileName(environment, fileSpec, new AbsoluteFileNameOptions(environment, null));
         unifyFilePath(environment, path, fileName);
     }
 
+    /**
+     * Find an absolute filename from a searchable filename (relative, maybe on search path). Full version.
+     *
+     * @param environment Execution environment
+     * @param fileSpec Specification of file
+     * @param options Options controlling expansion
+     * @param fileName Absolute file name.
+     */
     @Predicate("absolute_file_name")
     public static void absoluteFileName(Environment environment, Term fileSpec, Term fileName, Term options) {
         Path path = absoluteFileName(environment, fileSpec, new AbsoluteFileNameOptions(environment, options));
         unifyFilePath(environment, path, fileName);
     }
 
+    /**
+     * Expand file name following file expansion rules
+     *
+     * @param environment Execution environment
+     * @param fileSpec Specification of file
+     * @param expansion Expanded file name
+     */
     @Predicate("expand_file_name")
     public static void expandFileName(Environment environment, Term fileSpec, Term expansion) {
 
@@ -757,6 +780,48 @@ public final class Io {
         if (!Unifier.unify(environment.getLocalContext(), expansion, expanded)) {
             environment.backtrack();
         }
+    }
+
+    /**
+     * Obtain and/or change working directory.
+     * @param environment Execution environment
+     * @param oldDirTerm Unified with current/old directory
+     * @param newDirTerm Used to set new directory
+     */
+    @Predicate("working_directory")
+    public static void workingDirectory(Environment environment, Term oldDirTerm, Term newDirTerm) {
+        if (oldDirTerm.isInstantiated()) {
+            Path comparePath = parsePathBasic(environment, oldDirTerm);
+            Path cwd = environment.getCWD().toAbsolutePath();
+            boolean unified = false;
+            try {
+                if (Files.isSameFile(comparePath, cwd)) {
+                    unified = true;
+                }
+            } catch(IOException ioe) {
+                unified = comparePath.equals(cwd);
+            }
+            if (!unified) {
+                environment.backtrack();
+                return;
+            }
+        } else {
+            Term cwdTerm = new PrologAtom(environment.getCWD().toAbsolutePath().toString());
+            if (!oldDirTerm.instantiate(cwdTerm)) {
+                environment.backtrack();
+                return;
+            }
+        }
+        if (!newDirTerm.isInstantiated()) {
+            // note, we cannot do this until here, as newDirTerm might be unified with oldDirTerm,
+            // and working_directory(CWD,CWD) must do the right thing.
+            throw PrologInstantiationError.error(environment, newDirTerm);
+        }
+        if (newDirTerm.value(environment).equals(oldDirTerm.value(environment))) {
+            return; // no-op
+        }
+        Path newPath = parsePathBasic(environment, newDirTerm);
+        environment.setCWD(newPath);
     }
 
     // ====================================================================
