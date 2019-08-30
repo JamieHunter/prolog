@@ -16,6 +16,10 @@ public enum ExecutionPort {
         public int flag() {
             return CALL_FLAG;
         }
+        @Override
+        public String atomName() {
+            return "call";
+        }
     },
     EXIT {
         @Override
@@ -25,6 +29,10 @@ public enum ExecutionPort {
         @Override
         public int flag() {
             return EXIT_FLAG;
+        }
+        @Override
+        public String atomName() {
+            return "exit";
         }
     },
     REDO {
@@ -40,6 +48,10 @@ public enum ExecutionPort {
         public boolean canIgnore() {
             return false;
         }
+        @Override
+        public String atomName() {
+            return "redo";
+        }
     },
     FAIL {
         @Override
@@ -49,6 +61,10 @@ public enum ExecutionPort {
         @Override
         public int flag() {
             return FAIL_FLAG;
+        }
+        @Override
+        public String atomName() {
+            return "fail";
         }
     },
     EXCEPTION {
@@ -64,30 +80,16 @@ public enum ExecutionPort {
         public boolean canIgnore() {
             return false;
         }
+        @Override
+        public String atomName() {
+            return "exception";
+        }
     },
     DEFERRED {
         // Not really a port
-        @Override
-        public String display() {
-            return null;
-        }
-
-        @Override
-        public int flag() {
-            return -1;
-        }
     },
     RETURN {
         // Not really a port
-        @Override
-        public String display() {
-            return null;
-        }
-
-        @Override
-        public int flag() {
-            return -1;
-        }
     };
     public static int CALL_FLAG = 0x01;
     public static int EXIT_FLAG = 0x02;
@@ -96,10 +98,16 @@ public enum ExecutionPort {
     public static int EXCEPTION_FLAG = 0x10;
     public static int ANY_FLAG = -1;
 
-    public abstract String display();
-    public abstract int flag();
-
     public boolean canIgnore() {
         return true;
+    }
+    public String atomName() {
+        return null;
+    }
+    public String display() {
+        return null;
+    }
+    public int flag() {
+        return -1;
     }
 }

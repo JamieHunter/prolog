@@ -17,6 +17,7 @@ import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.flags.WriteOptions;
 import prolog.io.Prompt;
+import prolog.library.Debug;
 import prolog.predicates.BuiltInPredicate;
 import prolog.predicates.ClauseEntry;
 import prolog.predicates.ClauseSearchPredicate;
@@ -69,7 +70,7 @@ public class ActiveDebugger implements DebuggerHook {
         addCommand("g", this::ancestors, "ancestors", "<n> ancestors n");
         addCommand("t", this::backtrace, "backtrace", "<n> backtrace n");
         addCommand("n", this::undefined, "nodebug");
-        addCommand("=", this::undefined, "debugging");
+        addCommand("=", this::debuggingStatus, "debugging");
         addCommand("+", this::activateSpy, "spy this", "<i> spy conditionally");
         addCommand("-", this::removeSpy, "nospy this");
         addCommand(".", this::undefined, "find this");
@@ -679,11 +680,11 @@ public class ActiveDebugger implements DebuggerHook {
         return null;
     }
 
-    protected StepMode display(String arg) {
+    private StepMode display(String arg) {
         return write(arg);
     }
 
-    protected StepMode print(String arg) {
+    private StepMode print(String arg) {
         return write(arg);
     }
 
@@ -703,5 +704,10 @@ public class ActiveDebugger implements DebuggerHook {
         ClauseEntry entry = clauses[prologThis.getIteration()];
         CompoundTerm clause = new CompoundTermImpl(Interned.CLAUSE_FUNCTOR, entry.getHead(), entry.getBody());
         writer.accept(clause);
+    }
+
+    private StepMode debuggingStatus(String arg) {
+        Debug.debugging(environment, DefaultIoBinding.USER_ERROR);
+        return null;
     }
 }

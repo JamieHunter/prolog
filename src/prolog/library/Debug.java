@@ -6,6 +6,8 @@ package prolog.library;
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Predicate;
 import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologAtomLike;
+import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologInteger;
 import prolog.debugging.DebugStateChange;
 import prolog.debugging.SpySpec;
@@ -15,6 +17,7 @@ import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
+import prolog.flags.WriteOptions;
 import prolog.io.LogicalStream;
 
 import java.util.ArrayList;
@@ -145,7 +148,60 @@ public final class Debug {
      */
     @Predicate(value = "leash", notrace = true)
     public static void leash(Environment environment, Term leashOptions) {
-        throw new UnsupportedOperationException("NYI-leash");
+        if (!leashOptions.isInstantiated()) {
+            // report leashing
+            Term term = environment.spyPoints().getLeashFlags(environment);
+            if (!leashOptions.instantiate(term)) {
+                environment.backtrack();
+            }
+            return;
+        }
+        if (leashOptions == PrologEmptyList.EMPTY_LIST) {
+            environment.spyPoints().setLeashFlags(0);
+        }
+        List<Term> ports = TermList.extractList(leashOptions);
+        int includeMask = 0;
+        int excludeMask = 0;
+        int testMask = 0;
+        for(Term t : ports) {
+            int flagType = 0;
+            if (t instanceof CompoundTerm) {
+                CompoundTerm tt = (CompoundTerm)t;
+                if (tt.arity() != 1) {
+                }
+                String prefixString = tt.functor().name();
+                if (prefixString.equals("-")) {
+                    flagType = -1;
+                } else if (prefixString.equals("+")) {
+                    flagType = 1;
+                } else {
+                    throw PrologDomainError.error(environment, "lease_port", t);
+                }
+                t = tt.get(0);
+            }
+            PrologAtomLike atom = PrologAtomLike.from(t);
+            String flag = atom.name();
+            int mask = environment.spyPoints().parseLeashFlag(flag);
+            if (flagType > 0) {
+                includeMask |= mask;
+            } else if (flagType < 0) {
+                excludeMask |= mask;
+            } else {
+                includeMask |= mask;
+                excludeMask = -1;
+            }
+        }
+        int flags = environment.spyPoints().getLeashFlags();
+        if (testMask != 0) {
+            // TODO!
+            if ((testMask & flags) != flags) {
+                environment.backtrack();
+                return;
+            }
+        }
+        flags = flags & ~excludeMask;
+        flags = flags | includeMask;
+        environment.spyPoints().setLeashFlags(flags);
     }
 
     /**
@@ -155,11 +211,23 @@ public final class Debug {
      */
     @Predicate(value = "debugging", notrace = true)
     public static void debugging(Environment environment) {
-        LogicalStream logicalStream = environment.getOutputStream();
+        debugging(environment, environment.getOutputStream());
+    }
+
+    public static void debugging(Environment environment, LogicalStream logicalStream) {
         if (environment.isDebuggerEnabled()) {
             logicalStream.write(environment, null, "Debugging is enabled.\n");
         } else {
             logicalStream.write(environment, null, "Debugging is disabled.\n");
+        }
+        Term leash = environment.spyPoints().getLeashFlags(environment);
+        if (leash == PrologEmptyList.EMPTY_LIST) {
+            logicalStream.write(environment, null, "Leash ports: [] (tracing is disabled).\n");
+        } else {
+            logicalStream.write(environment, null, "Leash ports: ");
+            WriteOptions op = new WriteOptions(environment, null);
+            op.nl = true;
+            logicalStream.write(environment, null, leash, op);
         }
         TreeSet<String> spies = new TreeSet<>();
         for (SpySpec spec : environment.spyPoints().enumerate()) {
