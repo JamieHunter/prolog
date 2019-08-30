@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.TreeMap;
@@ -224,6 +225,13 @@ public class Environment {
     }
 
     /**
+     * @return Iterable list of call stack
+     */
+    public List<InstructionPointer> getCallStack() {
+        return Collections.unmodifiableList(callStack);
+    }
+
+    /**
      * Depth of Data stack.
      *
      * @return depth
@@ -239,6 +247,13 @@ public class Environment {
      */
     public int getBacktrackDepth() {
         return backtrackStack.size();
+    }
+
+    /**
+     * @return Iterable list of backtrack stack
+     */
+    public List<Backtrack> getBacktrackStack() {
+        return Collections.unmodifiableList(backtrackStack);
     }
 
     /**

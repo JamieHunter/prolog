@@ -25,6 +25,19 @@ public enum StepMode {
             return true;
         }
     },
+    SKIP {
+        @Override
+        public int flags(ActiveDebugger debugger, InstructionContext context) {
+            return debugger.isSkipHit() ? ExecutionPort.EXIT_FLAG | ExecutionPort.FAIL_FLAG : 0;
+        }
+    },
+    QSKIP {
+        @Override
+        public int flags(ActiveDebugger debugger, InstructionContext context) {
+            return debugger.isSkipHit() ? ExecutionPort.EXIT_FLAG | ExecutionPort.FAIL_FLAG :
+                    context.spyFlags(debugger.environment.spyPoints());
+        }
+    },
 
     ;
 

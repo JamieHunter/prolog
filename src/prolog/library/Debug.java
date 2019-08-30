@@ -15,10 +15,12 @@ import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
+import prolog.io.LogicalStream;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.TreeSet;
 
 /**
  * File is referenced by {@link Library} to parse all annotations.
@@ -153,7 +155,28 @@ public final class Debug {
      */
     @Predicate(value = "debugging", notrace = true)
     public static void debugging(Environment environment) {
-        throw new UnsupportedOperationException("NYI-debugging");
+        LogicalStream logicalStream = environment.getOutputStream();
+        if (environment.isDebuggerEnabled()) {
+            logicalStream.write(environment, null, "Debugging is enabled.\n");
+        } else {
+            logicalStream.write(environment, null, "Debugging is disabled.\n");
+        }
+        TreeSet<String> spies = new TreeSet<>();
+        for (SpySpec spec : environment.spyPoints().enumerate()) {
+            spies.add(spec.toString());
+        }
+        if (spies.size() == 0) {
+            logicalStream.write(environment, null, "No spy points are set.\n");
+        } else {
+            StringBuilder builder = new StringBuilder();
+            builder.append("Spy points:");
+            for(String ref : spies) {
+                builder.append(" ");
+                builder.append(ref);
+            }
+            builder.append('\n');
+            logicalStream.write(environment, null, builder.toString());
+        }
     }
 
 }

@@ -3,6 +3,7 @@
 //
 package prolog.io;
 
+import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtom;
 import prolog.constants.PrologAtomInterned;
@@ -882,6 +883,16 @@ public class LogicalStream {
 
         try {
             writer.write(source);
+            if (options.fullstop) {
+                writer.write(Interned.DOT);
+                if (options.nl) {
+                    output.write("\n");
+                } else {
+                    output.write(" ");
+                }
+            } else if (options.nl) {
+                output.write("\n");
+            }
         } catch (IOException ioe) {
             throw writeError(ioe, environment);
         }

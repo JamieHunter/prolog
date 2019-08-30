@@ -49,6 +49,10 @@ public class SpySpec {
             super(functor);
         }
 
+        @Override
+        public String toString() {
+            return functor.toString();
+        }
     }
 
     public static class SingleArity extends SpySpec {
@@ -78,6 +82,11 @@ public class SpySpec {
             }
             return this.functor == ((SpySpec)obj).functor &&
                     this.arity == ((SingleArity)obj).arity;
+        }
+
+        @Override
+        public String toString() {
+            return functor.toString() + "/" + String.valueOf(arity);
         }
     }
 }

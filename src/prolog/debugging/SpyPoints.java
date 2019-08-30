@@ -6,7 +6,10 @@ package prolog.debugging;
 import prolog.execution.Environment;
 import prolog.predicates.Predication;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 
 /**
  * Track Spy Points, which exist if debugger is enabled or disabled.
@@ -48,5 +51,13 @@ public class SpyPoints {
             }
         }
         return -1;
+    }
+
+    /**
+     * Iterator of spy spec
+     * @return specs
+     */
+    public Collection<SpySpec> enumerate() {
+        return Collections.unmodifiableSet(spying);
     }
 }
