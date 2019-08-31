@@ -6,6 +6,7 @@ package prolog.flags;
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
 import prolog.constants.PrologEmptyList;
+import prolog.exceptions.FutureInstantiationError;
 import prolog.exceptions.FutureTypeError;
 import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
@@ -34,6 +35,9 @@ class OptionParser<T extends Flags> extends ParserBase<T, Void> {
     public T apply(Environment environment, T obj, Term listTerm) {
         if (Optional.ofNullable(listTerm).orElse(PrologEmptyList.EMPTY_LIST) == PrologEmptyList.EMPTY_LIST) {
             return obj;
+        }
+        if (!listTerm.isInstantiated()) {
+            throw new FutureInstantiationError(listTerm);
         }
         if (!CompoundTerm.termIsA(listTerm, Interned.LIST_FUNCTOR, 2)) {
             throw new FutureTypeError(Interned.LIST_TYPE, listTerm);

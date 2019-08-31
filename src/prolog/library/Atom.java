@@ -7,13 +7,13 @@ import prolog.bootstrap.Predicate;
 import prolog.constants.PrologAtom;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
-import prolog.debugging.InstructionReflection;
-import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.Term;
+import prolog.flags.ReadOptions;
+import prolog.parser.StringParser;
 import prolog.unification.Unifier;
 
 import java.math.BigInteger;
@@ -31,8 +31,8 @@ public final class Atom {
      * True if atom is of given length.
      *
      * @param environment Execution environment
-     * @param atomTerm Atom to obtain length
-     * @param lengthTerm Length of atom
+     * @param atomTerm    Atom to obtain length
+     * @param lengthTerm  Length of atom
      */
     @Predicate("atom_length")
     public static void atomLength(Environment environment, Term atomTerm, Term lengthTerm) {
@@ -54,11 +54,34 @@ public final class Atom {
     }
 
     /**
-     * Either (a) concatenate left/right, (b) test left/right, (c) split into possible left/right
+     * Utility to parse an atom as a term
+     *
      * @param environment Execution environment
-     * @param leftTerm Left atom term
-     * @param rightTerm Right atom term
-     * @param concatTerm Concatinated form
+     * @param atomTerm    Source atom
+     * @param outTerm     Extracted term after parsing
+     * @param optionsTerm Parsing options
+     */
+    @Predicate("read_term_from_atom")
+    public static void readTermFromAtom(Environment environment, Term atomTerm, Term outTerm, Term optionsTerm) {
+        if (!atomTerm.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, atomTerm);
+        }
+        String text = PrologAtomLike.from(atomTerm).name();
+        ReadOptions readOptions = new ReadOptions(environment, optionsTerm);
+        readOptions.fullStop = ReadOptions.FullStop.ATOM_optional;
+        Term out = StringParser.parse(environment, text, readOptions);
+        if (!Unifier.unify(environment.getLocalContext(), outTerm, out)) {
+            environment.backtrack();
+        }
+    }
+
+    /**
+     * Either (a) concatenate left/right, (b) test left/right, (c) split into possible left/right
+     *
+     * @param environment Execution environment
+     * @param leftTerm    Left atom term
+     * @param rightTerm   Right atom term
+     * @param concatTerm  Concatinated form
      */
     @Predicate("atom_concat")
     public static void atomConcat(Environment environment, Term leftTerm, Term rightTerm, Term concatTerm) {
@@ -117,10 +140,10 @@ public final class Atom {
      * Before/Length/After.
      *
      * @param environment Execution environment
-     * @param atomTerm Source atom, required
-     * @param beforeTerm Variable, or integer >= 0, number of characters before sub-atom
-     * @param lengthTerm Variable, or integer >=0, length of sub-atom
-     * @param afterTerm Variable, or integer >=0, number of characters after sub-atom
+     * @param atomTerm    Source atom, required
+     * @param beforeTerm  Variable, or integer >= 0, number of characters before sub-atom
+     * @param lengthTerm  Variable, or integer >=0, length of sub-atom
+     * @param afterTerm   Variable, or integer >=0, number of characters after sub-atom
      * @param subAtomTerm Variable, or defined sub-atom
      */
     @Predicate("sub_atom")
@@ -292,11 +315,11 @@ public final class Atom {
                 algorithm = this::scanEmpty;
             } else if (subAtomConstraint != null) {
                 length = lengthConstraint;
-                limit = atomLen-lengthConstraint;
+                limit = atomLen - lengthConstraint;
                 algorithm = this::scanString;
             } else {
                 length = lengthConstraint;
-                limit = atomLen-lengthConstraint;
+                limit = atomLen - lengthConstraint;
                 algorithm = this::enumerateFixedLength;
             }
         }
@@ -305,7 +328,7 @@ public final class Atom {
          * All constraints applied, this only runs once
          */
         protected void fullyConstrained() {
-            String subAtom = atomString.substring(offset, offset+length);
+            String subAtom = atomString.substring(offset, offset + length);
             unify(offset, subAtom);
         }
 
@@ -313,7 +336,7 @@ public final class Atom {
          * Before is fixed, length and after are variable
          */
         protected void enumerateFixedLeft() {
-            int end = offset+length;
+            int end = offset + length;
             String subAtom = atomString.substring(offset, end);
             if (end != limit) {
                 notLast();
@@ -326,7 +349,7 @@ public final class Atom {
          * After is fixed, length and before are variable
          */
         protected void enumerateFixedRight() {
-            int end = offset+length;
+            int end = offset + length;
             String subAtom = atomString.substring(offset, end);
             if (offset != limit) {
                 notLast();
@@ -340,7 +363,7 @@ public final class Atom {
          * Length is fixed, before and after are variable
          */
         protected void enumerateFixedLength() {
-            int end = offset+length;
+            int end = offset + length;
             String subAtom = atomString.substring(offset, end);
             if (offset != limit) {
                 notLast();
@@ -353,7 +376,7 @@ public final class Atom {
          * Completely unconstrained
          */
         protected void enumerateAll() {
-            int end = offset+length;
+            int end = offset + length;
             String subAtom = atomString.substring(offset, end);
             if (offset != limit) {
                 notLast();
@@ -363,7 +386,7 @@ public final class Atom {
                 offset++;
                 length = 0;
             } else {
-                length ++;
+                length++;
             }
         }
 
@@ -372,7 +395,7 @@ public final class Atom {
          * String is empty string
          */
         protected void scanEmpty() {
-            if (offset == limit+1) {
+            if (offset == limit + 1) {
                 forceBacktrack();
                 return;
             }
@@ -388,7 +411,7 @@ public final class Atom {
          * String is a provided string.
          */
         protected void scanString() {
-            for(;;) {
+            for (; ; ) {
                 if (!scan()) {
                     forceBacktrack();
                     return;
@@ -407,6 +430,7 @@ public final class Atom {
 
         /**
          * Helper for the scanString algorithm, find first character
+         *
          * @return true if first character found
          */
         protected boolean scan() {
@@ -446,7 +470,7 @@ public final class Atom {
 
         protected void unify(int before, String subAtom) {
             int length = subAtom.length();
-            int after = atomString.length() - (length+before);
+            int after = atomString.length() - (length + before);
             if (!beforeTerm.isInstantiated()) {
                 if (!beforeTerm.instantiate(PrologInteger.from(before))) {
                     forceBacktrack();

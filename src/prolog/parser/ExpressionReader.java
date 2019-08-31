@@ -67,7 +67,8 @@ public final class ExpressionReader {
      * @return Resulting term of expression
      */
     public Term read() {
-        Term t = read(Interned.DOT, () -> !tokenizer.isNext('('), tokenizer.nextToken());
+        boolean assumedAtEof = options.fullStop == ReadOptions.FullStop.ATOM_optional;
+        Term t = read(Interned.DOT, () -> !tokenizer.isNext('('), tokenizer.nextToken(), assumedAtEof);
         tokenizer.skipEOLN();
         return t.enumTerm(new SimplifyTerm(environment));
     }
@@ -77,10 +78,12 @@ public final class ExpressionReader {
      * is called if initial token is known.
      *
      * @param terminal     Atom that indicates end of parse
+     * @param confirmTerminal Called to make sure terminal really is a terminal
      * @param initialToken Initial token.
+     * @param assumedAtEoF If true, terminal is optional at end of file
      * @return Resulting term of expression
      */
-    private Term read(PrologAtomLike terminal, BooleanSupplier confirmTerminal, Term initialToken) {
+    private Term read(PrologAtomLike terminal, BooleanSupplier confirmTerminal, Term initialToken, boolean assumedAtEoF) {
         operators.push(OperatorEntry.TERMINAL); // adds a guard for handleEnd
         State oldState = state;
         try {
@@ -107,9 +110,14 @@ public final class ExpressionReader {
                 // if no terms read, this is an acceptable place to receive an end-of-file
                 operators.pop();
                 return PrologEOF.EOF;
+            } else if (assumedAtEoF) {
+                // If we can assume terminal at end of file, then handle as if terminal was given. Note the ordering
+                // here so that EOF is returned when it is appropriate.
+                return handleEnd(terminal);
+            } else {
+                throw PrologSyntaxError.eofError(environment,
+                        "EOF reached before term was completed, missing '" + terminal + "' ?");
             }
-            throw PrologSyntaxError.eofError(environment,
-                    "EOF reached before term was completed, missing '" + terminal + "' ?");
         } finally {
             state = oldState;
         }
@@ -198,7 +206,7 @@ public final class ExpressionReader {
         if (!atom.isAtom()) {
             throw PrologSyntaxError.functorError(environment, "Functor expected before '('");
         }
-        Term result = read(Interned.CLOSE_BRACKET, () -> true, tokenizer.nextToken());
+        Term result = read(Interned.CLOSE_BRACKET, () -> true, tokenizer.nextToken(), false);
         BracketedTerm bracketed = rewriteBracketedCommas(result);
         // replace previous term
         stack.push(new CompoundTermImpl((Atomic) atom, bracketed.get()));
@@ -210,7 +218,7 @@ public final class ExpressionReader {
      * mis-interpreted when used as an argument where commas have special meaning.
      */
     private void handleBracketTerm() {
-        Term result = read(Interned.CLOSE_BRACKET, () -> true, tokenizer.nextToken());
+        Term result = read(Interned.CLOSE_BRACKET, () -> true, tokenizer.nextToken(), false);
         handleTerm(rewriteBracketedCommas(result), false);
     }
 
@@ -222,7 +230,7 @@ public final class ExpressionReader {
         if (is(next, Interned.CLOSE_BRACES)) {
             handleTerm(Interned.EMPTY_BRACES_ATOM, false);
         } else {
-            Term nestedTerm = read(Interned.CLOSE_BRACES, () -> true, next);
+            Term nestedTerm = read(Interned.CLOSE_BRACES, () -> true, next, false);
             handleTerm(nestedTerm, false);
         }
     }
@@ -236,7 +244,7 @@ public final class ExpressionReader {
         if (is(next, Interned.CLOSE_SQUARE_BRACKET)) {
             handleTerm(PrologEmptyList.EMPTY_LIST, false);
         } else {
-            Term nestedTerm = read(Interned.CLOSE_SQUARE_BRACKET, () -> true, next);
+            Term nestedTerm = read(Interned.CLOSE_SQUARE_BRACKET, () -> true, next, false);
             handleTerm(convertList(nestedTerm), false);
         }
     }

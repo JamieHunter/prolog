@@ -8,18 +8,22 @@ import prolog.bootstrap.DefaultIoBinding;
 import prolog.bootstrap.Interned;
 import prolog.cli.Run;
 import prolog.constants.PrologAtomInterned;
+import prolog.constants.PrologEOF;
 import prolog.exceptions.PrologAborted;
 import prolog.execution.Backtrack;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.InstructionPointer;
+import prolog.execution.Query;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
+import prolog.flags.ReadOptions;
 import prolog.flags.WriteOptions;
 import prolog.io.Prompt;
 import prolog.library.Debug;
+import prolog.parser.StringParser;
 import prolog.predicates.BuiltInPredicate;
 import prolog.predicates.ClauseEntry;
 import prolog.predicates.ClauseSearchPredicate;
@@ -71,7 +75,7 @@ public class ActiveDebugger implements DebuggerHook {
         addCommand("w", this::display, "write");
         addCommand("g", this::ancestors, "ancestors", "<n> ancestors n");
         addCommand("t", this::backtrace, "backtrace", "<n> backtrace n");
-        addCommand("n", this::undefined, "nodebug");
+        addCommand("n", this::nodebug, "nodebug");
         addCommand("=", this::debuggingStatus, "debugging");
         addCommand("+", this::activateSpy, "spy this", "<i> spy conditionally");
         addCommand("-", this::removeSpy, "nospy this");
@@ -111,6 +115,7 @@ public class ActiveDebugger implements DebuggerHook {
 
     /**
      * Called when a new decisionpoint is pushed, this may be referenced during backtrack to identify redo port.
+     *
      * @param decisionPoint Decision point
      */
     @Override
@@ -135,12 +140,13 @@ public class ActiveDebugger implements DebuggerHook {
             invoke(deferred, ExecutionPort.RETURN, null);
         }
         Scoped newScoped = scopedFromInstruction(instructionFromIp(ip));
-        invoke(newScoped, ExecutionPort.CALL, ()->ip.next());
+        invoke(newScoped, ExecutionPort.CALL, () -> ip.next());
     }
 
     /**
      * Push IP to stack. this inherently means that the Exit/Fail port
      * us unknown until return
+     *
      * @param ip Instruction pointer
      */
     @Override
@@ -156,13 +162,13 @@ public class ActiveDebugger implements DebuggerHook {
      * Wrap around a direct instruction invoke
      *
      * @param unused Used by {@link NoDebugger}, not used here.
-     * @param inst Instruction
+     * @param inst   Instruction
      */
     @Override
     public void invoke(Environment unused, Instruction inst) {
         //
         // E.g. CALL executing instruction directly
-        invoke(scopedFromInstruction(inst), ExecutionPort.CALL, ()->inst.invoke(environment));
+        invoke(scopedFromInstruction(inst), ExecutionPort.CALL, () -> inst.invoke(environment));
     }
 
     protected boolean isSkipHit() {
@@ -180,11 +186,11 @@ public class ActiveDebugger implements DebuggerHook {
             bt.backtrack();
             return;
         }
-        Scoped scoped = scopedFromDecisionPoint((DecisionPoint)bt);
+        Scoped scoped = scopedFromDecisionPoint((DecisionPoint) bt);
         if (scoped != Scoped.NULL) {
             scoped.incrementIteration();
         }
-        invoke(scoped, ExecutionPort.REDO, ()->bt.backtrack());
+        invoke(scoped, ExecutionPort.REDO, () -> bt.backtrack());
     }
 
     private void invoke(Scoped scoped, ExecutionPort newPort, Runnable action) {
@@ -200,14 +206,14 @@ public class ActiveDebugger implements DebuggerHook {
         try {
             prologThis = scoped;
             port = newPort;
-            int flags = mode.flags(this, scoped.instructionContext);
             if (port != ExecutionPort.RETURN) {
+                int enterFlags = mode.flags(this, scoped.instructionContext);
                 // CALL or REDO port
-                if (flags == 0) {
+                if (enterFlags == 0) {
                     action.run();
                     return;
                 }
-                if ((flags & port.flag()) != 0) {
+                if ((enterFlags & port.flag()) != 0) {
                     enterPort();
                     if (mode.ignore()) {
                         return;
@@ -228,7 +234,8 @@ public class ActiveDebugger implements DebuggerHook {
             } else {
                 port = ExecutionPort.FAIL;
             }
-            if ((flags & port.flag()) != 0) {
+            int exitFlags = mode.flags(this, scoped.instructionContext);
+            if ((exitFlags & port.flag()) != 0) {
                 enterPort();
             }
         } finally {
@@ -349,7 +356,7 @@ public class ActiveDebugger implements DebuggerHook {
     private List<Scoped> getCallStack() {
         ArrayList<Scoped> stack = new ArrayList<>();
         ListIterator<InstructionPointer> it = environment.getCallStack().listIterator(environment.getCallStackDepth());
-        while(it.hasPrevious()) {
+        while (it.hasPrevious()) {
             InstructionPointer ip = it.previous();
             Scoped scoped = callMap.get(ip);
             if (scoped != null) {
@@ -380,7 +387,7 @@ public class ActiveDebugger implements DebuggerHook {
      */
     private Scoped getTopDecision() {
         ListIterator<Backtrack> it = environment.getBacktrackStack().listIterator(environment.getBacktrackDepth());
-        while(it.hasPrevious()) {
+        while (it.hasPrevious()) {
             Backtrack bt = it.previous();
             if (bt instanceof DecisionPoint) {
                 Scoped scoped = decisionMap.get(bt);
@@ -464,15 +471,15 @@ public class ActiveDebugger implements DebuggerHook {
             traceText(" ? ");
             traceFlush();
             String line = readLine();
-            line = line.trim();
             if (line == null) {
                 abort();
             }
+            line = line.trim();
             if (line.length() == 0) {
                 mode = creep("");
                 return false;
             }
-            String cmd = line.substring(0,1);
+            String cmd = line.substring(0, 1);
             String arg = line.substring(1).trim();
             Function<String, StepMode> func = dispatch.get(cmd);
             if (func != null) {
@@ -487,9 +494,9 @@ public class ActiveDebugger implements DebuggerHook {
                 shortHelp();
                 return true;
             }
-        } catch(PrologAborted pa) {
+        } catch (PrologAborted pa) {
             throw pa;
-        } catch(RuntimeException re) {
+        } catch (RuntimeException re) {
             String text = re.getMessage();
             traceText("Error: " + text);
             return true;
@@ -498,6 +505,7 @@ public class ActiveDebugger implements DebuggerHook {
 
     /**
      * Helper for integer arguments
+     *
      * @param arg Argument to parse
      * @return Optional of Integer
      */
@@ -569,7 +577,7 @@ public class ActiveDebugger implements DebuggerHook {
         if (iarg.isPresent()) {
             boolean hitCall = false;
             ListIterator<Scoped> callIt = getCallStack().listIterator();
-            while(callIt.hasPrevious()) {
+            while (callIt.hasPrevious()) {
                 Scoped scoped = callIt.previous();
                 if (hitCall || scoped.instructionContext.getId() == iarg.get()) {
                     hitCall = true;
@@ -578,7 +586,7 @@ public class ActiveDebugger implements DebuggerHook {
             }
             boolean hitRedo = false;
             ListIterator<Scoped> redoIt = getDecisionStack().listIterator();
-            while(redoIt.hasPrevious()) {
+            while (redoIt.hasPrevious()) {
                 Scoped scoped = redoIt.previous();
                 if (hitRedo || scoped.instructionContext.getId() == iarg.get()) {
                     hitRedo = true;
@@ -602,7 +610,7 @@ public class ActiveDebugger implements DebuggerHook {
         int iarg = parseInteger(arg).orElse(1);
         skipTo.clear();
         ListIterator<Scoped> callIt = getCallStack().listIterator();
-        while(callIt.hasPrevious()) {
+        while (callIt.hasPrevious()) {
             Scoped scoped = callIt.previous();
             if (--iarg <= 0) {
                 skipTo.add(scoped.instructionContext);
@@ -646,8 +654,8 @@ public class ActiveDebugger implements DebuggerHook {
         if (max < 1 || max > stack.size()) {
             max = stack.size();
         }
-        int pos = stack.size()-max;
-        for(Scoped scoped : stack) {
+        int pos = stack.size() - max;
+        for (Scoped scoped : stack) {
             traceContext(scoped, pos, null);
             traceNL();
             if (++pos > max) {
@@ -664,8 +672,8 @@ public class ActiveDebugger implements DebuggerHook {
         if (max < 1 || max > stack.size()) {
             max = stack.size();
         }
-        int pos = stack.size()-max;
-        for(Scoped scoped : stack) {
+        int pos = stack.size() - max;
+        for (Scoped scoped : stack) {
             traceContext(scoped, pos, null);
             traceNL();
             if (++pos > max) {
@@ -704,7 +712,7 @@ public class ActiveDebugger implements DebuggerHook {
         } else if (!(defn instanceof ClauseSearchPredicate)) {
             traceText("Predicate not defined.\n");
         }
-        ClauseEntry [] clauses = ((ClauseSearchPredicate)defn).getClauses();
+        ClauseEntry[] clauses = ((ClauseSearchPredicate) defn).getClauses();
         ClauseEntry entry = clauses[prologThis.getIteration()];
         CompoundTerm clause = new CompoundTermImpl(Interned.CLAUSE_FUNCTOR, entry.getHead(), entry.getBody());
         writer.accept(clause);
@@ -730,7 +738,28 @@ public class ActiveDebugger implements DebuggerHook {
         return null;
     }
 
+    private StepMode nodebug(String arg) {
+        environment.enableDebugger(false);
+        return StepMode.NODEBUG;
+    }
+
+    /**
+     * Execute command given as an argument
+     *
+     * @param arg Command argument
+     * @return
+     */
     private StepMode doCommand(String arg) {
-        return undefined(arg);
+        ReadOptions options = new ReadOptions(environment, null);
+        options.fullStop = ReadOptions.FullStop.ATOM_optional;
+        Term term = StringParser.parse(environment, arg, options);
+        if (term == PrologEOF.EOF) {
+            traceText("Use as: @command");
+            return null;
+        }
+        Query query = new Query(new Environment(environment));
+        query.compile(term);
+        query.run();
+        return null;
     }
 }

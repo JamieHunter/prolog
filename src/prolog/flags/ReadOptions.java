@@ -28,6 +28,7 @@ public class ReadOptions implements Flags {
         parser.enumFlag(internAtom("double_quotes"), PrologFlags.Quotes.class, (o, v) -> o.doubleQuotes = v);
         parser.enumFlag(internAtom("singletons"), Singletons.class, (o, v) -> o.singletons = v);
         parser.enumFlag(internAtom("syntax_errors"), SyntaxErrors.class, (o, v) -> o.syntaxErrors = v);
+        parser.enumFlag(internAtom("full_stop"), FullStop.class, (o, v) -> o.fullStop = v);
         parser.booleanFlag(internAtom("var_prefix"), (o, v) -> o.varPrefix = v);
         parser.other(internAtom("variables"), (o, v) -> o.variables = Optional.of(v));
         parser.other(internAtom("variable_names"), (o, v) -> o.variableNames = Optional.of(v));
@@ -61,6 +62,10 @@ public class ReadOptions implements Flags {
      * Specify how to handle syntax errors.
      */
     public SyntaxErrors syntaxErrors = SyntaxErrors.ATOM_error;
+    /**
+     * Specify how to handle missing '.' at end of file.
+     */
+    public FullStop fullStop = FullStop.ATOM_required;
     /**
      * Force variables to begin with '_'
      */
@@ -100,5 +105,10 @@ public class ReadOptions implements Flags {
         ATOM_error,
         ATOM_fail,
         ATOM_quiet
+    }
+
+    public enum FullStop {
+        ATOM_required,
+        ATOM_optional
     }
 }

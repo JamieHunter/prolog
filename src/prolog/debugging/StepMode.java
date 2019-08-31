@@ -38,6 +38,12 @@ public enum StepMode {
                     context.spyFlags(debugger.environment.spyPoints());
         }
     },
+    NODEBUG {
+        @Override
+        public int flags(ActiveDebugger debugger, InstructionContext context) {
+            return 0;
+        }
+    },
 
     ;
 
