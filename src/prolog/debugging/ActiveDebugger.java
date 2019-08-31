@@ -6,7 +6,9 @@ package prolog.debugging;
 import prolog.bootstrap.Builtins;
 import prolog.bootstrap.DefaultIoBinding;
 import prolog.bootstrap.Interned;
+import prolog.cli.Run;
 import prolog.constants.PrologAtomInterned;
+import prolog.exceptions.PrologAborted;
 import prolog.execution.Backtrack;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
@@ -74,9 +76,9 @@ public class ActiveDebugger implements DebuggerHook {
         addCommand("+", this::activateSpy, "spy this", "<i> spy conditionally");
         addCommand("-", this::removeSpy, "nospy this");
         addCommand(".", this::undefined, "find this");
-        addCommand("a", this::undefined, "abort");
-        addCommand("b", this::undefined, "break");
-        addCommand("@", this::undefined, "command");
+        addCommand("a", this::abort, "abort");
+        addCommand("b", this::doBreak, "break");
+        addCommand("@", this::doCommand, "command");
         addCommand("u", this::undefined, "unify");
         addCommand("e", this::undefined, "raise exception");
         addCommand("<", this::undefined, "reset printdepth", "<n> set printdepth");
@@ -461,18 +463,18 @@ public class ActiveDebugger implements DebuggerHook {
         try {
             traceText(" ? ");
             traceFlush();
-            String cmd = readLine();
-            cmd = cmd.trim();
-            if (cmd.length() == 0) {
+            String line = readLine();
+            line = line.trim();
+            if (line == null) {
+                abort();
+            }
+            if (line.length() == 0) {
                 mode = creep("");
                 return false;
             }
-            String[] parts = cmd.split("\\s+", 2);
-            String arg = "";
-            if (parts.length > 1) {
-                arg = parts[1];
-            }
-            Function<String, StepMode> func = dispatch.get(parts[0]);
+            String cmd = line.substring(0,1);
+            String arg = line.substring(1).trim();
+            Function<String, StepMode> func = dispatch.get(cmd);
             if (func != null) {
                 StepMode newMode = func.apply(arg);
                 if (newMode != null) {
@@ -485,6 +487,8 @@ public class ActiveDebugger implements DebuggerHook {
                 shortHelp();
                 return true;
             }
+        } catch(PrologAborted pa) {
+            throw pa;
         } catch(RuntimeException re) {
             String text = re.getMessage();
             traceText("Error: " + text);
@@ -709,5 +713,24 @@ public class ActiveDebugger implements DebuggerHook {
     private StepMode debuggingStatus(String arg) {
         Debug.debugging(environment, DefaultIoBinding.USER_ERROR);
         return null;
+    }
+
+    private StepMode abort(String arg) {
+        abort();
+        return null; // unreached
+    }
+
+    private void abort() {
+        throw PrologAborted.abort(environment);
+    }
+
+    private StepMode doBreak(String arg) {
+        traceText("Break: type 'abort.' to return\n");
+        new Run(new Environment(environment)).run();
+        return null;
+    }
+
+    private StepMode doCommand(String arg) {
+        return undefined(arg);
     }
 }

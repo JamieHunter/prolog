@@ -16,7 +16,7 @@ import java.util.Optional;
  * Class that helps modify a flags object from a list of flags. These structures are expected to be created
  * as part of the bootstrap.
  */
-public class PrologFlagsParser extends ReadableParser<PrologFlags> {
+public class PrologFlagsParser extends ReadableParser<PrologFlags.Scope> {
 
     /**
      * Create a new parser for PrologFlags. This is used to create the global parser.
@@ -42,7 +42,7 @@ public class PrologFlagsParser extends ReadableParser<PrologFlags> {
      * @param options Set of options controlling create
      */
     public void create(final PrologFlags obj, final Atomic key, final Term value, final CreateFlagOptions options) {
-        ReadableFlagEntry<PrologFlags> entry = flags.computeIfAbsent(key, ReadableFlagEntry::new);
+        ReadableFlagEntry<PrologFlags.Scope> entry = flags.computeIfAbsent(key, ReadableFlagEntry::new);
         if (entry.getOnUpdate() != null && options.keep) {
             // do not modify if it exists
             return;
@@ -72,14 +72,14 @@ public class PrologFlagsParser extends ReadableParser<PrologFlags> {
         } else {
             // read/write
             obj.setOther(key, value);
-            entry.read(o -> o.getOther(key));
+            entry.read(o -> o.flags.getOther(key));
             switch (options.type.get()) {
                 case ATOM_integer:
                     entry.setOnUpdate((o, v) -> {
                         if (!v.isInteger()) {
                             throw new FutureTypeError(Interned.INTEGER_TYPE, value);
                         }
-                        o.setOther(key, v);
+                        o.flags.setOther(key, v);
                     });
                     break;
                 case ATOM_float:
@@ -88,7 +88,7 @@ public class PrologFlagsParser extends ReadableParser<PrologFlags> {
                             throw new FutureTypeError(Interned.NUMBER_TYPE, value);
                         }
                         v = ((PrologNumber) v).toPrologFloat();
-                        o.setOther(key, v);
+                        o.flags.setOther(key, v);
                     });
                     break;
                 case ATOM_atom:
@@ -96,12 +96,12 @@ public class PrologFlagsParser extends ReadableParser<PrologFlags> {
                         if (!v.isAtom()) {
                             throw new FutureTypeError(Interned.ATOM_TYPE, value);
                         }
-                        o.setOther(key, v);
+                        o.flags.setOther(key, v);
                     });
                     break;
                 default:
                     entry.setOnUpdate((o, v) -> {
-                        o.setOther(key, v);
+                        o.flags.setOther(key, v);
                     });
                     break;
             }

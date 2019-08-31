@@ -16,7 +16,7 @@ import java.util.function.Function;
 /**
  * Class that helps configure and access read/write flags object.
  */
-class ReadableParser<T extends FlagsWithEnvironment> extends ParserBase<T, ReadableFlagEntry<T>> {
+class ReadableParser<T> extends ParserBase<T, ReadableFlagEntry<T>> {
     protected final TreeMap<Atomic, ReadableFlagEntry<T>> flags = new TreeMap<>();
 
     /**

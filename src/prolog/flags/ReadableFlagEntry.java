@@ -17,7 +17,7 @@ import java.util.function.Function;
 /**
  * An extended structure that adds ability to read an object value and to protect the entry.
  */
-public class ReadableFlagEntry<T extends FlagsWithEnvironment> {
+public class ReadableFlagEntry<T> {
     private final Atomic key;
     private BiConsumer<T, Term> onUpdate;
     private Function<T, Term> onRead;

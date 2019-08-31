@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 /**
  * Abstract base for flags and options. Allows an update of a Prolog flag to modify a Java class.
  */
-public abstract class ParserBase<T extends Flags, R> {
+public abstract class ParserBase<T, R> {
 
     /**
      * Retrieves a consumer used to update target Flags object.

@@ -18,38 +18,50 @@ import static prolog.bootstrap.Interned.internAtom;
 /**
  * Global flags and options
  */
-public class PrologFlags implements FlagsWithEnvironment {
+public class PrologFlags implements Flags {
 
     private static final PrologFlagsParser global = new PrologFlagsParser();
 
+    public class Scope {
+        public final Environment environment;
+        public final PrologFlags flags;
+
+        public Scope(Environment environment, PrologFlags flags) {
+            this.environment = environment;
+            this.flags = flags;
+        }
+    }
+
     static {
-        global.enumFlag(internAtom("back_quotes"), Quotes.class, (o, v) -> o.backQuotes = v).
-                readEnum(Quotes.class, o -> o.backQuotes).protect();
-        global.enumFlag(internAtom("double_quotes"), Quotes.class, (o, v) -> o.doubleQuotes = v).
-                readEnum(Quotes.class, o -> o.doubleQuotes).protect();
+        global.enumFlag(internAtom("back_quotes"), Quotes.class, (o, v) -> o.flags.backQuotes = v).
+                readEnum(Quotes.class, o -> o.flags.backQuotes).protect();
+        global.enumFlag(internAtom("double_quotes"), Quotes.class, (o, v) -> o.flags.doubleQuotes = v).
+                readEnum(Quotes.class, o -> o.flags.doubleQuotes).protect();
         global.protectedFlag(internAtom("bounded")).
                 constant(Interned.FALSE_ATOM).protect();
         global.protectedFlag(internAtom("break_level")).
-                readInteger(o -> (long) o.breakLevel).protect();
-        global.booleanFlag(internAtom("character_escapes"), (o, v) -> o.characterEscapes = v).
-                readBoolean(o -> o.characterEscapes).protect();
-        global.onOffFlag(internAtom("char_conversion"), (o, v) -> o.charConversion = v).
-                readOnOff(o -> o.charConversion).protect();
-        global.onOffFlag(internAtom("debug"), (o, v) -> { o.environment.enableDebugger(v); }).
+                readInteger(o -> (long) o.flags.breakLevel).protect();
+        global.booleanFlag(internAtom("character_escapes"), (o, v) -> o.flags.characterEscapes = v).
+                readBoolean(o -> o.flags.characterEscapes).protect();
+        global.onOffFlag(internAtom("char_conversion"), (o, v) -> o.flags.charConversion = v).
+                readOnOff(o -> o.flags.charConversion).protect();
+        global.onOffFlag(internAtom("debug"), (o, v) -> {
+            o.environment.enableDebugger(v);
+        }).
                 readOnOff(o -> o.environment.isDebuggerEnabled()).protect();
-        global.enumFlag(internAtom("encoding"), StreamProperties.Encoding.class, (o, v) -> o.encoding = v).
-                readEnum(StreamProperties.Encoding.class, o -> o.encoding).protect();
-        global.atomFlag(internAtom("float_format"), (o, v) -> o.floatFormat = v).
-                read(o -> o.floatFormat).protect();
+        global.enumFlag(internAtom("encoding"), StreamProperties.Encoding.class, (o, v) -> o.flags.encoding = v).
+                readEnum(StreamProperties.Encoding.class, o -> o.flags.encoding).protect();
+        global.atomFlag(internAtom("float_format"), (o, v) -> o.flags.floatFormat = v).
+                read(o -> o.flags.floatFormat).protect();
         global.protectedFlag(internAtom("integer_rounding_function")).
                 constant(internAtom("toward_zero")).protect();
         global.protectedFlag(internAtom("max_arity")).
                 constant(internAtom("unbounded")).protect();
-        global.enumFlag(internAtom("unknown"), Unknown.class, (o, v) -> o.unknown = v).
-                readEnum(Unknown.class, o -> o.unknown).protect();
+        global.enumFlag(internAtom("unknown"), Unknown.class, (o, v) -> o.flags.unknown = v).
+                readEnum(Unknown.class, o -> o.flags.unknown).protect();
     }
 
-    private final Environment environment;
+    //private final Environment environment;
     private final PrologFlagsParser local;
     /**
      * Handling of back quotes
@@ -88,42 +100,34 @@ public class PrologFlags implements FlagsWithEnvironment {
     private final Map<Atomic, Term> otherFlags = new TreeMap<>();
 
     /**
-     * Create a new PrologFlags associated with a new environment
-     *
-     * @param environment Execution environment
+     * Create a new PrologFlags
      */
-    public PrologFlags(Environment environment) {
-        // TODO don't use this if cloning environment
-        this.environment = environment;
+    public PrologFlags() {
         this.local = new PrologFlagsParser(global);
-    }
-
-    /**
-     * @return Execution environment
-     */
-    @Override
-    public Environment environment() {
-        return environment;
     }
 
     /**
      * Get flag
      *
-     * @param key Flag key
+     * @param environment Execution environment
+     * @param key         Flag key
      * @return Flag value as a term
      */
-    public Term get(Atomic key) {
-        return local.get(this, key);
+    public Term get(Environment environment, Atomic key) {
+        Scope scope = new Scope(environment, this);
+        return local.get(scope, key);
     }
 
     /**
      * Update flag
      *
-     * @param key   Flag key
-     * @param value New value as a term
+     * @param environment Execution environment
+     * @param key         Flag key
+     * @param value       New value as a term
      */
-    public void set(Atomic key, Term value) {
-        local.set(this, key, value);
+    public void set(Environment environment, Atomic key, Term value) {
+        Scope scope = new Scope(environment, this);
+        local.set(scope, key, value);
     }
 
     /**
@@ -158,10 +162,12 @@ public class PrologFlags implements FlagsWithEnvironment {
     }
 
     /**
+     * @param environment Execution environment
      * @return merged set of flags
      */
-    public Map<Atomic, Term> getAll() {
-        return local.getAll(this);
+    public Map<Atomic, Term> getAll(Environment environment) {
+        Scope scope = new Scope(environment, this);
+        return local.getAll(scope);
     }
 
     public enum Quotes {

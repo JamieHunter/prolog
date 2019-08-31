@@ -4,7 +4,9 @@
 package prolog.library;
 
 import prolog.bootstrap.Predicate;
+import prolog.cli.Run;
 import prolog.constants.PrologInteger;
+import prolog.exceptions.PrologAborted;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 
@@ -35,5 +37,24 @@ public final class SystemControl {
     @Predicate("halt")
     public static void halt(Environment environment, Term exitCode) {
         System.exit(PrologInteger.from(exitCode).toInteger());
+    }
+
+    /**
+     * Abort current execution
+     * @param environment Execution environment
+     */
+    @Predicate("abort")
+    public static void abort(Environment environment) {
+        throw PrologAborted.abort(environment);
+    }
+
+    /**
+     * Break current execution
+     * @param environment Execution environment
+     */
+    @Predicate("break")
+    public static void doBreak(Environment environment) {
+        Environment child = new Environment(environment);
+        new Run(child).run();
     }
 }

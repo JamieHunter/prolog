@@ -11,10 +11,10 @@ import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologInteger;
 import prolog.debugging.ActiveDebugger;
+import prolog.debugging.DebugStateChange;
 import prolog.debugging.DebuggerHook;
 import prolog.debugging.NoDebugger;
 import prolog.debugging.SpyPoints;
-import prolog.debugging.DebugStateChange;
 import prolog.exceptions.PrologError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.expressions.Term;
@@ -49,35 +49,65 @@ import java.util.TreeMap;
  */
 public class Environment {
 
-    // character translation table
-    private final CharConverter charConverter = new CharConverter();
-    // table of atoms for this instance
-    private final HashMap<String, PrologAtomInterned> atomTable = new HashMap<>();
-    // table of predicates for this instance
-    private final HashMap<Predication.Interned, PredicateDefinition> dictionary = new HashMap<>();
-    // table of variable argument predicates for this instance
-    private final HashMap<PrologAtomInterned, VarArgDefinition> varArgDictionary = new HashMap<>();
-    // table of functions functions
-    private final HashMap<Predication.Interned, StackFunction> functions = new HashMap<>();
-    // tables of operators for this instance
-    private final TreeMap<Atomic, OperatorEntry> infixPostfixOperatorTable = new TreeMap<>();
-    private final TreeMap<Atomic, OperatorEntry> prefixOperatorTable = new TreeMap<>();
-    // io, ID mappings
-    private final HashMap<PrologInteger, LogicalStream> streamById = new HashMap<>();
-    private final HashMap<PrologAtomInterned, LogicalStream> streamByAlias = new HashMap<>();
-    // load group mappings
-    private final HashMap<String, LoadGroup> loadGroups = new HashMap<>();
+    // These are shared by all 'break' instances of Environment
+    public static class Shared {
+        // character translation table
+        private final CharConverter charConverter = new CharConverter();
+        // table of atoms for this instance
+        private final HashMap<String, PrologAtomInterned> atomTable = new HashMap<>();
+        // table of predicates for this instance
+        private final HashMap<Predication.Interned, PredicateDefinition> dictionary = new HashMap<>();
+        // table of variable argument predicates for this instance
+        private final HashMap<PrologAtomInterned, VarArgDefinition> varArgDictionary = new HashMap<>();
+        // table of functions functions
+        private final HashMap<Predication.Interned, StackFunction> functions = new HashMap<>();
+        // tables of operators for this instance
+        private final TreeMap<Atomic, OperatorEntry> infixPostfixOperatorTable = new TreeMap<>();
+        private final TreeMap<Atomic, OperatorEntry> prefixOperatorTable = new TreeMap<>();
+        // io, ID mappings
+        private final HashMap<PrologInteger, LogicalStream> streamById = new HashMap<>();
+        private final HashMap<PrologAtomInterned, LogicalStream> streamByAlias = new HashMap<>();
+        // load group mappings
+        private final HashMap<String, LoadGroup> loadGroups = new HashMap<>();
+        // debugging spy points
+        private SpyPoints spyPoints = new SpyPoints();
+        // Variable ID allocator
+        private long nextVariableId = 10;
+        // global flags
+        private final PrologFlags flags = new PrologFlags();
+
+        public Shared() {
+            // Bootstap
+            dictionary.putAll(Builtins.getPredicates());
+            varArgDictionary.putAll(Builtins.getVarArgPredicates());
+            functions.putAll(Builtins.getFunctions());
+            infixPostfixOperatorTable.putAll(Operators.getInfixPostfix());
+            prefixOperatorTable.putAll(Operators.getPrefix());
+            streamById.putAll(DefaultIoBinding.getById());
+            streamByAlias.putAll(DefaultIoBinding.getByAlias());
+            // Add atoms last to ensure that all interned atoms are added
+            atomTable.putAll(Interned.getInterned());
+        }
+
+    }
+
+    // shared state between related environments
+    private final Shared shared;
     // stacks
     private final LinkedList<InstructionPointer> callStack = new LinkedList<>();
     private final LinkedList<Backtrack> backtrackStack = new LinkedList<>();
     private final LinkedList<Term> dataStack = new LinkedList<>();
-    private final TrackableList<Path> searchPath = new TrackableList<>();
+    // active streams
     private LogicalStream inputStream = DefaultIoBinding.USER_INPUT;
     private LogicalStream outputStream = DefaultIoBinding.USER_OUTPUT;
+    // active search path
+    private final TrackableList<Path> searchPath = new TrackableList<>();
+    // current directory
     private Path cwd = Paths.get(".").normalize().toAbsolutePath();
+    // catch
     private CatchPoint catchPoint = CatchPoint.TERMINAL;
+    // debugger
     private DebuggerHook debuggerHook = NoDebugger.SELF;
-    private SpyPoints spyPoints = new SpyPoints(this);
     // state
     private ExecutionState executionState = ExecutionState.FORWARD;
     // terminals
@@ -94,32 +124,36 @@ public class Environment {
         }
     };
     private InstructionPointer ip = terminalIP;
-    // Variable ID allocator
-    private long nextVariableId = 10;
     // local localContext used for variable binding
     private LocalContext localContext = new LocalContext(this, Predication.UNDEFINED, CutPoint.TERMINAL);
-    // global flags
-    private final PrologFlags flags = new PrologFlags(this);
     // how to handle a cut
     private CutPoint cutPoint = localContext;
     // current load group
     private LoadGroup loadGroup;
+    // break level
+    private int breakLevel;
 
     /**
      * Construct a new environment.
      */
     public Environment() {
-        // Bootstap
-        dictionary.putAll(Builtins.getPredicates());
-        varArgDictionary.putAll(Builtins.getVarArgPredicates());
-        functions.putAll(Builtins.getFunctions());
-        infixPostfixOperatorTable.putAll(Operators.getInfixPostfix());
-        prefixOperatorTable.putAll(Operators.getPrefix());
-        streamById.putAll(DefaultIoBinding.getById());
-        streamByAlias.putAll(DefaultIoBinding.getByAlias());
-        // Add atoms last to ensure that all interned atoms are added
-        atomTable.putAll(Interned.getInterned());
+        shared = new Shared();
+        breakLevel = 0;
         // By default, all definitions are associated with this special load group
+        changeLoadGroup(new LoadGroup.Interactive());
+    }
+
+    /**
+     * Construct a child environment (break).
+     *
+     * @param parent
+     */
+    public Environment(Environment parent) {
+        this.shared = parent.shared;
+        breakLevel = parent.breakLevel+1;
+        this.inputStream = parent.inputStream;
+        this.outputStream = parent.outputStream;
+        this.cwd = parent.cwd;
         changeLoadGroup(new LoadGroup.Interactive());
     }
 
@@ -184,6 +218,7 @@ public class Environment {
 
     /**
      * Invoke instruction via debugger (when not part of next).
+     *
      * @param instruction Instruction to invoke
      */
     public void invoke(Instruction instruction) {
@@ -262,7 +297,7 @@ public class Environment {
      * @return Variable ID
      */
     public long nextVariableId() {
-        return nextVariableId++;
+        return shared.nextVariableId++;
     }
 
     /**
@@ -482,7 +517,7 @@ public class Environment {
                 debuggerHook != NoDebugger.SELF) {
             debuggerHook.backtrack(backtrackStack.poll());
         }
-   }
+    }
 
     /**
      * Main execution transition between FORWARD and BACKTRACK until a terminal state is hit.
@@ -501,7 +536,7 @@ public class Environment {
                 if (executionState.isTerminal()) {
                     return executionState;
                 }
-            } catch(DebugStateChange e) {
+            } catch (DebugStateChange e) {
                 // ignore, its purpose was to cause an iteration of this loop
             } catch (RuntimeException e) {
                 // convert Java exceptions into Prolog exceptions
@@ -517,7 +552,7 @@ public class Environment {
      * @return Interned Atom
      */
     public PrologAtomInterned internAtom(String name) {
-        return atomTable.computeIfAbsent(name, PrologAtomInterned::internalNew);
+        return shared.atomTable.computeIfAbsent(name, PrologAtomInterned::internalNew);
     }
 
     /**
@@ -530,7 +565,7 @@ public class Environment {
      */
     public void setBuiltinPredicate(Atomic functor, int arity, BuiltInPredicate predicate) {
         Predication.Interned interned = new Predication.Interned(PrologAtomInterned.from(this, functor), arity);
-        dictionary.put(interned, predicate);
+        shared.dictionary.put(interned, predicate);
     }
 
     /**
@@ -541,7 +576,7 @@ public class Environment {
      */
     public PredicateDefinition lookupPredicate(Predication predication) {
         Predication.Interned interned = predication.intern(this);
-        PredicateDefinition entry = dictionary.get(interned);
+        PredicateDefinition entry = shared.dictionary.get(interned);
         if (entry == null) {
             entry = lookupVarArgPredicate(interned);
         }
@@ -559,7 +594,7 @@ public class Environment {
      */
     private PredicateDefinition lookupVarArgPredicate(Predication predication) {
         Predication.Interned interned = predication.intern(this);
-        VarArgDefinition varArg = varArgDictionary.get(interned.functor());
+        VarArgDefinition varArg = shared.varArgDictionary.get(interned.functor());
         if (varArg == null) {
             return null;
         }
@@ -574,7 +609,7 @@ public class Environment {
      */
     public PredicateDefinition abolishPredicate(Predication predication) {
         Predication.Interned interned = predication.intern(this);
-        PredicateDefinition entry = dictionary.remove(interned);
+        PredicateDefinition entry = shared.dictionary.remove(interned);
         if (entry == null) {
             return MissingPredicate.MISSING_PREDICATE;
         } else {
@@ -589,7 +624,7 @@ public class Environment {
      * @return StackFunction or null
      */
     public StackFunction lookupFunction(Predication predication) {
-        return functions.get(predication.intern(this));
+        return shared.functions.get(predication.intern(this));
     }
 
     /**
@@ -600,7 +635,7 @@ public class Environment {
      */
     public PredicateDefinition autoCreateDictionaryEntry(Predication predication) {
         Predication.Interned interned = predication.intern(this);
-        return dictionary.computeIfAbsent(interned, this::autoPredicate);
+        return shared.dictionary.computeIfAbsent(interned, this::autoPredicate);
     }
 
     /**
@@ -633,7 +668,7 @@ public class Environment {
         } else if (entry instanceof DemandLoadPredicate) {
             // force replacement of demand-load predicates
             ClauseSearchPredicate replace = new ClauseSearchPredicate(interned);
-            dictionary.put(interned, replace);
+            shared.dictionary.put(interned, replace);
             return replace;
         } else {
             throw PrologPermissionError.error(this, "modify", "static_procedure", interned.term(),
@@ -648,7 +683,7 @@ public class Environment {
      * @return operator entry
      */
     public OperatorEntry getPrefixOperator(Atomic atom) {
-        OperatorEntry entry = prefixOperatorTable.get(atom);
+        OperatorEntry entry = shared.prefixOperatorTable.get(atom);
         if (entry == null) {
             return OperatorEntry.ARGUMENT;
         } else {
@@ -663,7 +698,7 @@ public class Environment {
      * @return operator entry
      */
     public OperatorEntry getInfixPostfixOperator(Atomic atom) {
-        OperatorEntry entry = infixPostfixOperatorTable.get(atom);
+        OperatorEntry entry = shared.infixPostfixOperatorTable.get(atom);
         if (entry == null) {
             return OperatorEntry.ARGUMENT;
         } else {
@@ -677,7 +712,7 @@ public class Environment {
      * @return all prefix operators
      */
     public Map<Atomic, OperatorEntry> getPrefixOperators() {
-        return Collections.unmodifiableMap(prefixOperatorTable);
+        return Collections.unmodifiableMap(shared.prefixOperatorTable);
     }
 
     /**
@@ -686,7 +721,7 @@ public class Environment {
      * @return all infix/postfix operators
      */
     public Map<Atomic, OperatorEntry> getInfixPostfixOperators() {
-        return Collections.unmodifiableMap(infixPostfixOperatorTable);
+        return Collections.unmodifiableMap(shared.infixPostfixOperatorTable);
     }
 
     /**
@@ -757,9 +792,9 @@ public class Environment {
      */
     public LogicalStream lookupStream(Atomic streamIdent) {
         if (streamIdent.isInteger()) {
-            return streamById.get(streamIdent);
+            return shared.streamById.get(streamIdent);
         } else if (streamIdent.isAtom()) {
-            return streamByAlias.get(PrologAtomInterned.from(this, streamIdent));
+            return shared.streamByAlias.get(PrologAtomInterned.from(this, streamIdent));
         } else {
             return null;
         }
@@ -771,7 +806,7 @@ public class Environment {
      * @return all open streams
      */
     public Collection<LogicalStream> getOpenStreams() {
-        return streamById.values();
+        return shared.streamById.values();
     }
 
     /**
@@ -782,7 +817,7 @@ public class Environment {
      */
     public void addStream(PrologInteger id, LogicalStream stream) {
         if (stream != null) {
-            streamById.put(id, stream);
+            shared.streamById.put(id, stream);
         }
     }
 
@@ -794,7 +829,7 @@ public class Environment {
      */
     public void removeStream(PrologInteger id, LogicalStream stream) {
         if (stream != null) {
-            streamById.remove(id, stream);
+            shared.streamById.remove(id, stream);
         }
     }
 
@@ -810,7 +845,7 @@ public class Environment {
             return null;
         }
         LogicalStream prior;
-        prior = streamByAlias.put(alias, stream);
+        prior = shared.streamByAlias.put(alias, stream);
         if (prior != stream) {
             if (prior != null) {
                 prior.removeAlias(alias);
@@ -832,7 +867,7 @@ public class Environment {
         if (alias == null || stream == null) {
             return;
         }
-        streamByAlias.remove(alias, stream);
+        shared.streamByAlias.remove(alias, stream);
         stream.removeAlias(alias);
     }
 
@@ -846,9 +881,9 @@ public class Environment {
     public void makeOperator(int precedence, OperatorEntry.Code code, PrologAtomInterned atom) {
         OperatorEntry entry;
         if (code.isPrefix()) {
-            entry = prefixOperatorTable.computeIfAbsent(atom, OperatorEntry::new);
+            entry = shared.prefixOperatorTable.computeIfAbsent(atom, OperatorEntry::new);
         } else {
-            entry = infixPostfixOperatorTable.computeIfAbsent(atom, OperatorEntry::new);
+            entry = shared.infixPostfixOperatorTable.computeIfAbsent(atom, OperatorEntry::new);
         }
         entry.setCode(code);
         entry.setPrecedence(precedence);
@@ -863,9 +898,9 @@ public class Environment {
     public void removeOperator(OperatorEntry.Code code, PrologAtomInterned atom) {
         OperatorEntry entry;
         if (code.isPrefix()) {
-            entry = prefixOperatorTable.remove(atom);
+            entry = shared.prefixOperatorTable.remove(atom);
         } else {
-            entry = infixPostfixOperatorTable.remove(atom);
+            entry = shared.infixPostfixOperatorTable.remove(atom);
         }
     }
 
@@ -885,7 +920,7 @@ public class Environment {
      * @return load group, or empty
      */
     public LoadGroup getLoadGroup(String id) {
-        return loadGroups.get(id);
+        return shared.loadGroups.get(id);
     }
 
     /**
@@ -895,7 +930,7 @@ public class Environment {
      * @param group New load group
      */
     public void changeLoadGroup(LoadGroup group) {
-        loadGroups.put(group.getId(), group);
+        shared.loadGroups.put(group.getId(), group);
         loadGroup = group;
     }
 
@@ -905,7 +940,7 @@ public class Environment {
      * @return Flags
      */
     public PrologFlags getFlags() {
-        return flags;
+        return shared.flags;
     }
 
     /**
@@ -914,11 +949,12 @@ public class Environment {
      * @return conversion table
      */
     public CharConverter getCharConverter() {
-        return charConverter;
+        return shared.charConverter;
     }
 
     /**
      * Reference the search-path list used for recursive loads
+     *
      * @return Search path
      */
     public TrackableList<Path> getSearchPath() {
@@ -927,6 +963,7 @@ public class Environment {
 
     /**
      * Indicate if environment debugger is enabled
+     *
      * @return True if enabled
      */
     public boolean isDebuggerEnabled() {
@@ -935,6 +972,7 @@ public class Environment {
 
     /**
      * Enable or disable debugger
+     *
      * @param enabled True if debugger is enabled
      */
     public void enableDebugger(boolean enabled) {
@@ -959,6 +997,13 @@ public class Environment {
      * @return Trace hook
      */
     public SpyPoints spyPoints() {
-        return spyPoints;
+        return shared.spyPoints;
+    }
+
+    /**
+     * @return Break-level, 0 = top level
+     */
+    public int getBreakLevel() {
+        return breakLevel;
     }
 }

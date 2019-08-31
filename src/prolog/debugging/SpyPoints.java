@@ -20,13 +20,11 @@ import java.util.Iterator;
  * Track Spy Points, which exist if debugger is enabled or disabled.
  */
 public class SpyPoints {
-    /*package*/ final Environment environment;
     /*package*/ int generation = 0; // at the time nothing is spied
     /*package*/ int leashFlags = -1;
     private final HashSet<SpySpec> spying = new HashSet<>();
 
-    public SpyPoints(Environment environment) {
-        this.environment = environment;
+    public SpyPoints() {
     }
 
     public void addSpy(SpySpec spySpec) {

@@ -33,12 +33,12 @@ public class Flags {
                 throw PrologTypeError.atomExpected(environment, key);
             }
             PrologFlags flags = environment.getFlags();
-            Term actual = flags.get((Atomic) key);
+            Term actual = flags.get(environment, (Atomic) key);
             if (!Unifier.unify(environment.getLocalContext(), value, actual)) {
                 environment.backtrack();
             }
         } else {
-            Map<Atomic, Term> allFlags = new PrologFlags(environment).getAll();
+            Map<Atomic, Term> allFlags = environment.getFlags().getAll(environment);
             new ForEachFlag(environment, allFlags.entrySet().iterator(), key, value).next();
         }
     }
@@ -52,7 +52,7 @@ public class Flags {
             throw PrologInstantiationError.error(environment, value);
         }
         PrologFlags flags = environment.getFlags();
-        flags.set((Atomic)key, value);
+        flags.set(environment, (Atomic)key, value);
     }
 
     @Predicate("create_prolog_flag")

@@ -31,6 +31,7 @@ public final class Interned {
     public static final PrologAtomInterned FALSE_ATOM = internAtom("false");
     public static final PrologAtomInterned ON_ATOM = internAtom("on");
     public static final PrologAtomInterned OFF_ATOM = internAtom("off");
+    public static final PrologAtomInterned ABORT_ATOM = internAtom("abort");
     public static final PrologAtomInterned LIST_FUNCTOR = internAtom(".");
     public static final PrologAtomInterned DOT = LIST_FUNCTOR; // alias
     public static final PrologAtomInterned COMMA_FUNCTOR = internAtom(",");
@@ -67,6 +68,7 @@ public final class Interned {
     public static final PrologAtomInterned PERMISSION_ERROR_FUNCTOR = internAtom("permission_error");
     public static final PrologAtomInterned REPRESENTATION_ERROR_FUNCTOR = internAtom("representation_error");
     public static final PrologAtomInterned EVALUATION_ERROR_FUNCTOR = internAtom("evaluation_error");
+    public static final PrologAtomInterned ABORTED_ATOM = internAtom("$aborted");
     public static final PrologAtomInterned LIST_TYPE = internAtom("list");
     public static final PrologAtomInterned CHARACTER_TYPE = internAtom("character");
     public static final PrologAtomInterned IN_CHARACTER_TYPE = internAtom("in_character");
