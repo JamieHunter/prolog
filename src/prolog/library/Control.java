@@ -11,6 +11,9 @@ import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
+import prolog.instructions.ComposedCallInstruction;
+import prolog.instructions.CurriedCallInstruction;
+import prolog.instructions.DeferredCallInstruction;
 import prolog.instructions.ExecBagOf;
 import prolog.instructions.ExecBlock;
 import prolog.instructions.ExecCall;
@@ -96,9 +99,8 @@ public final class Control {
     public static void ifThen(CompileContext compiling, CompoundTerm source) {
         // IF-THEN construct, see IF-THEN-ELSE construct
         compiling.add(new ExecIfThenElse(
-                compiling.environment(),
-                source.get(0),
-                ExecBlock.from(compiling.environment(), source.get(1)),
+                ExecBlock.nested(compiling, source.get(0)), // or deferred?
+                ExecBlock.nested(compiling, source.get(1)),
                 Control.FALSE));
     }
 
@@ -111,7 +113,6 @@ public final class Control {
      */
     @Predicate(value = ";", arity = 2, notrace = true)
     public static void disjunction(CompileContext compiling, CompoundTerm source) {
-        Environment environment = compiling.environment();
         ArrayList<Instruction> alternates = new ArrayList<>();
         if (CompoundTerm.termIsA(source.get(0), Interned.IF_FUNCTOR, 2)) {
             // IF-THEN-ELSE construct
@@ -125,19 +126,18 @@ public final class Control {
             CompoundTerm ifThen = (CompoundTerm) source.get(0);
             // Cond -> Then ; Else
             compiling.add(new ExecIfThenElse(
-                    environment,
-                    ifThen.get(0), // Cond
-                    ExecBlock.from(compiling.environment(), ifThen.get(1)), // Then
-                    ExecBlock.from(compiling.environment(), source.get(1)))); // Else
+                    ExecBlock.nested(compiling, ifThen.get(0)), // Cond (or deferred?)
+                    ExecBlock.nested(compiling, ifThen.get(1)), // Then
+                    ExecBlock.nested(compiling, source.get(1)))); // Else
         } else {
             // Disjunction construct
             Term iter = source;
             while (CompoundTerm.termIsA(iter, Interned.SEMICOLON_FUNCTOR, 2)) {
                 Term blockTerm = ((CompoundTerm) iter).get(0);
-                alternates.add(ExecBlock.from(environment, blockTerm));
+                alternates.add(ExecBlock.nested(compiling, blockTerm));
                 iter = ((CompoundTerm) iter).get(1);
             }
-            alternates.add(ExecBlock.from(environment, iter));
+            alternates.add(ExecBlock.nested(compiling, iter));
             compiling.add(new ExecDisjunction(alternates.toArray(new Instruction[alternates.size()])));
         }
     }
@@ -153,7 +153,9 @@ public final class Control {
         Term callTerm = source.get(0);
         // while p1,call(p2),p3 may seem the same as p1,p2,p3,
         // cut behavior is modified by the call
-        compiling.add(new ExecCall(compiling.environment(), source, callTerm));
+        // note that compilation of the call is deferred further, so any error only occurs if actually trying
+        // to call.
+        compiling.add(new ExecCall(ExecBlock.deferred(callTerm)));
     }
 
     /**
@@ -167,9 +169,8 @@ public final class Control {
         Term callTerm = source.get(0);
         Term argTerm = source.get(1);
         // This is similar to call/2 but the parameters passed as a list, handling of both
-        // get deferred - this will "break" if the compound term call() is used
-        // TODO: Type validation
-        compiling.add(new ExecCall(compiling.environment(), source, callTerm, argTerm));
+        // get deferred.
+        compiling.add(new ExecCall(new CurriedCallInstruction(callTerm, argTerm)));
     }
 
     /**
@@ -180,22 +181,12 @@ public final class Control {
      */
     @Predicate(value = "call", arity = 2, vararg = true)
     public static void call2(CompileContext compiling, CompoundTerm source) {
-        Term functorTerm = source.get(0);
-        Term[] members = new Term[source.arity()];
+        Term callTerm = source.get(0);
+        Term[] members = new Term[source.arity()-1];
         for (int i = 1; i < source.arity(); i++) {
-            members[i] = source.get(i);
+            members[i-1] = source.get(i);
         }
-        if (functorTerm.isAtom()) {
-            // this is a variation of call/1
-            members[0] = functorTerm;
-            compiling.add(new ExecCall(compiling.environment(), source, new CompoundTermImpl(members)));
-        } else {
-            // this needs deferred handling, and is similar to apply
-            members[0] = source.functor();
-            Term argTerm = new CompoundTermImpl(members);
-            // call(X,Y) maps to term X and compound call(Y)
-            compiling.add(new ExecCall(compiling.environment(), source, functorTerm, new CompoundTermImpl(members)));
-        }
+        compiling.add(new ExecCall(new ComposedCallInstruction(callTerm, members)));
     }
 
     /**
@@ -207,11 +198,9 @@ public final class Control {
     @Predicate(value = {"\\+", "not"}, arity = 1, notrace = true)
     public static void notProvable(CompileContext compiling, CompoundTerm source) {
         Term callTerm = source.get(0);
-        final Environment environment = compiling.environment();
         compiling.add(
                 new ExecIfThenElse(
-                        environment,
-                        callTerm,
+                        ExecBlock.nested(compiling, callTerm),
                         FALSE,
                         TRUE));
 
@@ -226,7 +215,7 @@ public final class Control {
     @Predicate(value = "once", arity = 1)
     public static void once(CompileContext compiling, CompoundTerm source) {
         Term callTerm = source.get(0);
-        compiling.add(new ExecOnce(compiling.environment(), source, callTerm));
+        compiling.add(new ExecOnce(ExecBlock.nested(compiling, callTerm)));
     }
 
     /**
@@ -238,7 +227,7 @@ public final class Control {
     @Predicate(value = "ignore", arity = 1)
     public static void ignore(CompileContext compiling, CompoundTerm source) {
         Term callTerm = source.get(0);
-        compiling.add(new ExecIgnore(compiling.environment(), source, callTerm));
+        compiling.add(new ExecIgnore(ExecBlock.nested(compiling, callTerm)));
     }
 
     /**

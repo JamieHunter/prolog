@@ -61,4 +61,14 @@ public class PrologAtomInterned extends PrologAtomLike {
     public static PrologAtomInterned from(Environment environment, Term term) {
         return PrologAtomLike.from(term).intern(environment);
     }
+
+    /**
+     * Intern an atom, error if not an atom
+     * @param environmentShared Shared execution environment
+     * @param term Term to convert
+     * @return Interned atom
+     */
+    public static PrologAtomInterned from(Environment.Shared environmentShared, Term term) {
+        return PrologAtomLike.from(term).intern(environmentShared);
+    }
 }

@@ -122,9 +122,9 @@ public class CompoundTermImpl implements CompoundTerm {
      */
     @Override
     public void compile(CompileContext compiling) {
-        Environment environment = compiling.environment();
+        Environment.Shared environmentShared = compiling.environmentShared();
         Predication predication = new Predication(functor(), arity());
-        PredicateDefinition definition = environment.autoCreateDictionaryEntry(predication);
+        PredicateDefinition definition = environmentShared.autoCreateDictionaryEntry(predication);
         definition.compile(predication, compiling, this);
     }
 

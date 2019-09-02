@@ -16,16 +16,17 @@ import prolog.unification.Unifier;
  */
 public class ExecIs extends Traceable {
 
-    private final Instruction [] ops;
+    private final Instruction ops;
     private final Term target;
 
     /**
      * Create instruction that takes value of stack and unifies it with target.
+     *
      * @param target Target term, assumed to be a variable.
      */
     public ExecIs(CompoundTerm source, CompileMathExpression expr, Term target) {
         super(source);
-        this.ops = expr.toArray();
+        this.ops = expr.toInstruction();
         this.target = target;
     }
 
@@ -35,12 +36,7 @@ public class ExecIs extends Traceable {
     @Override
     public void invoke(Environment environment) {
         // Execute math expression (not debuggable, known to be deterministic
-        for(Instruction op : ops) {
-            op.invoke(environment);
-            if (!environment.isForward()) {
-                return; // error occurred
-            }
-        }
+        ops.invoke(environment);
         Term boundTarget = target.resolve(environment.getLocalContext());
         Term source = environment.pop(); // from stack
         if (!source.isInstantiated()) {

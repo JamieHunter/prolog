@@ -8,6 +8,7 @@ import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.instructions.ExecBlock;
 import prolog.instructions.ExecCatch;
 
 /**
@@ -32,7 +33,10 @@ public final class ThrowCatch {
         Term callTerm = source.get(0);
         Term matchTerm = source.get(1);
         Term recoverTerm = source.get(2);
-        compiling.add(new ExecCatch(compiling.environment(), source, callTerm, matchTerm, recoverTerm));
+        compiling.add(new ExecCatch(
+                ExecBlock.deferred(callTerm),
+                matchTerm,
+                ExecBlock.deferred(recoverTerm)));
     }
 
     /**

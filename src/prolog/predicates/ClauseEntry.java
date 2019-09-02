@@ -3,35 +3,41 @@
 //
 package prolog.predicates;
 
+import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.instructions.ClauseEntryBodyInstruction;
 import prolog.unification.Unifier;
 import prolog.utility.LinkNode;
 
 /**
- * An entry for a given clause.
+ * An entry for a given clause. The clause is associated with a {@link prolog.execution.Environment.Shared}
+ * context, and is not compiled until an instruction is obtained. The clause may be compiled or recompiled depending
+ * on debug context / global changes (broadGeneration).
  */
 public class ClauseEntry {
+    private final Environment.Shared environmentShared;
     private final CompoundTerm head;
     private final Term body;
     private final Unifier unifier;
-    private final Instruction instruction;
+    private final ClauseEntryBodyInstruction instruction;
     private final LinkNode<ClauseEntry> node;
 
     /**
      * Create a clause entry.
      *
+     * @param environmentShared Shared context of environment(s).
      * @param head        Head term (for reference)
      * @param body        Callable body term (for reference)
      * @param unifier     Head unifier
-     * @param instruction Compiled instruction
      */
-    public ClauseEntry(CompoundTerm head, Term body, Unifier unifier, Instruction instruction) {
+    public ClauseEntry(Environment.Shared environmentShared, CompoundTerm head, Term body, Unifier unifier) {
+        this.environmentShared = environmentShared;
         this.head = head;
         this.body = body;
+        this.instruction = new ClauseEntryBodyInstruction(body, this);
         this.unifier = unifier;
-        this.instruction = instruction;
         this.node = new LinkNode<>(this);
     }
 
@@ -68,7 +74,7 @@ public class ClauseEntry {
      * @return instruction
      */
     public Instruction getInstruction() {
-        return this.instruction;
+        return instruction;
     }
 
     /**

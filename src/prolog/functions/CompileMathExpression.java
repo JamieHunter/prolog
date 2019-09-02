@@ -3,15 +3,18 @@
 //
 package prolog.functions;
 
+import prolog.bootstrap.Interned;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologNumber;
-import prolog.exceptions.PrologTypeError;
+import prolog.exceptions.FutureTypeError;
+import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.instructions.ExecPushConstant;
 import prolog.instructions.ExecPushNumberVariable;
+import prolog.instructions.ExecSimpleBlock;
 import prolog.predicates.Predication;
 import prolog.variables.Variable;
 
@@ -23,15 +26,15 @@ import java.util.ArrayList;
 public class CompileMathExpression {
 
     private final ArrayList<Instruction> compiling = new ArrayList<>();
-    private final Environment environment;
+    private final Environment.Shared environmentShared;
 
     /**
-     * Construct a math expression builder associated with a compile context.
+     * Construct a math expression builder
      *
-     * @param environment Execution environment.
+     * @param compiling Parent compiling context.
      */
-    public CompileMathExpression(Environment environment) {
-        this.environment = environment;
+    public CompileMathExpression(CompileContext compiling) {
+        this.environmentShared = compiling.environmentShared();
     }
 
     /**
@@ -44,11 +47,11 @@ public class CompileMathExpression {
         if (term.isAtomic()) {
             if (term.isAtom()) {
                 // per standard
-                throw PrologTypeError.evaluableExpected(environment, new Predication((PrologAtomLike) term, 0).term());
+                throw new FutureTypeError(Interned.EVALUABLE_TYPE, new Predication((PrologAtomLike) term, 0).term());
             }
             if (!term.isNumber()) {
                 // per standard
-                throw PrologTypeError.numberExpected(environment, term);
+                throw new FutureTypeError(Interned.NUMBER_TYPE, term);
             }
             // number constants go onto stack
             compiling.add(new ExecPushConstant((PrologNumber) term));
@@ -63,14 +66,14 @@ public class CompileMathExpression {
         if (term instanceof CompoundTerm) {
             CompoundTerm compound = (CompoundTerm) term;
             Predication predication = new Predication(compound.functor(), compound.arity());
-            StackFunction func = environment.lookupFunction(predication);
+            StackFunction func = environmentShared.lookupFunction(predication);
             if (func != null) {
                 compileFunction(compound, func);
                 return this;
             }
-            throw PrologTypeError.evaluableExpected(environment, predication.term());
+            throw new FutureTypeError(Interned.EVALUABLE_TYPE, predication.term());
         }
-        throw PrologTypeError.numberExpected(environment, term);
+        throw new FutureTypeError(Interned.NUMBER_TYPE, term);
     }
 
     /**
@@ -90,7 +93,7 @@ public class CompileMathExpression {
     /**
      * @return array of stack-based instructions.
      */
-    public Instruction[] toArray() {
-        return compiling.toArray(new Instruction[compiling.size()]);
+    public Instruction toInstruction() {
+        return ExecSimpleBlock.from(compiling);
     }
 }

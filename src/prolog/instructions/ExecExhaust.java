@@ -22,13 +22,13 @@ public final class ExecExhaust implements Instruction {
     /**
      * Create instruction
      *
-     * @param environment Execution environment
+     * @param compiling Compiling context
      * @param comp        Given a nested CompileContext, provide an instruction.
      */
-    public ExecExhaust(Environment environment, Consumer<CompileContext> comp) {
-        CompileContext compiling = new CompileContext(environment);
-        comp.accept(compiling);
-        this.precompiled = compiling.toInstruction();
+    public ExecExhaust(CompileContext compiling, Consumer<CompileContext> comp) {
+        CompileContext child = compiling.newContext();
+        comp.accept(child);
+        this.precompiled = child.toInstruction();
     }
 
     /**

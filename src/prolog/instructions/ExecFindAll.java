@@ -86,9 +86,8 @@ public class ExecFindAll extends Traceable {
             super(environment);
             this.listUnifier = listUnifier;
             this.template = template;
-            CompileContext compile = new CompileContext(environment);
-            CompoundTerm findAllCall = new CompoundTermImpl(Interned.CALL_FUNCTOR, callable);
-            compile.add(new ExecCall(environment, findAllCall, callable));
+            CompileContext compile = environment.newCompileContext();
+            compile.add(new ExecCall(ExecBlock.nested(compile, callable)));
             compile.add(e -> {
                 // success
                 builder.add(copyTemplate());

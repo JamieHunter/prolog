@@ -4,8 +4,7 @@
 package prolog.instructions;
 
 import prolog.execution.Environment;
-import prolog.expressions.CompoundTerm;
-import prolog.expressions.Term;
+import prolog.execution.Instruction;
 
 /**
  * Indirect call to a predicate. If any paths lead to success, a cut is performed ensuring it is only
@@ -13,15 +12,15 @@ import prolog.expressions.Term;
  */
 public class ExecOnce extends ExecCall {
 
-    public ExecOnce(Environment environment, CompoundTerm source, Term onceTerm) {
-        super(environment, source, onceTerm);
+    public ExecOnce(Instruction once) {
+        super(once);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void preCall() {
+    protected void preCall(Environment environment) {
         // protective cut-scope for the expression being called
         environment.callIP(new EndOnceScope(environment));
     }

@@ -4,6 +4,7 @@
 package prolog.debugging;
 
 import prolog.execution.Backtrack;
+import prolog.execution.CompileContext;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
@@ -24,4 +25,6 @@ public interface DebuggerHook {
     void decisionPoint(DecisionPoint decisionPoint);
 
     void pushIP(InstructionPointer ip);
+
+    CompileContext newCompileContext(Environment.Shared shared);
 }

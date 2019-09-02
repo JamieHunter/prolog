@@ -10,7 +10,9 @@ import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.flags.ReadOptions;
 import prolog.flags.StreamProperties;
+import prolog.instructions.DeferredCallInstruction;
 import prolog.instructions.ExecCall;
+import prolog.instructions.ExecOnce;
 import prolog.io.InputBuffered;
 import prolog.io.InputLineHandler;
 import prolog.io.PrologInputStream;
@@ -64,10 +66,8 @@ public class LoadResourceOnDemand implements OnDemand {
                     // for a select number of directives.
                     CompoundTerm clause = (CompoundTerm) term;
                     final Term goalTerm = clause.get(0);
-                    Instruction callable = new ExecCall(
-                            environment,
-                            new CompoundTermImpl(Interned.CALL_FUNCTOR, goalTerm),
-                            goalTerm);
+                    Instruction callable = new ExecOnce(
+                            new DeferredCallInstruction(goalTerm));
                     callable.invoke(environment);
                     if (!environment.isForward()) {
                         throw new InternalError("Directive error in resource " + resource);

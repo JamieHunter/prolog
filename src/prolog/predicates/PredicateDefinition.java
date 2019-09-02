@@ -3,7 +3,8 @@
 //
 package prolog.predicates;
 
-import prolog.exceptions.PrologTypeError;
+import prolog.bootstrap.Interned;
+import prolog.exceptions.FutureTypeError;
 import prolog.execution.CompileContext;
 import prolog.expressions.CompoundTerm;
 
@@ -14,11 +15,11 @@ public abstract class PredicateDefinition {
 
     /**
      * Update compilation block
-     * @param compiling Compilation context
      *
+     * @param compiling Compilation context
      */
     public void compile(Predication predication, CompileContext compiling, CompoundTerm term) {
-        throw PrologTypeError.callableExpected(compiling.environment(), term);
+        throw new FutureTypeError(Interned.CALLABLE_TYPE, term);
     }
 
     /**

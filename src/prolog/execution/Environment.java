@@ -50,7 +50,7 @@ import java.util.TreeMap;
 public class Environment {
 
     // These are shared by all 'break' instances of Environment
-    public static class Shared {
+    public final static class Shared {
         // character translation table
         private final CharConverter charConverter = new CharConverter();
         // table of atoms for this instance
@@ -89,6 +89,84 @@ public class Environment {
             atomTable.putAll(Interned.getInterned());
         }
 
+        /**
+         * Create or retrieve an atom of specified name for this environment. Only one atom exists per name per environment.
+         *
+         * @param name Name of atom
+         * @return Interned Atom
+         */
+        public PrologAtomInterned internAtom(String name) {
+            return atomTable.computeIfAbsent(name, PrologAtomInterned::internalNew);
+        }
+
+        /**
+         * Create predicate for the specified clause name and arity as needed.
+         *
+         * @param predication Predication
+         * @return predicate definition
+         */
+        public PredicateDefinition autoCreateDictionaryEntry(Predication predication) {
+            Predication.Interned interned = predication.intern(this);
+            return dictionary.computeIfAbsent(interned, this::autoPredicate);
+        }
+
+        /**
+         * Retrieve predicate for the specified clause name and arity.
+         *
+         * @param predication Functor/Arity
+         * @return predicate definition
+         */
+        public PredicateDefinition lookupPredicate(Predication predication) {
+            Predication.Interned interned = predication.intern(this);
+            PredicateDefinition entry = dictionary.get(interned);
+            if (entry == null) {
+                entry = lookupVarArgPredicate(interned);
+            }
+            if (entry == null) {
+                entry = MissingPredicate.MISSING_PREDICATE;
+            }
+            return entry;
+        }
+
+        /**
+         * Used when there is a predicate miss. Either use a variable-argument predicate, or create an empty predicate
+         * entry. Note that a "miss" will result in the predicate being auto-populated into the predicate table.
+         *
+         * @param predication Predication to "auto create"
+         * @return variable-argument predicate, or new predicate
+         */
+        private PredicateDefinition autoPredicate(Predication predication) {
+            PredicateDefinition defn = lookupVarArgPredicate(predication);
+            if (defn == null) {
+                defn = new ClauseSearchPredicate();
+            }
+            return defn;
+        }
+
+        /**
+         * Look up a variable-argument predicate if one exists
+         *
+         * @param predication Predication to look up
+         * @return variable-argument predicate, or null
+         */
+        private PredicateDefinition lookupVarArgPredicate(Predication predication) {
+            Predication.Interned interned = predication.intern(this);
+            VarArgDefinition varArg = varArgDictionary.get(interned.functor());
+            if (varArg == null) {
+                return null;
+            }
+            return varArg.lookup(interned);
+        }
+
+        /**
+         * Retrieve a function. Used for evaluation.
+         *
+         * @param predication functor/arity
+         * @return StackFunction or null
+         */
+        public StackFunction lookupFunction(Predication predication) {
+            return functions.get(predication.intern(this));
+        }
     }
 
     // shared state between related environments
@@ -98,12 +176,12 @@ public class Environment {
     private final LinkedList<Backtrack> backtrackStack = new LinkedList<>();
     private final LinkedList<Term> dataStack = new LinkedList<>();
     // active streams
-    private LogicalStream inputStream = DefaultIoBinding.USER_INPUT;
-    private LogicalStream outputStream = DefaultIoBinding.USER_OUTPUT;
+    private LogicalStream inputStream;
+    private LogicalStream outputStream;
     // active search path
     private final TrackableList<Path> searchPath = new TrackableList<>();
     // current directory
-    private Path cwd = Paths.get(".").normalize().toAbsolutePath();
+    private Path cwd;
     // catch
     private CatchPoint catchPoint = CatchPoint.TERMINAL;
     // debugger
@@ -137,14 +215,12 @@ public class Environment {
      * Construct a new environment.
      */
     public Environment() {
-        shared = new Shared();
-        breakLevel = 0;
-        // By default, all definitions are associated with this special load group
-        changeLoadGroup(new LoadGroup.Interactive());
+        this(new Shared());
     }
 
     /**
-     * Construct a child environment (break).
+     * Construct a child environment (break). Prefer this over other variants to track
+     * break depth and inherit some variables.
      *
      * @param parent
      */
@@ -158,12 +234,43 @@ public class Environment {
     }
 
     /**
+     * Construct a child environment when parent is technically not known (e.g. loading), but shared
+     * context is known.
+     *
+     * @param shared Environment shared context.
+     */
+    public Environment(Environment.Shared shared) {
+        this.shared = shared;
+        breakLevel = 0; // assume top level
+        this.inputStream = DefaultIoBinding.USER_INPUT;
+        this.outputStream = DefaultIoBinding.USER_OUTPUT;
+        this.cwd = Paths.get(".").normalize().toAbsolutePath();
+        changeLoadGroup(new LoadGroup.Interactive());
+    }
+
+    /**
      * New local context for this environment.
      *
      * @return new local context
      */
     public LocalContext newLocalContext(Predication predication) {
         return new LocalContext(this, predication, cutPoint);
+    }
+
+    /**
+     * New Compile context. Depends on debugging mode.
+     * @return compile context
+     */
+    public CompileContext newCompileContext() {
+        return debuggerHook.newCompileContext(shared);
+    }
+
+    /**
+     * Retrieve shared context common to all 'break's.
+     * @return shared environment context.
+     */
+    public Shared getShared() {
+        return shared;
     }
 
     /**
@@ -214,15 +321,6 @@ public class Environment {
         debuggerHook.pushIP(this.ip);
         callStack.push(this.ip);
         this.ip = ip;
-    }
-
-    /**
-     * Invoke instruction via debugger (when not part of next).
-     *
-     * @param instruction Instruction to invoke
-     */
-    public void invoke(Instruction instruction) {
-        debuggerHook.invoke(this, instruction);
     }
 
     /**
@@ -552,7 +650,7 @@ public class Environment {
      * @return Interned Atom
      */
     public PrologAtomInterned internAtom(String name) {
-        return shared.atomTable.computeIfAbsent(name, PrologAtomInterned::internalNew);
+        return shared.internAtom(name);
     }
 
     /**
@@ -575,30 +673,7 @@ public class Environment {
      * @return predicate definition
      */
     public PredicateDefinition lookupPredicate(Predication predication) {
-        Predication.Interned interned = predication.intern(this);
-        PredicateDefinition entry = shared.dictionary.get(interned);
-        if (entry == null) {
-            entry = lookupVarArgPredicate(interned);
-        }
-        if (entry == null) {
-            entry = MissingPredicate.MISSING_PREDICATE;
-        }
-        return entry;
-    }
-
-    /**
-     * Look up a variable-argument predicate if one exists
-     *
-     * @param predication Predication to look up
-     * @return variable-argument predicate, or null
-     */
-    private PredicateDefinition lookupVarArgPredicate(Predication predication) {
-        Predication.Interned interned = predication.intern(this);
-        VarArgDefinition varArg = shared.varArgDictionary.get(interned.functor());
-        if (varArg == null) {
-            return null;
-        }
-        return varArg.lookup(interned);
+        return shared.lookupPredicate(predication);
     }
 
     /**
@@ -618,39 +693,13 @@ public class Environment {
     }
 
     /**
-     * Retrieve a function. Used for evaluation.
-     *
-     * @param predication functor/arity
-     * @return StackFunction or null
-     */
-    public StackFunction lookupFunction(Predication predication) {
-        return shared.functions.get(predication.intern(this));
-    }
-
-    /**
      * Create predicate for the specified clause name and arity as needed.
      *
      * @param predication Predication
      * @return predicate definition
      */
     public PredicateDefinition autoCreateDictionaryEntry(Predication predication) {
-        Predication.Interned interned = predication.intern(this);
-        return shared.dictionary.computeIfAbsent(interned, this::autoPredicate);
-    }
-
-    /**
-     * Used when there is a predicate miss. Either use a variable-argument predicate, or create an empty predicate
-     * entry. Note that a "miss" will result in the predicate being auto-populated into the predicate table.
-     *
-     * @param predication Predication to "auto create"
-     * @return variable-argument predicate, or new predicate
-     */
-    private PredicateDefinition autoPredicate(Predication predication) {
-        PredicateDefinition defn = lookupVarArgPredicate(predication);
-        if (defn == null) {
-            defn = new ClauseSearchPredicate();
-        }
-        return defn;
+        return shared.autoCreateDictionaryEntry(predication);
     }
 
     /**

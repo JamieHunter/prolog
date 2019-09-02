@@ -27,7 +27,7 @@ public class ExecCallLocal implements Instruction {
         environment.setLocalContext(newContext);
         environment.setCutPoint(newContext);
         environment.callIP(new EndLocalScope(environment));
-        environment.invoke(instruction);
+        instruction.invoke(environment);
     }
 
     private static class EndLocalScope implements InstructionPointer {

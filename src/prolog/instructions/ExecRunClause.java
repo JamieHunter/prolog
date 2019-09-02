@@ -202,7 +202,7 @@ public class ExecRunClause implements InstructionReflection, Instruction {
             if (unifier.unify(newContext, term)) {
                 // Once unified, now execute, assume forward
                 environment.forward();
-                environment.invoke(entry.getInstruction()); // this will push ClauseEnd onto stack
+                entry.getInstruction().invoke(environment); // this will push ClauseEnd onto stack
             } else {
                 // failed to unify, keep backtracking (will re-enter this function)
                 environment.backtrack();

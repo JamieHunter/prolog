@@ -5,9 +5,8 @@ package prolog.instructions;
 
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
+import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
-import prolog.expressions.CompoundTerm;
-import prolog.expressions.Term;
 
 /**
  * Indirect call to a predicate. If any paths lead to success, a cut is performed ensuring it is only
@@ -15,15 +14,15 @@ import prolog.expressions.Term;
  */
 public class ExecIgnore extends ExecCall {
 
-    public ExecIgnore(Environment environment, CompoundTerm source, Term onceTerm) {
-        super(environment, source, onceTerm);
+    public ExecIgnore(Instruction once) {
+        super(once);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void preCall() {
+    protected void preCall(Environment environment) {
         // protective cut-scope for the expression being called
         LocalContext context = environment.getLocalContext();
         environment.callIP(new EndIgnoreScope(environment));

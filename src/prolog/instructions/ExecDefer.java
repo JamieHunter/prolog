@@ -24,7 +24,17 @@ public class ExecDefer implements Instruction {
      * @param environment Execution environment
      */
     public void invoke(Environment environment) {
-        environment.callIP(new ExecDefer.Defer(environment, deferred));
+        defer(environment, deferred);
+    }
+
+    /**
+     * Handle a call into the block. This effectively pushes an iterator IP
+     *
+     * @param environment Execution environment
+     * @param inst Instruction to defer
+     */
+    public static void defer(Environment environment, Instruction inst) {
+        environment.callIP(new ExecDefer.Defer(environment, inst));
     }
 
     /**

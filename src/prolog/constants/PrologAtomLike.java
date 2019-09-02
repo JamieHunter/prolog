@@ -68,13 +68,22 @@ public abstract class PrologAtomLike extends AtomicBase {
     }
 
     /**
+     * Intern the atom in the context of environment for faster operations
+     * @param environmentShared Shared Execution environment
+     * @return atom
+     */
+    public PrologAtomInterned intern(Environment.Shared environmentShared) {
+        return environmentShared.internAtom(name());
+    }
+
+    /**
      * When compiling, an atom is considered to be a predication of name/0 and handled via CompoundTerm compilation.
      *
      * @param compiling Context for compiling
      */
     @Override
     public void compile(CompileContext compiling) {
-        CompoundTerm.from(intern(compiling.environment())).compile(compiling);
+        CompoundTerm.from(intern(compiling.environmentShared())).compile(compiling);
     }
 
     /**

@@ -3,15 +3,12 @@
 //
 package prolog.instructions;
 
-import prolog.bootstrap.Interned;
 import prolog.execution.CatchPoint;
 import prolog.execution.CutPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.InstructionPointer;
 import prolog.execution.LocalContext;
-import prolog.expressions.CompoundTerm;
-import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.unification.Unifier;
 import prolog.unification.UnifyBuilder;
@@ -27,27 +24,26 @@ public class ExecCatch extends ExecCall {
     /**
      * Construct a catch instruction.
      *
-     * @param environment Execution environment this instruction is bound to.
-     * @param callTerm    Call term, per {@link ExecCall}.
-     * @param matchTerm   Term that is unified with the thrown term.
-     * @param recoverTerm Call-like term used if an error was caught, per {@link ExecCall}.
+     * @param callable  Call instruction.
+     * @param matchTerm Term that is unified with the thrown term.
+     * @param recover   Call-like instruction used if error is caught.
      */
-    public ExecCatch(Environment environment, CompoundTerm source, Term callTerm, Term matchTerm, Term recoverTerm) {
-        super(environment, source, callTerm);
+    public ExecCatch(Instruction callable, Term matchTerm, Instruction recover) {
+        super(callable);
         this.unifier = UnifyBuilder.from(matchTerm);
-        CompoundTerm callRecover = new CompoundTermImpl(Interned.CALL_FUNCTOR, callTerm);
-        this.recover = new ExecCall(environment, callRecover, recoverTerm);
+        this.recover = new ExecCall(recover);
     }
 
     /**
      * Adapts Call behavior with extra step of managing CatchHandler.
      *
+     * @param environment Execution environment
      * @return IP
      */
     @Override
-    protected ConstrainedCutPoint prepareCall() {
+    protected ConstrainedCutPoint prepareCall(Environment environment) {
         LocalContext context = environment.getLocalContext();
-        CatchHandler handler = new CatchHandler();
+        CatchHandler handler = new CatchHandler(environment);
         environment.setCatchPoint(handler);
         return new EndThrowScope(context, handler);
     }
@@ -84,7 +80,7 @@ public class ExecCatch extends ExecCall {
         final int dataStackDepth;
         final int backtrackDepth;
 
-        CatchHandler() {
+        CatchHandler(Environment environment) {
             // Capture state that needs to be restored
             this.catchContext = environment.getLocalContext();
             this.parent = environment.getCatchPoint();
@@ -99,7 +95,7 @@ public class ExecCatch extends ExecCall {
          * Handle call completion on success.
          */
         void endCall() {
-            environment.setCatchPoint(parent);
+            catchContext.environment().setCatchPoint(parent);
         }
 
         /**
@@ -110,6 +106,7 @@ public class ExecCatch extends ExecCall {
          */
         @Override
         public boolean tryCatch(Term thrown) {
+            Environment environment = catchContext.environment();
             thrown = thrown.value(environment);
             environment.setCatchPoint(parent); // next catch point
             // forced backtrack to here - has to be done prior to unify

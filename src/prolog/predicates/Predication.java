@@ -44,6 +44,16 @@ public class Predication {
     }
 
     /**
+     * Intern a predication
+     *
+     * @param environmentShared Shared execution environment
+     * @return interned predication
+     */
+    public Predication.Interned intern(Environment.Shared environmentShared) {
+        return new Predication.Interned(PrologAtomInterned.from(environmentShared, functor), arity);
+    }
+
+    /**
      * @return Functor
      */
     public PrologAtomLike functor() {

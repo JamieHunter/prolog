@@ -7,6 +7,7 @@ import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
+import prolog.instructions.DeferredCallInstruction;
 import prolog.instructions.ExecCall;
 import prolog.io.WriteContext;
 
@@ -106,13 +107,16 @@ abstract class VariableBase implements Variable {
      */
     @Override
     public void compile(CompileContext compiling) {
-        // A compiled variable is considered the same as compiling 'call'
-        compiling.add(new ExecCall(
-                compiling.environment(),
-                new CompoundTermImpl(Interned.CALL_FUNCTOR, this),
-                value(compiling.environment())));
+        unbound().compile(compiling);
     }
 
+    /**
+     * Used by compile, strips any binding information from variable.
+     * @return Unbound variable
+     */
+    protected UnboundVariable unbound() {
+        return new UnboundVariable(name(), id());
+    }
 
     /**
      * Instantiate variable if variable is not yet instantiated.

@@ -6,6 +6,7 @@ package prolog.library;
 import prolog.bootstrap.Predicate;
 import prolog.execution.CompileContext;
 import prolog.execution.Instruction;
+import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.functions.CompileMathExpression;
@@ -49,7 +50,7 @@ public final class Unify {
         }
         if (left.isGrounded() && right.isGrounded()) {
             // if left and right are both grounded, just compare right now
-            if (Unifier.unify(compiling.environment().getLocalContext(), left, right)) {
+            if (left.compareTo(right) == 0) {
                 // compiling.add(Control.TRUE); - not needed
                 // TODO should this be a warning at least?
             } else {
@@ -85,8 +86,7 @@ public final class Unify {
     public static void is(CompileContext compiling, CompoundTerm source) {
         Term left = source.get(0);
         Term right = source.get(1);
-        CompileMathExpression expr = new CompileMathExpression(compiling.environment()).compile(right);
-        // TODO: most of this instruction will execute before this step
+        CompileMathExpression expr = new CompileMathExpression(compiling).compile(right);
         compiling.add(new ExecIs(source, expr, left));
     }
 

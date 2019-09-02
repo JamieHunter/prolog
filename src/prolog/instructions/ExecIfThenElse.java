@@ -7,8 +7,6 @@ import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
-import prolog.expressions.CompoundTerm;
-import prolog.expressions.Term;
 
 /**
  * Executes a goal once. On success, executes the onSuccess instruction. On failure,
@@ -24,15 +22,14 @@ public class ExecIfThenElse extends ExecCall {
     /**
      * Create an if-else call.
      *
-     * @param environment Execution environment
-     * @param condition   Term to evaluate as the condition
-     * @param onSuccess   Success instruction
-     * @param onFailed    Failure instruction
+     * @param condition Term to evaluate as the condition
+     * @param onSuccess Success instruction
+     * @param onFailed  Failure instruction
      */
-    public ExecIfThenElse(Environment environment, Term condition,
+    public ExecIfThenElse(Instruction condition,
                           Instruction onSuccess, Instruction onFailed) {
 
-        super(environment, null, condition);
+        super(condition);
         this.onSuccess = onSuccess;
         this.onFailed = onFailed;
     }
@@ -41,7 +38,7 @@ public class ExecIfThenElse extends ExecCall {
      * {@inheritDoc}
      */
     @Override
-    protected void preCall() {
+    protected void preCall(Environment environment) {
         //
         // Prepare for IF-THEN-ELSE by establishing two hooks - the first is called after Condition is executed to
         // establish success behavior. The second is called as part of a decision point to establish failure behavior.

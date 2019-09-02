@@ -11,6 +11,7 @@ import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologEOF;
 import prolog.exceptions.PrologAborted;
 import prolog.execution.Backtrack;
+import prolog.execution.CompileContext;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
@@ -141,6 +142,16 @@ public class ActiveDebugger implements DebuggerHook {
         }
         Scoped newScoped = scopedFromInstruction(instructionFromIp(ip));
         invoke(newScoped, ExecutionPort.CALL, () -> ip.next());
+    }
+
+    /**
+     * Create a debugging aware compile context.
+     * @param shared Shared aspect of Environment(s).
+     * @return Compile context
+     */
+    @Override
+    public CompileContext newCompileContext(Environment.Shared shared) {
+        return new DebuggingCompileContext(shared);
     }
 
     /**

@@ -3,7 +3,8 @@
 //
 package prolog.expressions;
 
-import prolog.exceptions.PrologTypeError;
+import prolog.bootstrap.Interned;
+import prolog.exceptions.FutureTypeError;
 import prolog.execution.CompileContext;
 import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
@@ -18,7 +19,6 @@ import java.io.IOException;
 public interface Term extends Comparable<Term> {
 
     /**
-     * @return true if this and other are equivalent (Prolog type equals vs Java equals)
      * @param other other term to compare
      * @return true if they are equivalent (sufficiently equal)
      */
@@ -115,7 +115,7 @@ public interface Term extends Comparable<Term> {
      * @param compiling Context used for compilation.
      */
     default void compile(CompileContext compiling) {
-        throw PrologTypeError.callableExpected(compiling.environment(), this);
+        throw new FutureTypeError(Interned.CALLABLE_TYPE, this);
     }
 
     /**
@@ -153,6 +153,7 @@ public interface Term extends Comparable<Term> {
 
     /**
      * Compare with another term of same type (assumed by rank)
+     *
      * @param o Other value
      * @return rank order
      */
@@ -161,13 +162,15 @@ public interface Term extends Comparable<Term> {
     /**
      * Each Term type is given a rank per Prolog standard. Note, each unique type must be given
      * a unique rank value.
+     *
      * @return rank of term type
      */
     int typeRank();
 
     /**
      * Compare two terms
-     * @param left Left term
+     *
+     * @param left  Left term
      * @param right right term
      * @return
      */

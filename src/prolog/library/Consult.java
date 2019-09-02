@@ -6,7 +6,6 @@ package prolog.library;
 import prolog.bootstrap.DemandLoad;
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtom;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologFloat;
 import prolog.constants.PrologNumber;
@@ -16,6 +15,7 @@ import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.Term;
+import prolog.instructions.ExecBlock;
 import prolog.instructions.ExecCallLocal;
 import prolog.instructions.ExecFinally;
 import prolog.io.LogicalStream;
@@ -24,7 +24,6 @@ import prolog.predicates.LoadGroup;
 import prolog.predicates.Predication;
 import prolog.unification.Unifier;
 import prolog.utility.LinkNode;
-import prolog.utility.TrackableList;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -94,7 +93,6 @@ public final class Consult {
      * @param environment Execution environment
      * @param idTerm      Id of load group
      * @param callable    Callable term
-     *
      */
     @Predicate("$load_group_scope")
     public static void setLoadGroup(Environment environment, Term idTerm, Term timeTerm, Term callable) {
@@ -103,7 +101,7 @@ public final class Consult {
         final LoadGroup priorGroup = environment.getLoadGroup();
         final LoadGroup newGroup = new LoadGroup(newId, time);
 
-        new ExecFinally(environment, callable,
+        new ExecFinally(ExecBlock.deferred(callable),
                 e -> {
                     environment.changeLoadGroup(newGroup);
                 },
@@ -116,8 +114,8 @@ public final class Consult {
      * Add path to search path, remove it under any exit circumstance.
      *
      * @param environment Execution environment
-     * @param pathTerm Search path to add
-     * @param callable Callable term
+     * @param pathTerm    Search path to add
+     * @param callable    Callable term
      */
     @Predicate("$file_search_scope")
     public static void fileSearchScope(Environment environment, Term pathTerm, Term callable) {
@@ -127,7 +125,7 @@ public final class Consult {
         }
         final LinkNode node = new LinkNode(path);
 
-        new ExecFinally(environment, callable,
+        new ExecFinally(ExecBlock.deferred(callable),
                 e -> {
                     environment.getSearchPath().addHead(node);
                 },
@@ -169,7 +167,7 @@ public final class Consult {
         List<Term> initialization = group.getInitialization();
 
         // Compile all the terms as if they were provided as a single ':-' at the end of the script
-        CompileContext compiling = new CompileContext(environment);
+        CompileContext compiling = environment.newCompileContext();
         ListIterator<Term> iter = initialization.listIterator();
         while (iter.hasNext()) {
             Term term = iter.next();

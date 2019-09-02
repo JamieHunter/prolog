@@ -43,16 +43,24 @@ public final class ExecBlock implements Instruction {
     }
 
     /**
-     * Convert array of sequential instructions into a single instruction.
-     *
-     * @param environment Execution environment
-     * @param term single term to compile
-     * @return Single instruction including instruction block
+     * Compile an independently nested block
+     * @param compiling Compiling context of calling block
+     * @param term Term to compile
+     * @return Instruction
      */
-    public static Instruction from(Environment environment, Term term) {
-        CompileContext context = new CompileContext(environment);
+    public static Instruction nested(CompileContext compiling, Term term) {
+        CompileContext context = compiling.newContext();
         term.compile(context);
         return context.toInstruction();
+    }
+
+    /**
+     * Deferred compile of a nested block (per call).
+     * @param term Term to call, compilation deferred
+     * @return Instruction
+     */
+    public static Instruction deferred(Term term) {
+        return new DeferredCallInstruction(term);
     }
 
     /**
@@ -68,6 +76,7 @@ public final class ExecBlock implements Instruction {
 
     /**
      * Retrieve all instructions as a collection.
+     *
      * @return collection of instructions
      */
     public Collection<? extends Instruction> all() {

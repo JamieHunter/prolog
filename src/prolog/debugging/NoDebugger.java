@@ -4,6 +4,7 @@
 package prolog.debugging;
 
 import prolog.execution.Backtrack;
+import prolog.execution.CompileContext;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
@@ -50,5 +51,10 @@ public class NoDebugger implements DebuggerHook {
 
     @Override
     public void pushIP(InstructionPointer ip) {
+    }
+
+    @Override
+    public CompileContext newCompileContext(Environment.Shared shared) {
+        return new CompileContext(shared);
     }
 }

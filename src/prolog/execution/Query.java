@@ -5,6 +5,7 @@ package prolog.execution;
 
 import prolog.bootstrap.Interned;
 import prolog.expressions.Term;
+import prolog.instructions.DeferredCallInstruction;
 import prolog.instructions.ExecDefer;
 import prolog.library.Control;
 import prolog.predicates.Predication;
@@ -15,7 +16,7 @@ import prolog.predicates.Predication;
 public class Query {
     protected final Environment environment;
     protected final LocalContext context;
-    private Instruction precompiled = Control.TRUE;
+    private Instruction instruction = Control.TRUE;
 
     /**
      * Construct a new query associated with environment.
@@ -48,9 +49,7 @@ public class Query {
         environment.reset();
         environment.setLocalContext(context); // establish for purpose of compiling and exceptions
         environment.setCutPoint(context); // related cut point
-        CompileContext compiling = new CompileContext(environment);
-        term.compile(compiling);
-        precompiled = new ExecDefer(compiling.toInstruction());
+        instruction = new ExecDefer(new DeferredCallInstruction(term));
     }
 
     /**
@@ -72,7 +71,7 @@ public class Query {
         environment.reset();
         environment.setLocalContext(context);
         environment.setCutPoint(context);
-        precompiled.invoke(environment);
+        instruction.invoke(environment);
     }
 
     public ExecutionState cycle() {

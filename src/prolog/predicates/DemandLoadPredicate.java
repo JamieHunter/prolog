@@ -54,15 +54,15 @@ public class DemandLoadPredicate extends PredicateDefinition {
      */
     @Override
     public void compile(Predication predication, CompileContext context, CompoundTerm term) {
-        // Demand-load at compile time
-        Environment environment = context.environment();
+        // Demand-load at compile time, give the demand-load process its own environment
+        Environment environment = new Environment(context.environmentShared());
         // What is current definition? Have we already loaded it?
         PredicateDefinition defn = environment.lookupPredicate(predication);
         if (defn == this) {
             // this step happening before load prevents cycles
             defn = environment.createDictionaryEntry(predication);
             // load definition
-            onDemand.load(context.environment());
+            onDemand.load(environment);
         }
         // delegate compile step to new clause
         defn.compile(predication, context, term);

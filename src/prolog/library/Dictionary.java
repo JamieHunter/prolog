@@ -149,7 +149,7 @@ public final class Dictionary {
     public static void retractAll(CompileContext compiling, CompoundTerm source) {
         compiling.add(
                 new ExecExhaust(
-                        compiling.environment(),
+                        compiling,
                         c2 -> retract(c2, source)));
     }
 
@@ -285,12 +285,8 @@ public final class Dictionary {
             dictionaryEntry.changeLoadGroup(environment.getLoadGroup());
         }
 
-        // compile body
-        CompileContext compiling = new CompileContext(environment);
-        body.compile(compiling);
-        Instruction compiled = compiling.toInstruction();
-        // add clause to library
-        ClauseEntry entry = new ClauseEntry((CompoundTerm) head, body, unifier, compiled);
+        // add clause to library (don't compile until execution)
+        ClauseEntry entry = new ClauseEntry(environment.getShared(), (CompoundTerm) head, body, unifier);
         add.accept(dictionaryEntry, entry);
     }
 
