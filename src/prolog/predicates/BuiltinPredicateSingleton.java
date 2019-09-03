@@ -21,6 +21,6 @@ public class BuiltinPredicateSingleton extends BuiltInPredicate {
      */
     @Override
     public void compile(Predication predication, CompileContext context, CompoundTerm term) {
-        context.add(instruction);
+        context.add(term, instruction);
     }
 }

@@ -12,8 +12,6 @@ import prolog.library.Control;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  * A block of instructions (conjunction). Each instruction is executed in turn as long as the executionState is forward.
@@ -44,8 +42,9 @@ public final class ExecBlock implements Instruction {
 
     /**
      * Compile an independently nested block
+     *
      * @param compiling Compiling context of calling block
-     * @param term Term to compile
+     * @param term      Term to compile
      * @return Instruction
      */
     public static Instruction nested(CompileContext compiling, Term term) {
@@ -56,6 +55,7 @@ public final class ExecBlock implements Instruction {
 
     /**
      * Deferred compile of a nested block (per call).
+     *
      * @param term Term to call, compilation deferred
      * @return Instruction
      */
@@ -75,12 +75,13 @@ public final class ExecBlock implements Instruction {
     }
 
     /**
-     * Retrieve all instructions as a collection.
+     * Utility to allow merging of blocks.
      *
-     * @return collection of instructions
+     * @param instructions Instructions to append this block to.
      */
-    public Collection<? extends Instruction> all() {
-        return Collections.unmodifiableList(Arrays.asList(block));
+    public void mergeTo(ArrayList<Instruction> instructions) {
+        instructions.addAll(Arrays.asList(block));
+        instructions.add(tail);
     }
 
     /**
@@ -121,18 +122,5 @@ public final class ExecBlock implements Instruction {
                 block[iter++].invoke(environment);
             }
         }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public Instruction peek() {
-            if (iter == block.length) {
-                return tail;
-            } else {
-                return block[iter];
-            }
-        }
-
     }
 }

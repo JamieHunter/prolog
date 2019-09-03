@@ -3,9 +3,8 @@
 //
 package prolog.instructions;
 
-import prolog.debugging.InstructionReflection;
 import prolog.execution.CompileContext;
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.InstructionPointer;
@@ -23,7 +22,7 @@ public final class ExecExhaust implements Instruction {
      * Create instruction
      *
      * @param compiling Compiling context
-     * @param comp        Given a nested CompileContext, provide an instruction.
+     * @param comp      Given a nested CompileContext, provide an instruction.
      */
     public ExecExhaust(CompileContext compiling, Consumer<CompileContext> comp) {
         CompileContext child = compiling.newContext();
@@ -47,7 +46,7 @@ public final class ExecExhaust implements Instruction {
      * Decision point on first round executes instruction. On second round, determines if the repetition should be
      * considered successful or not.
      */
-    private static class RepeatLoop extends DecisionPoint {
+    private static class RepeatLoop extends DecisionPointImpl {
 
         final Instruction block;
         boolean success = false; // set to true on success
@@ -72,7 +71,7 @@ public final class ExecExhaust implements Instruction {
          * Begin second iteration, succeeds if first iteration reached {@link LoopRepeat}.
          */
         @Override
-        protected void next() {
+        public void redo() {
             // we only  get here if all attempts are exhausted
             if (success) {
                 // succeeded at least once

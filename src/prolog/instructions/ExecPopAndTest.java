@@ -13,11 +13,10 @@ import prolog.functions.CompileMathExpression;
 /**
  * Singleton, pop value and test against 'true'. Used to implement a compare test.
  */
-public class ExecPopAndTest extends Traceable {
+public class ExecPopAndTest implements Instruction {
     private final Instruction ops;
 
-    public ExecPopAndTest(CompoundTerm source, CompileMathExpression expr) {
-        super(source);
+    public ExecPopAndTest(CompileMathExpression expr) {
         this.ops = expr.toInstruction();
     }
 

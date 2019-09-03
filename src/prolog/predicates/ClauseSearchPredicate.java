@@ -3,6 +3,7 @@
 //
 package prolog.predicates;
 
+import prolog.debugging.DebugInstruction;
 import prolog.execution.CompileContext;
 import prolog.expressions.CompoundTerm;
 import prolog.instructions.ExecRunClause;
@@ -119,7 +120,9 @@ public class ClauseSearchPredicate extends PredicateDefinition {
      */
     @Override
     public void compile(Predication predication, CompileContext context, CompoundTerm term) {
-        context.add(new ExecRunClause(predication, this, term));
+        // always wrap in debugger instruction, the overhead should be minimal
+        ExecRunClause inst = new ExecRunClause(predication, this, term);
+        context.add(term, new DebugInstruction(term, inst, true));
     }
 
     /**

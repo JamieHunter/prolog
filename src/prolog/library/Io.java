@@ -14,7 +14,6 @@ import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologFloat;
 import prolog.constants.PrologInteger;
 import prolog.constants.PrologString;
-import prolog.debugging.InstructionReflection;
 import prolog.exceptions.FutureFlagError;
 import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologError;
@@ -23,11 +22,9 @@ import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.Backtrack;
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
-import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
-import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
 import prolog.expressions.TermListImpl;
@@ -744,8 +741,8 @@ public final class Io {
      * Find an absolute filename from a searchable filename (relative, maybe on search path).
      *
      * @param environment Execution environment
-     * @param fileSpec Specification of file
-     * @param fileName Absolute file name.
+     * @param fileSpec    Specification of file
+     * @param fileName    Absolute file name.
      */
     @Predicate("absolute_file_name")
     public static void absoluteFileName(Environment environment, Term fileSpec, Term fileName) {
@@ -757,9 +754,9 @@ public final class Io {
      * Find an absolute filename from a searchable filename (relative, maybe on search path). Full version.
      *
      * @param environment Execution environment
-     * @param fileSpec Specification of file
-     * @param options Options controlling expansion
-     * @param fileName Absolute file name.
+     * @param fileSpec    Specification of file
+     * @param options     Options controlling expansion
+     * @param fileName    Absolute file name.
      */
     @Predicate("absolute_file_name")
     public static void absoluteFileName(Environment environment, Term fileSpec, Term fileName, Term options) {
@@ -771,8 +768,8 @@ public final class Io {
      * Expand file name following file expansion rules
      *
      * @param environment Execution environment
-     * @param fileSpec Specification of file
-     * @param expansion Expanded file name
+     * @param fileSpec    Specification of file
+     * @param expansion   Expanded file name
      */
     @Predicate("expand_file_name")
     public static void expandFileName(Environment environment, Term fileSpec, Term expansion) {
@@ -787,9 +784,10 @@ public final class Io {
 
     /**
      * Obtain and/or change working directory.
+     *
      * @param environment Execution environment
-     * @param oldDirTerm Unified with current/old directory
-     * @param newDirTerm Used to set new directory
+     * @param oldDirTerm  Unified with current/old directory
+     * @param newDirTerm  Used to set new directory
      */
     @Predicate("working_directory")
     public static void workingDirectory(Environment environment, Term oldDirTerm, Term newDirTerm) {
@@ -801,7 +799,7 @@ public final class Io {
                 if (Files.isSameFile(comparePath, cwd)) {
                     unified = true;
                 }
-            } catch(IOException ioe) {
+            } catch (IOException ioe) {
                 unified = comparePath.equals(cwd);
             }
             if (!unified) {
@@ -997,7 +995,7 @@ public final class Io {
      * @param transform   Validate and transform search path into actual path.
      * @return Path to open, or null if path not validated via transform function
      */
-    public static Path parsePathSearch(Environment environment, Term fileName, Function<Path,Path> transform) {
+    public static Path parsePathSearch(Environment environment, Term fileName, Function<Path, Path> transform) {
         Path basic = parsePathBasic(environment, fileName);
         if (basic.isAbsolute()) {
             basic = transform.apply(basic);
@@ -1174,11 +1172,11 @@ public final class Io {
         } else {
             List<LogicalStream> all = new ArrayList<>();
             all.addAll(environment.getOpenStreams());
-            new ForEachStream(environment, all.listIterator(), streamIdent, lambda).next();
+            new ForEachStream(environment, all.listIterator(), streamIdent, lambda).redo();
         }
     }
 
-    private static class ForEachStream extends DecisionPoint {
+    private static class ForEachStream extends DecisionPointImpl {
         private final ListIterator<LogicalStream> iter;
         private final Term streamIdent;
         private final BiConsumer<Atomic, LogicalStream> lambda;
@@ -1191,7 +1189,7 @@ public final class Io {
         }
 
         @Override
-        protected void next() {
+        public void redo() {
             if (!iter.hasNext()) {
                 environment.backtrack();
                 return;
@@ -1251,11 +1249,11 @@ public final class Io {
             throw PrologDomainError.streamProperty(environment, property);
         } else {
             List<Term> allProps = new StreamProperties(environment, stream, streamIdent).getAll(stream);
-            new ForEachStreamProperty(environment, allProps.iterator(), property).next();
+            new ForEachStreamProperty(environment, allProps.iterator(), property).redo();
         }
     }
 
-    private static class ForEachStreamProperty extends DecisionPoint {
+    private static class ForEachStreamProperty extends DecisionPointImpl {
         private final Iterator<Term> iter;
         private final Term property;
 
@@ -1266,7 +1264,7 @@ public final class Io {
         }
 
         @Override
-        protected void next() {
+        public void redo() {
             if (!iter.hasNext()) {
                 environment.backtrack();
                 return;

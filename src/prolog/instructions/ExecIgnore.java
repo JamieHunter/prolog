@@ -3,7 +3,7 @@
 //
 package prolog.instructions;
 
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
@@ -50,14 +50,14 @@ public class ExecIgnore extends ExecCall {
     /**
      * DecisionPoint to handle failure case.
      */
-    private class OnBacktrack extends DecisionPoint {
+    private class OnBacktrack extends DecisionPointImpl {
 
         OnBacktrack(Environment environment) {
             super(environment);
         }
 
         @Override
-        protected void next() {
+        public void redo() {
             // stack is just prior to this decision point being pushed
             // remove the OnForward() entry point
             environment.restoreIP();

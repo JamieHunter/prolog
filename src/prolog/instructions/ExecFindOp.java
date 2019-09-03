@@ -5,14 +5,12 @@ package prolog.instructions;
 
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
-import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
 import prolog.execution.OperatorEntry;
-import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.unification.Unifier;
 import prolog.unification.UnifyBuilder;
@@ -24,13 +22,12 @@ import java.util.Map;
 /**
  * Find and enumerate matching operators.
  */
-public class ExecFindOp extends Traceable {
+public class ExecFindOp implements Instruction {
     private final Term nameTerm;
     private final Term precedenceTerm;
     private final Term typeTerm;
 
-    public ExecFindOp(CompoundTerm source, Term precedenceTerm, Term typeTerm, Term nameTerm) {
-        super(source);
+    public ExecFindOp(Term precedenceTerm, Term typeTerm, Term nameTerm) {
         this.precedenceTerm = precedenceTerm;
         this.typeTerm = typeTerm;
         this.nameTerm = nameTerm;
@@ -76,16 +73,17 @@ public class ExecFindOp extends Traceable {
         }
         OpIterator iter =
                 new OpIterator(environment, searchList, boundPrecedence, boundType, boundName);
-        iter.next();
+        iter.redo();
     }
 
     /**
      * Builds up a list ready for iteration.
+     *
      * @param operators Target iteration list
-     * @param name Name of operator (filter)
-     * @param source Source map of operators
+     * @param name      Name of operator (filter)
+     * @param source    Source map of operators
      */
-    private static void addToList(List<OperatorEntry> operators, PrologAtomInterned name, Map<Atomic,OperatorEntry> source) {
+    private static void addToList(List<OperatorEntry> operators, PrologAtomInterned name, Map<Atomic, OperatorEntry> source) {
         if (name != null) {
             OperatorEntry select = source.get(name);
             if (select != null) {
@@ -99,7 +97,7 @@ public class ExecFindOp extends Traceable {
     /**
      * Operator iterator decision point.
      */
-    private static class OpIterator extends DecisionPoint {
+    private static class OpIterator extends DecisionPointImpl {
 
         final ArrayList<OperatorEntry> operators;
         final Term precedenceTerm;
@@ -128,7 +126,7 @@ public class ExecFindOp extends Traceable {
          * {@inheritDoc}
          */
         @Override
-        protected void next() {
+        public void redo() {
             if (index == operators.size()) {
                 // final fail
                 environment.backtrack();

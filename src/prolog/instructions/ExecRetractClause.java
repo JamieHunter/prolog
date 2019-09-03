@@ -5,11 +5,10 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
-import prolog.debugging.InstructionReflection;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
@@ -26,7 +25,7 @@ import prolog.unification.UnifyBuilder;
 /**
  * Find and retract matching clauses in a predicate.
  */
-public class ExecRetractClause extends Traceable {
+public class ExecRetractClause implements Instruction {
     private final Term clause;
 
     /**
@@ -34,8 +33,7 @@ public class ExecRetractClause extends Traceable {
      *
      * @param clause Parameter to retract
      */
-    public ExecRetractClause(CompoundTerm source, Term clause) {
-        super(source);
+    public ExecRetractClause(Term clause) {
         this.clause = clause;
     }
 
@@ -89,13 +87,13 @@ public class ExecRetractClause extends Traceable {
         }
         ClauseIterator iter =
                 new ClauseIterator(environment, ((ClauseSearchPredicate) defn).getClauses(), matcher, body);
-        iter.next();
+        iter.redo();
     }
 
     /**
      * Main clause iterator with state. This is kept on the backtracking stack.
      */
-    protected static class ClauseIterator extends DecisionPoint {
+    protected static class ClauseIterator extends DecisionPointImpl {
 
         final ClauseEntry[] clauses;
         final Term matcher;
@@ -115,7 +113,7 @@ public class ExecRetractClause extends Traceable {
          * Iterate through clauses
          */
         @Override
-        protected void next() {
+        public void redo() {
             if (index == clauses.length) {
                 // final fail
                 environment.backtrack();

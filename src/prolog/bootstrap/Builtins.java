@@ -4,7 +4,6 @@
 package prolog.bootstrap;
 
 import prolog.constants.PrologAtomInterned;
-import prolog.debugging.InstructionLookup;
 import prolog.debugging.SpySpec;
 import prolog.execution.Instruction;
 import prolog.functions.StackFunction;
@@ -20,7 +19,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Global map of built in predicates and functions that's used to bootstrap each environment. Collection of these
@@ -36,7 +34,6 @@ public class Builtins {
     private static final HashMap<PrologAtomInterned, VarArgDefinition> builtinVarArgs = new HashMap<>();
     private static final HashMap<Predication.Interned, StackFunction> functions = new HashMap<>();
     private static final HashSet<SpySpec> notraceSet = new HashSet<>();
-    private static final HashMap<Instruction, InstructionLookup> reverseLookups = new HashMap<>();
 
     //
     // Add libraries to this list
@@ -127,17 +124,7 @@ public class Builtins {
      */
     public static BuiltinPredicateSingleton define(Predication.Interned predication, Instruction instruction, boolean notrace) {
         BuiltinPredicateSingleton def = define(predication, new BuiltinPredicateSingleton(instruction), notrace);
-        addReverse(predication, instruction);
         return def;
-    }
-
-    /**
-     * Helper to create a reverse lookup
-     * @param predication Predication to return from instruction
-     * @param instruction Singleton instruction
-     */
-    private static void addReverse(Predication.Interned predication, Instruction instruction) {
-        reverseLookups.computeIfAbsent(instruction, i -> new InstructionLookup(predication, instruction));
     }
 
     /**
@@ -196,15 +183,6 @@ public class Builtins {
      */
     public static boolean isNoTrace(SpySpec spec) {
         return notraceSet.contains(spec);
-    }
-
-    /**
-     * Retrieve lookup given an instruction.
-     * @param inst Instruction to lookup
-     * @return information about instruction
-     */
-    public static InstructionLookup getLookup(Instruction inst) {
-        return reverseLookups.get(inst);
     }
 
     /**

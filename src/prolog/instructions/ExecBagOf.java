@@ -5,10 +5,9 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.PrologEmptyList;
-import prolog.debugging.InstructionReflection;
 import prolog.execution.CopyTerm;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.EnumTermStrategy;
-import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
@@ -16,7 +15,6 @@ import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
 import prolog.expressions.TermListImpl;
-import prolog.library.Unify;
 import prolog.unification.Unifier;
 import prolog.unification.UnifyBuilder;
 import prolog.variables.UnboundVariable;
@@ -24,11 +22,8 @@ import prolog.variables.Variable;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.function.Function;
 
 /**
@@ -39,8 +34,8 @@ import java.util.function.Function;
  */
 public class ExecBagOf extends ExecFindAll {
 
-    public ExecBagOf(CompoundTerm callTerm, Term template, Term callable, Term list) {
-        super(callTerm, template, callable, list);
+    public ExecBagOf(Term template, Term callable, Term list) {
+        super(template, callable, list);
     }
 
     /**
@@ -62,12 +57,13 @@ public class ExecBagOf extends ExecFindAll {
         CompoundTerm combined = new CompoundTermImpl(Interned.CAROT_FUNCTOR, template, freeVariables);
 
         BagOfCollector iter = new BagOfCollector(environment, combined, callable, listUnifier);
-        iter.next();
+        iter.redo();
     }
 
     /**
      * Helper method to determine existential vs free variables of callable, supporting the Term^Goal syntax.
-     * @param context Collector class
+     *
+     * @param context  Collector class
      * @param callable Originally specified Goal
      * @return Actual goal
      */
@@ -97,14 +93,15 @@ public class ExecBagOf extends ExecFindAll {
         final Term realTemplate;
         final CompoundTerm freeVariables;
         final Set<Long> freeVariableIds;
+
         public BagOfCollector(Environment environment, CompoundTerm combinedTemplate, Term callable,
                               Unifier listUnifier) {
             super(environment, combinedTemplate, callable, listUnifier);
             realTemplate = combinedTemplate.get(0);
-            freeVariables = (CompoundTerm)combinedTemplate.get(1);
+            freeVariables = (CompoundTerm) combinedTemplate.get(1);
             freeVariableIds = new HashSet<Long>();
-            for(int i = 0; i < freeVariables.arity(); i++) {
-                freeVariableIds.add(((Variable)freeVariables.get(i)).id());
+            for (int i = 0; i < freeVariables.arity(); i++) {
+                freeVariableIds.add(((Variable) freeVariables.get(i)).id());
             }
         }
 
@@ -117,14 +114,14 @@ public class ExecBagOf extends ExecFindAll {
         protected void onDone(List<Term> solutions) {
             // chain to a new decision point iterator to produce collated solutions
             ProduceIterator iter = new ProduceIterator(environment, realTemplate, freeVariables, solutions, listUnifier);
-            iter.next();
+            iter.redo();
         }
     }
 
     /**
      * This decision-point iterator produces a new solution with a new set of free-variables on each iteration.
      */
-    private class ProduceIterator extends DecisionPoint {
+    private class ProduceIterator extends DecisionPointImpl {
 
         private final Term template;
         private final CompoundTerm freeVariables;
@@ -144,8 +141,8 @@ public class ExecBagOf extends ExecFindAll {
         }
 
         @Override
-        protected void next() {
-            while(iter < solutions.size() && solutions.get(iter) == PrologEmptyList.EMPTY_LIST) {
+        public void redo() {
+            while (iter < solutions.size() && solutions.get(iter) == PrologEmptyList.EMPTY_LIST) {
                 iter++;
             }
             if (iter == solutions.size()) {
@@ -159,8 +156,8 @@ public class ExecBagOf extends ExecFindAll {
 
             // Collect possible solutions - solutions may be merged together including unification.
             // original logic just used sort, but that is not sufficient
-            CompoundTerm entry = (CompoundTerm)solutions.get(iter++).resolve(context);
-            CompoundTerm freeVarVals = (CompoundTerm)entry.get(1);
+            CompoundTerm entry = (CompoundTerm) solutions.get(iter++).resolve(context);
+            CompoundTerm freeVarVals = (CompoundTerm) entry.get(1);
 
             // bind key with free variables
             if (!varUnifier.unify(context, freeVarVals)) {
@@ -170,13 +167,13 @@ public class ExecBagOf extends ExecFindAll {
             // dedup/collate all other viable entries that can be considered to have the same set of values
             ArrayList<Term> values = new ArrayList<>();
             values.add(entry.get(0));
-            for(int i = iter; i < solutions.size(); i++) {
+            for (int i = iter; i < solutions.size(); i++) {
                 Term next = solutions.get(i);
                 if (next == PrologEmptyList.EMPTY_LIST) {
                     continue;
                 }
                 int depth = environment.getBacktrackDepth();
-                CompoundTerm compNext = (CompoundTerm)next.resolve(context);
+                CompoundTerm compNext = (CompoundTerm) next.resolve(context);
                 if (varUnifier.unify(context, compNext.get(1))) {
                     values.add(compNext.get(0));
                     solutions.set(i, PrologEmptyList.EMPTY_LIST); // don't include again
@@ -188,7 +185,7 @@ public class ExecBagOf extends ExecFindAll {
             // entry will always contain at least one value, no need to handle an empty list.
             TermList outTerm = new TermListImpl(collate(values), PrologEmptyList.EMPTY_LIST);
             // Unify
-            if(!listUnifier.unify(context, outTerm)) {
+            if (!listUnifier.unify(context, outTerm)) {
                 environment.backtrack();
                 return;
             }

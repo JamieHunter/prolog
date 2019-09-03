@@ -73,6 +73,6 @@ public class BuiltinPredicateArity4 extends BuiltInPredicate {
         Term b = term.get(1);
         Term c = term.get(2);
         Term d = term.get(3);
-        compiling.add(new Proxy(lambda, a, b, c, d));
+        compiling.add(term, new Proxy(lambda, a, b, c, d));
     }
 }

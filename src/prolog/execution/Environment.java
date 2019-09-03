@@ -11,7 +11,6 @@ import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologInteger;
 import prolog.debugging.ActiveDebugger;
-import prolog.debugging.DebugStateChange;
 import prolog.debugging.DebuggerHook;
 import prolog.debugging.NoDebugger;
 import prolog.debugging.SpyPoints;
@@ -186,6 +185,7 @@ public class Environment {
     private CatchPoint catchPoint = CatchPoint.TERMINAL;
     // debugger
     private DebuggerHook debuggerHook = NoDebugger.SELF;
+    private boolean debugging = false;
     // state
     private ExecutionState executionState = ExecutionState.FORWARD;
     // terminals
@@ -226,7 +226,7 @@ public class Environment {
      */
     public Environment(Environment parent) {
         this.shared = parent.shared;
-        breakLevel = parent.breakLevel+1;
+        breakLevel = parent.breakLevel + 1;
         this.inputStream = parent.inputStream;
         this.outputStream = parent.outputStream;
         this.cwd = parent.cwd;
@@ -259,6 +259,7 @@ public class Environment {
 
     /**
      * New Compile context. Depends on debugging mode.
+     *
      * @return compile context
      */
     public CompileContext newCompileContext() {
@@ -267,6 +268,7 @@ public class Environment {
 
     /**
      * Retrieve shared context common to all 'break's.
+     *
      * @return shared environment context.
      */
     public Shared getShared() {
@@ -309,6 +311,7 @@ public class Environment {
      * Restore IP from stack (return).
      */
     public void restoreIP() {
+        if (debugging) debuggerHook.leaveIP(ip);
         ip = callStack.pop();
     }
 
@@ -318,7 +321,7 @@ public class Environment {
      * @param ip New IP
      */
     public void callIP(InstructionPointer ip) {
-        debuggerHook.pushIP(this.ip);
+        if (debugging) debuggerHook.acceptIP(ip);
         callStack.push(this.ip);
         this.ip = ip;
     }
@@ -518,8 +521,8 @@ public class Environment {
      * @param decisionPoint New decision point
      */
     public void pushDecisionPoint(DecisionPoint decisionPoint) {
+        if(debugging) decisionPoint = debuggerHook.acceptDecisionPoint(decisionPoint);
         cutPoint.markDecisionPoint(backtrackStack.size());
-        debuggerHook.decisionPoint(decisionPoint);
         pushBacktrack(decisionPoint);
     }
 
@@ -588,33 +591,6 @@ public class Environment {
         ip = terminalIP;
         backtrackStack.push(backtrackTerminal);
         catchPoint = CatchPoint.TERMINAL;
-        debuggerHook.reset();
-    }
-
-    /**
-     * When not debugging, iterate steps as quickly as possible
-     */
-    private void runNoDebugger() {
-        while (executionState == ExecutionState.FORWARD) {
-            ip.next();
-        }
-        while (executionState == ExecutionState.BACKTRACK) {
-            backtrackStack.poll().backtrack();
-        }
-    }
-
-    /**
-     * When debugging, iterate steps through hooks
-     */
-    private void runDebugger() {
-        while (executionState == ExecutionState.FORWARD &&
-                debuggerHook != NoDebugger.SELF) {
-            debuggerHook.forward(ip);
-        }
-        while (executionState == ExecutionState.BACKTRACK &&
-                debuggerHook != NoDebugger.SELF) {
-            debuggerHook.backtrack(backtrackStack.poll());
-        }
     }
 
     /**
@@ -626,16 +602,15 @@ public class Environment {
         // Tight loop handling forward and backtracking at the simplest level
         for (; ; ) {
             try {
-                if (debuggerHook == NoDebugger.SELF) {
-                    runNoDebugger();
-                } else {
-                    runDebugger();
+                while (executionState == ExecutionState.FORWARD) {
+                    ip.next();
+                }
+                while (executionState == ExecutionState.BACKTRACK) {
+                    backtrackStack.poll().backtrack();
                 }
                 if (executionState.isTerminal()) {
                     return executionState;
                 }
-            } catch (DebugStateChange e) {
-                // ignore, its purpose was to cause an iteration of this loop
             } catch (RuntimeException e) {
                 // convert Java exceptions into Prolog exceptions
                 throwing(PrologError.convert(this, e));
@@ -1016,7 +991,7 @@ public class Environment {
      * @return True if enabled
      */
     public boolean isDebuggerEnabled() {
-        return debuggerHook != NoDebugger.SELF;
+        return debugging;
     }
 
     /**
@@ -1025,7 +1000,7 @@ public class Environment {
      * @param enabled True if debugger is enabled
      */
     public void enableDebugger(boolean enabled) {
-        if (enabled == isDebuggerEnabled()) {
+        if (enabled == debugging) {
             return;
         }
         if (enabled) {
@@ -1033,6 +1008,7 @@ public class Environment {
         } else {
             debuggerHook = NoDebugger.SELF;
         }
+        debugging = enabled;
     }
 
     /**

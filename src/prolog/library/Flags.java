@@ -5,18 +5,14 @@ package prolog.library;
 
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
-import prolog.debugging.InstructionReflection;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
-import prolog.expressions.CompoundTerm;
-import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.flags.CreateFlagOptions;
 import prolog.flags.PrologFlags;
-import prolog.flags.StreamProperties;
 import prolog.unification.Unifier;
 
 import java.util.Iterator;
@@ -39,7 +35,7 @@ public class Flags {
             }
         } else {
             Map<Atomic, Term> allFlags = environment.getFlags().getAll(environment);
-            new ForEachFlag(environment, allFlags.entrySet().iterator(), key, value).next();
+            new ForEachFlag(environment, allFlags.entrySet().iterator(), key, value).redo();
         }
     }
 
@@ -52,7 +48,7 @@ public class Flags {
             throw PrologInstantiationError.error(environment, value);
         }
         PrologFlags flags = environment.getFlags();
-        flags.set(environment, (Atomic)key, value);
+        flags.set(environment, (Atomic) key, value);
     }
 
     @Predicate("create_prolog_flag")
@@ -65,10 +61,10 @@ public class Flags {
         }
         PrologFlags flags = environment.getFlags();
         CreateFlagOptions options = new CreateFlagOptions(environment, optionsTerm);
-        flags.create((Atomic)key, value, options);
+        flags.create((Atomic) key, value, options);
     }
 
-    private static class ForEachFlag extends DecisionPoint {
+    private static class ForEachFlag extends DecisionPointImpl {
         private final Iterator<Map.Entry<Atomic, Term>> iter;
         private final Term key;
         private final Term value;
@@ -81,7 +77,7 @@ public class Flags {
         }
 
         @Override
-        protected void next() {
+        public void redo() {
             if (!iter.hasNext()) {
                 environment.backtrack();
                 return;
@@ -92,7 +88,7 @@ public class Flags {
                 environment.pushDecisionPoint(this);
             }
             LocalContext context = environment.getLocalContext();
-            if (! (Unifier.unify(context, key, entry.getKey()) &&
+            if (!(Unifier.unify(context, key, entry.getKey()) &&
                     Unifier.unify(context, value, entry.getValue()))) {
                 environment.backtrack();
             }

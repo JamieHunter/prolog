@@ -3,7 +3,10 @@
 //
 package prolog.execution;
 
+import prolog.expressions.CompoundTerm;
+import prolog.expressions.Term;
 import prolog.instructions.ExecBlock;
+import prolog.instructions.ExecCall;
 import prolog.predicates.ClauseEntry;
 
 import java.util.ArrayList;
@@ -13,8 +16,8 @@ import java.util.ArrayList;
  * is not 1:1 with the number of predicates in a comma sequence.
  */
 public class CompileContext {
-    private final Environment.Shared environmentShared;
-    private final ArrayList<Instruction> instructions = new ArrayList<>();
+    protected final Environment.Shared environmentShared;
+    protected final ArrayList<Instruction> instructions = new ArrayList<>();
 
     /**
      * Begin a new compile block associated with shared environment.
@@ -55,15 +58,26 @@ public class CompileContext {
     /**
      * Add an instruction to the block.
      *
+     * @param source Source for instruction (used by debugger, see {@link prolog.debugging.DebuggingCompileContext}.
      * @param instruction Instruction to add.
      */
-    public void add(Instruction instruction) {
+    public void add(CompoundTerm source, Instruction instruction) {
         if (instruction instanceof ExecBlock) {
             // flatten blocks
-            instructions.addAll(((ExecBlock) instruction).all());
+            ((ExecBlock)instruction).mergeTo(instructions);
         } else {
             instructions.add(instruction);
         }
+    }
+
+    /**
+     * Add an instruction to the block, assumed to be / converted to callable.
+     *
+     * @param callable Callable term
+     * @param instruction Instruction to add.
+     */
+    public void addCall(Term callable, ExecCall instruction) {
+        add(null, instruction);
     }
 
     /**

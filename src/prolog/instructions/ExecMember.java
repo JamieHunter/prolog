@@ -3,11 +3,10 @@
 //
 package prolog.instructions;
 
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
-import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
 import prolog.unification.Unifier;
@@ -18,12 +17,11 @@ import java.util.List;
 /**
  * Find/enumerate elements within list
  */
-public class ExecMember extends Traceable {
+public class ExecMember implements Instruction {
     private final Term element;
     private final Term list;
 
-    public ExecMember(CompoundTerm source, Term element, Term list) {
-        super(source);
+    public ExecMember(Term element, Term list) {
         this.element = element;
         this.list = list;
     }
@@ -42,13 +40,13 @@ public class ExecMember extends Traceable {
         Unifier memberUnifier = UnifyBuilder.from(boundElement);
         MemberIterator iter =
                 new MemberIterator(environment, boundElement, memberUnifier, listElements);
-        iter.next();
+        iter.redo();
     }
 
     /**
      * Iterate each possible member and unify with target element
      */
-    protected class MemberIterator extends DecisionPoint {
+    protected class MemberIterator extends DecisionPointImpl {
 
         private final Term searchElement;
         private final Unifier memberUnifier;
@@ -66,7 +64,7 @@ public class ExecMember extends Traceable {
         }
 
         @Override
-        protected void next() {
+        public void redo() {
             if (index >= listElements.size()) {
                 // end of list
                 environment.backtrack();

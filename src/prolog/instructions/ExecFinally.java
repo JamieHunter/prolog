@@ -4,7 +4,7 @@
 package prolog.instructions;
 
 import prolog.execution.CatchPoint;
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.Term;
@@ -82,14 +82,14 @@ public class ExecFinally extends ExecCall {
     /**
      * DecisionPoint to handle failure case.
      */
-    private class OnBacktrack extends DecisionPoint {
+    private class OnBacktrack extends DecisionPointImpl {
 
         OnBacktrack(Environment environment) {
             super(environment);
         }
 
         @Override
-        protected void next() {
+        public void redo() {
             // NOTE, no state restored. Assume that this instruction will fail
             onFinally.invoke(environment);
         }

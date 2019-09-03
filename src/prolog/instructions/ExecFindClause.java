@@ -5,11 +5,10 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
-import prolog.debugging.InstructionReflection;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
@@ -26,12 +25,11 @@ import prolog.unification.UnifyBuilder;
 /**
  * Find and enumerate matching clauses in a predicate.
  */
-public class ExecFindClause extends Traceable {
+public class ExecFindClause implements Instruction {
     private final Term head;
     private final Term body;
 
-    public ExecFindClause(CompoundTerm source, Term head, Term body) {
-        super(source);
+    public ExecFindClause(Term head, Term body) {
         this.head = head;
         this.body = body;
     }
@@ -81,13 +79,13 @@ public class ExecFindClause extends Traceable {
         }
         ClauseIterator iter =
                 new ClauseIterator(environment, ((ClauseSearchPredicate) defn).getClauses(), matcher, boundBody);
-        iter.next();
+        iter.redo();
     }
 
     /**
      * Clause iterator decision point.
      */
-    private static class ClauseIterator extends DecisionPoint {
+    private static class ClauseIterator extends DecisionPointImpl {
 
         final ClauseEntry[] clauses;
         final Term matcher;
@@ -107,7 +105,7 @@ public class ExecFindClause extends Traceable {
          * {@inheritDoc}
          */
         @Override
-        protected void next() {
+        public void redo() {
             if (index == clauses.length) {
                 // final fail
                 environment.backtrack();

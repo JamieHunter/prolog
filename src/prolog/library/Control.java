@@ -98,7 +98,7 @@ public final class Control {
     @Predicate(value = "->", arity = 2, notrace = true)
     public static void ifThen(CompileContext compiling, CompoundTerm source) {
         // IF-THEN construct, see IF-THEN-ELSE construct
-        compiling.add(new ExecIfThenElse(
+        compiling.add(source, new ExecIfThenElse(
                 ExecBlock.nested(compiling, source.get(0)), // or deferred?
                 ExecBlock.nested(compiling, source.get(1)),
                 Control.FALSE));
@@ -125,7 +125,7 @@ public final class Control {
             // but should be avoided anyway.
             CompoundTerm ifThen = (CompoundTerm) source.get(0);
             // Cond -> Then ; Else
-            compiling.add(new ExecIfThenElse(
+            compiling.add(source, new ExecIfThenElse(
                     ExecBlock.nested(compiling, ifThen.get(0)), // Cond (or deferred?)
                     ExecBlock.nested(compiling, ifThen.get(1)), // Then
                     ExecBlock.nested(compiling, source.get(1)))); // Else
@@ -138,7 +138,7 @@ public final class Control {
                 iter = ((CompoundTerm) iter).get(1);
             }
             alternates.add(ExecBlock.nested(compiling, iter));
-            compiling.add(new ExecDisjunction(alternates.toArray(new Instruction[alternates.size()])));
+            compiling.add(source, new ExecDisjunction(alternates.toArray(new Instruction[alternates.size()])));
         }
     }
 
@@ -155,7 +155,7 @@ public final class Control {
         // cut behavior is modified by the call
         // note that compilation of the call is deferred further, so any error only occurs if actually trying
         // to call.
-        compiling.add(new ExecCall(ExecBlock.deferred(callTerm)));
+        compiling.add(source, new ExecCall(ExecBlock.deferred(callTerm)));
     }
 
     /**
@@ -170,7 +170,7 @@ public final class Control {
         Term argTerm = source.get(1);
         // This is similar to call/2 but the parameters passed as a list, handling of both
         // get deferred.
-        compiling.add(new ExecCall(new CurriedCallInstruction(callTerm, argTerm)));
+        compiling.add(source, new ExecCall(new CurriedCallInstruction(callTerm, argTerm)));
     }
 
     /**
@@ -186,7 +186,7 @@ public final class Control {
         for (int i = 1; i < source.arity(); i++) {
             members[i-1] = source.get(i);
         }
-        compiling.add(new ExecCall(new ComposedCallInstruction(callTerm, members)));
+        compiling.add(source, new ExecCall(new ComposedCallInstruction(callTerm, members)));
     }
 
     /**
@@ -198,7 +198,7 @@ public final class Control {
     @Predicate(value = {"\\+", "not"}, arity = 1, notrace = true)
     public static void notProvable(CompileContext compiling, CompoundTerm source) {
         Term callTerm = source.get(0);
-        compiling.add(
+        compiling.add(source,
                 new ExecIfThenElse(
                         ExecBlock.nested(compiling, callTerm),
                         FALSE,
@@ -215,7 +215,7 @@ public final class Control {
     @Predicate(value = "once", arity = 1)
     public static void once(CompileContext compiling, CompoundTerm source) {
         Term callTerm = source.get(0);
-        compiling.add(new ExecOnce(ExecBlock.nested(compiling, callTerm)));
+        compiling.add(source, new ExecOnce(ExecBlock.nested(compiling, callTerm)));
     }
 
     /**
@@ -227,7 +227,7 @@ public final class Control {
     @Predicate(value = "ignore", arity = 1)
     public static void ignore(CompileContext compiling, CompoundTerm source) {
         Term callTerm = source.get(0);
-        compiling.add(new ExecIgnore(ExecBlock.nested(compiling, callTerm)));
+        compiling.add(source, new ExecIgnore(ExecBlock.nested(compiling, callTerm)));
     }
 
     /**
@@ -245,7 +245,7 @@ public final class Control {
         Term template = source.get(0);
         Term callable = source.get(1);
         Term list = source.get(2);
-        compiling.add(new ExecFindAll(source, template, callable, list));
+        compiling.add(source, new ExecFindAll(template, callable, list));
     }
 
     /**
@@ -263,7 +263,7 @@ public final class Control {
         Term variable = source.get(0);
         Term callable = source.get(1);
         Term list = source.get(2);
-        compiling.add(new ExecBagOf(source, variable, callable, list));
+        compiling.add(source, new ExecBagOf(variable, callable, list));
     }
 
     /**
@@ -278,6 +278,6 @@ public final class Control {
         Term variable = source.get(0);
         Term callable = source.get(1);
         Term list = source.get(2);
-        compiling.add(new ExecSetOf(source, variable, callable, list));
+        compiling.add(source, new ExecSetOf(variable, callable, list));
     }
 }

@@ -3,75 +3,19 @@
 //
 package prolog.execution;
 
-import prolog.debugging.InstructionReflection;
-
-import java.util.ListIterator;
-
 /**
- * This is a decision point. Backtracking pauses at each decision point to consider
+ * This is a decision point as an interface. Backtracking pauses at each decision point to consider
  * alternatives.
  */
-public abstract class DecisionPoint implements Backtrack {
-
-    private final InstructionPointer[] stack;
-    protected final Environment environment;
-    protected final LocalContext decisionContext;
-    protected final CatchPoint catchPoint;
-    protected final CutPoint cutPoint;
+public interface DecisionPoint extends Backtrack {
 
     /**
-     * Create a new decision point associated with the environment. At time decision point is created, the local context,
-     * the catch point, the cut depth and the call stack are all snapshot and reused on each iteration of the decision
-     * point.
-     *
-     * @param environment Execution environment
+     * Restore state prior to moving to next decision point.
      */
-    protected DecisionPoint(Environment environment) {
-        this.environment = environment;
-        this.decisionContext = environment.getLocalContext();
-        this.catchPoint = environment.getCatchPoint();
-        this.cutPoint = environment.getCutPoint();
-        this.stack = environment.constructStack();
-    }
+    void restore();
 
     /**
-     * Restore state to that at the time the decision point was first executed.
+     * Move to next decision point.
      */
-    protected void restore() {
-        environment.setCutPoint(cutPoint);
-        environment.setCatchPoint(catchPoint);
-        environment.setLocalContext(decisionContext);
-        environment.restoreStack(stack);
-    }
-
-    /**
-     * Move to next decision point
-     */
-    abstract protected void next();
-
-    /**
-     * Called during backtracking process
-     */
-    @Override
-    public void backtrack() {
-        restore();
-        next();
-    }
-
-    /**
-     * Cut removes the decision point.
-     *
-     * @param iter cut iterator
-     */
-    @Override
-    public void cut(ListIterator<Backtrack> iter) {
-        iter.remove();
-    }
-
-    /**
-     * Undo does nothing on a decision point.
-     */
-    @Override
-    public void undo() {
-    }
+    void redo();
 }

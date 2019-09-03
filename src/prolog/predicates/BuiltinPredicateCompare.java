@@ -29,6 +29,6 @@ public class BuiltinPredicateCompare extends BuiltInPredicate {
     @Override
     public void compile(Predication predication, CompileContext compiling, CompoundTerm source) {
         CompileMathExpression expr = new CompileMathExpression(compiling).compileFunction(source, function);
-        compiling.add(new ExecPopAndTest(source, expr));
+        compiling.add(source, new ExecPopAndTest(expr));
     }
 }

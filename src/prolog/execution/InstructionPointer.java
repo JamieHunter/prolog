@@ -14,6 +14,14 @@ public interface InstructionPointer {
     void next();
 
     /**
+     * A reference to this object that crosses cloning
+     * @return Object to use in a hash table
+     */
+    default Object ref() {
+        return this;
+    }
+
+    /**
      * Make a copy of this instruction pointer (if necessary) that captures the current location. It is
      * a conditional clone.
      * @return Copy or self.

@@ -5,16 +5,14 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.PrologEmptyList;
-import prolog.debugging.InstructionReflection;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.CompileContext;
 import prolog.execution.CopyTerm;
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
-import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.expressions.TermListImpl;
 import prolog.library.Control;
@@ -27,14 +25,13 @@ import java.util.List;
 /**
  * Find all possible solutions of a subgoal. This is overridden for bagof and setof implementations.
  */
-public class ExecFindAll extends Traceable {
+public class ExecFindAll implements Instruction {
     protected final Term template;
     private final Term callable;
     private final Term list;
     protected final Unifier listUnifier;
 
-    public ExecFindAll(CompoundTerm source, Term template, Term callable, Term list) {
-        super(source);
+    public ExecFindAll(Term template, Term callable, Term list) {
         this.template = template;
         this.callable = callable;
         this.list = list;
@@ -43,6 +40,7 @@ public class ExecFindAll extends Traceable {
 
     /**
      * Execute instruction
+     *
      * @param environment Execution environment
      */
     @Override
@@ -66,13 +64,13 @@ public class ExecFindAll extends Traceable {
     protected void invoke2(Environment environment, Term template, Term callable) {
         FindAllCollector iter =
                 new FindAllCollector(environment, template, callable, listUnifier);
-        iter.next();
+        iter.redo();
     }
 
     /**
      * Iterate each possible solution to produce a list
      */
-    protected class FindAllCollector extends DecisionPoint {
+    protected class FindAllCollector extends DecisionPointImpl {
 
         protected final Term template;
         protected final Unifier listUnifier;
@@ -87,13 +85,13 @@ public class ExecFindAll extends Traceable {
             this.listUnifier = listUnifier;
             this.template = template;
             CompileContext compile = environment.newCompileContext();
-            compile.add(new ExecCall(ExecBlock.nested(compile, callable)));
-            compile.add(e -> {
+            compile.addCall(callable, new ExecCall(ExecBlock.nested(compile, callable)));
+            compile.add(null, e -> {
                 // success
                 builder.add(copyTemplate());
                 environment.backtrack();
             });
-            compile.add(Control.FALSE);
+            compile.add(null, Control.FALSE);
             call = compile.toInstruction();
         }
 
@@ -102,7 +100,7 @@ public class ExecFindAll extends Traceable {
         }
 
         @Override
-        protected void next() {
+        public void redo() {
             //
             // Attempt next possible solution (this will only run once)
             //
@@ -119,6 +117,7 @@ public class ExecFindAll extends Traceable {
 
         /**
          * Called on completion of findall
+         *
          * @param result array of Terms produced
          */
         protected void onDone(List<Term> result) {

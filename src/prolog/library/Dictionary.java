@@ -136,7 +136,7 @@ public final class Dictionary {
     @Predicate(value = "retract", arity = 1)
     public static void retract(CompileContext compiling, CompoundTerm source) {
         Term clause = source.get(0);
-        compiling.add(new ExecRetractClause(source, clause));
+        compiling.add(source, new ExecRetractClause(clause));
     }
 
     /**
@@ -147,7 +147,7 @@ public final class Dictionary {
      */
     @Predicate(value = "retractall", arity = 1)
     public static void retractAll(CompileContext compiling, CompoundTerm source) {
-        compiling.add(
+        compiling.add(source,
                 new ExecExhaust(
                         compiling,
                         c2 -> retract(c2, source)));
@@ -163,7 +163,7 @@ public final class Dictionary {
     public static void clause(CompileContext compiling, CompoundTerm source) {
         Term head = source.get(0);
         Term body = source.get(1);
-        compiling.add(new ExecFindClause(source, head, body));
+        compiling.add(source, new ExecFindClause(head, body));
     }
 
     /**

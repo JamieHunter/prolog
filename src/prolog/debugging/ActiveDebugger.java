@@ -3,7 +3,6 @@
 //
 package prolog.debugging;
 
-import prolog.bootstrap.Builtins;
 import prolog.bootstrap.DefaultIoBinding;
 import prolog.bootstrap.Interned;
 import prolog.cli.Run;
@@ -34,8 +33,8 @@ import prolog.predicates.Predication;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Optional;
@@ -49,16 +48,16 @@ import java.util.function.Function;
 public class ActiveDebugger implements DebuggerHook {
     /*package*/ final Environment environment;
     /*package*/ final SpyPoints spyPoints;
-    private final WeakHashMap<Instruction, InstructionContext> instructionMap = new WeakHashMap<>();
-    private final WeakHashMap<DecisionPoint, Scoped> decisionMap = new WeakHashMap<>();
-    private final WeakHashMap<InstructionPointer, Scoped> callMap = new WeakHashMap<>();
+    private final WeakHashMap<DebugInstruction, InstructionContext> instructionMap = new WeakHashMap<>();
+    private final WeakHashMap<Object, Scoped> exitMap = new WeakHashMap<>();
     private static final HashMap<String, Function<String, StepMode>> dispatch = new HashMap<>();
     private static final ArrayList<String> helpTable = new ArrayList<>();
     private StepMode mode = StepMode.LEAP;
     private ExecutionPort port = null;
     private int id = 0;
+    private long sequence = 0;
+    private long skipSeqId = 0;
     private Scoped prologThis = Scoped.NULL;
-    private final HashSet<InstructionContext> skipTo = new HashSet<>();
 
     public ActiveDebugger(Environment environment) {
         this.environment = environment;
@@ -108,44 +107,85 @@ public class ActiveDebugger implements DebuggerHook {
     }
 
     /**
-     * Called when resetting environment
+     * A 'DebugInstruction' will call invoke, to instrument debug ports either side of the
+     * instruction.
+     *
+     * @param unused      Used by {@link NoDebugger}, not used here.
+     * @param context     Provides information previously inserted by debug-compile.
+     * @param instruction Original instruction to call
      */
     @Override
-    public void reset() {
+    public void invoke(Environment unused, DebugInstruction context, Instruction instruction) {
+        //
+        // E.g. CALL executing instruction directly
+        invoke(getCallScope(context), ExecutionPort.CALL, () -> instruction.invoke(environment));
     }
 
     /**
-     * Called when a new decisionpoint is pushed, this may be referenced during backtrack to identify redo port.
+     * A debuggable decision point, after a restore and just before the point of redo.
+     *
+     * @param context       Provides information previously collected when decision point was inserted.
+     * @param decisionPoint Original decision point.
+     */
+    @Override
+    public void redo(DebugDecisionPoint context, DecisionPoint decisionPoint) {
+        Scoped scoped = context.getScope();
+        scoped.incrementIteration();
+        invoke(scoped, ExecutionPort.REDO, decisionPoint::redo);
+    }
+
+    /**
+     * Called when a new DecisionPoint is pushed, this may be referenced during backtrack to identify redo port.
+     * The decision point indicates that the instruction may backtrack, but doesn't mean it will, nor does it mean
+     * that the instruction is deferred.
      *
      * @param decisionPoint Decision point
+     * @return decoratedDecisionPoint
      */
     @Override
-    public void decisionPoint(DecisionPoint decisionPoint) {
+    public DecisionPoint acceptDecisionPoint(DecisionPoint decisionPoint) {
         if (prologThis.instructionContext != InstructionContext.NULL) {
-            decisionMap.put(decisionPoint, prologThis);
+            if (!(decisionPoint instanceof DebugDecisionPoint)) {
+                decisionPoint = new DebugDecisionPoint(environment, decisionPoint, prologThis);
+            }
+        }
+        return decisionPoint;
+    }
+
+    /**
+     * Called when new IP has been pushed. This implicitly means that the scope has been deferred until the IP is
+     * resumed.
+     *
+     * @param ip New instruction pointer
+     * @return decorated instruction pointer
+     */
+    @Override
+    public void acceptIP(InstructionPointer ip) {
+        if (prologThis.instructionContext != InstructionContext.NULL && port != ExecutionPort.DEFERRED) {
+            // consider ip to be either (a) the execution block for the current instruction, or
+            // (b) special return context. In either case, leaving ip (see restore) amounts to an exit
+            exitMap.put(ip.ref(), prologThis);
+            port = ExecutionPort.DEFERRED;
         }
     }
 
     /**
-     * Progressing forward to next instruction
+     * Called when IP leaves execution scope, that is, we return back to the caller that had previously
+     * pushed IP
      *
-     * @param ip Instruction Pointer
+     * @param ip IP being exited
      */
     @Override
-    public void forward(InstructionPointer ip) {
-        // handle return port at time first instruction of the ip is executed
-        // TODO: if copy was called, and this is the copy, it might not be recognized.
-        // I'm not sure we need to handle that / or desirable to handle that.
-        Scoped deferred = callMap.remove(ip);
-        if (deferred != null) {
-            invoke(deferred, ExecutionPort.RETURN, null);
+    public void leaveIP(InstructionPointer ip) {
+        Scoped scope = exitMap.get(ip.ref());
+        if (scope != null) {
+            invoke(scope, ExecutionPort.RETURN, null);
         }
-        Scoped newScoped = scopedFromInstruction(instructionFromIp(ip));
-        invoke(newScoped, ExecutionPort.CALL, () -> ip.next());
     }
 
     /**
      * Create a debugging aware compile context.
+     *
      * @param shared Shared aspect of Environment(s).
      * @return Compile context
      */
@@ -154,58 +194,21 @@ public class ActiveDebugger implements DebuggerHook {
         return new DebuggingCompileContext(shared);
     }
 
-    /**
-     * Push IP to stack. this inherently means that the Exit/Fail port
-     * us unknown until return
-     *
-     * @param ip Instruction pointer
-     */
-    @Override
-    public void pushIP(InstructionPointer ip) {
-        if (prologThis.instructionContext != InstructionContext.NULL) {
-            callMap.put(ip, prologThis);
-            prologThis = Scoped.NULL;
-            port = ExecutionPort.DEFERRED;
-        }
+    protected boolean isSkipEnd(Scoped scope) {
+        // reached an instruction that was entered earlier or same sequence than the specified watermark
+        // used during call/exit ports
+        return scope.getSeqId() <= skipSeqId;
     }
 
     /**
-     * Wrap around a direct instruction invoke
+     * Common logic for handling entry/exit ports.
      *
-     * @param unused Used by {@link NoDebugger}, not used here.
-     * @param inst   Instruction
+     * @param scope     Scope, includes iteration, parent context, and instruction
+     * @param enterPort Port on entry or {@link ExecutionPort#RETURN} if handling exit port only.
+     * @param action    Action to perform on entry port, or null if handling exit port only.
      */
-    @Override
-    public void invoke(Environment unused, Instruction inst) {
-        //
-        // E.g. CALL executing instruction directly
-        invoke(scopedFromInstruction(inst), ExecutionPort.CALL, () -> inst.invoke(environment));
-    }
-
-    protected boolean isSkipHit() {
-        return skipTo.contains(prologThis.instructionContext);
-    }
-
-    /**
-     * Backtracking
-     *
-     * @param bt Backtrack marker
-     */
-    @Override
-    public void backtrack(Backtrack bt) {
-        if (!(bt instanceof DecisionPoint)) {
-            bt.backtrack();
-            return;
-        }
-        Scoped scoped = scopedFromDecisionPoint((DecisionPoint) bt);
-        if (scoped != Scoped.NULL) {
-            scoped.incrementIteration();
-        }
-        invoke(scoped, ExecutionPort.REDO, () -> bt.backtrack());
-    }
-
-    private void invoke(Scoped scoped, ExecutionPort newPort, Runnable action) {
-        if (scoped.instructionContext == InstructionContext.NULL) {
+    private void invoke(Scoped scope, ExecutionPort enterPort, Runnable action) {
+        if (scope.instructionContext == InstructionContext.NULL) {
             if (action != null) {
                 action.run();
             }
@@ -215,17 +218,17 @@ public class ActiveDebugger implements DebuggerHook {
         Scoped oldThis = prologThis;
         ExecutionPort oldPort = port;
         try {
-            prologThis = scoped;
-            port = newPort;
+            prologThis = scope;
+            port = enterPort;
             if (port != ExecutionPort.RETURN) {
-                int enterFlags = mode.flags(this, scoped.instructionContext);
+                int enterFlags = mode.flags(this, scope);
                 // CALL or REDO port
                 if (enterFlags == 0) {
                     action.run();
                     return;
                 }
                 if ((enterFlags & port.flag()) != 0) {
-                    enterPort();
+                    portDebugLoop();
                     if (mode.ignore()) {
                         return;
                     }
@@ -245,9 +248,9 @@ public class ActiveDebugger implements DebuggerHook {
             } else {
                 port = ExecutionPort.FAIL;
             }
-            int exitFlags = mode.flags(this, scoped.instructionContext);
+            int exitFlags = mode.flags(this, scope);
             if ((exitFlags & port.flag()) != 0) {
-                enterPort();
+                portDebugLoop();
             }
         } finally {
             port = oldPort;
@@ -256,120 +259,66 @@ public class ActiveDebugger implements DebuggerHook {
     }
 
     /**
-     * Given an IP, map to instruction
-     *
-     * @param ip Instruction pointer
-     * @return Instruction
-     */
-    private Instruction instructionFromIp(InstructionPointer ip) {
-        if (ip instanceof InstructionReporter) {
-            return ((InstructionReporter) ip).peek();
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Given an Instruction, map to a Context unique for this unique instruction.
+     * Given an Instruction at a call point, Create a unique scope object. This scope object tracks the local
+     * context on entry to the instruction (context of parent), and tracks the iterations of redo's.
      *
      * @param inst Instruction
      * @return Context
      */
-    private Scoped scopedFromInstruction(Instruction inst) {
+    private Scoped getCallScope(DebugInstruction inst) {
         if (inst == null) {
             return Scoped.NULL;
         }
-        InstructionContext context = instructionMap.computeIfAbsent(inst, this::computeContext);
+        InstructionContext context = instructionMap.computeIfAbsent(inst, this::computeInstructionContext);
         if (context == InstructionContext.NULL) {
             return Scoped.NULL;
         }
-        Scoped decision = getTopDecision();
-        if (decision.instructionContext == context &&
-                decision.localContext == environment.getLocalContext()) {
-            return decision;
-        }
-        return new Scoped(context, environment.getLocalContext());
-    }
-
-    /**
-     * Given a decision point reference, map to the scoped Contexts unique for this unique point.
-     *
-     * @param dp DecisionPoint reference
-     * @return Scoped contexts
-     */
-    private Scoped scopedFromDecisionPoint(DecisionPoint dp) {
-        return decisionMap.getOrDefault(dp, Scoped.NULL);
+        return new Scoped(context, environment.getLocalContext(), inst.isTraceable(), ++sequence);
     }
 
     /**
      * When an Instruction does not have a context, build one.
      *
-     * @param inst Instruction
+     * @param instruction Instruction
      * @return Context for instruction.
      */
-    private InstructionContext computeContext(Instruction inst) {
-        InstructionContext context = InstructionContext.NULL;
-        if (inst instanceof InstructionReflection) {
-            CompoundTerm reflected = ((InstructionReflection) inst).reflect();
-            if (reflected == null) {
-                return context;
-            }
-            context = computeContextFromCompoundTerm(inst, reflected);
-        } else if (inst != null) {
-            InstructionLookup lookup = Builtins.getLookup(inst);
-            if (lookup != null) {
-                context = computeContextFromLookup(lookup);
-            }
-        }
-        return context;
-    }
-
-    /**
-     * Given a Compound Term, and no context, build one.
-     *
-     * @param instruction Instruction
-     * @param source      Source compound term
-     * @return Context for source
-     */
-    private InstructionContext computeContextFromCompoundTerm(Instruction instruction, CompoundTerm source) {
+    private InstructionContext computeInstructionContext(DebugInstruction instruction) {
+        CompoundTerm source = instruction.getSource();
         PrologAtomInterned functor = PrologAtomInterned.from(environment, source.functor());
         Predication.Interned predication = new Predication.Interned(functor, source.arity());
-        return new InstructionContext(predication, instruction, source, ++id);
-    }
-
-    /**
-     * Given an InstructionLookup (immutable), build a context.
-     *
-     * @param lookup InstructionLookup from builtins table
-     * @return Context
-     */
-    private InstructionContext computeContextFromLookup(InstructionLookup lookup) {
-        CompoundTerm source = lookup.reflect();
-        SpySpec spySpec = SpySpec.from((PrologAtomInterned) source.functor(), source.arity());
-        if (Builtins.isNoTrace(spySpec)) {
-            return InstructionContext.NULL; // trace blacklist
-        }
-        return new InstructionContext(lookup, ++id);
+        return new InstructionContext(predication, instruction, ++id);
     }
 
     /**
      * Enter debug loop for given port
      */
-    private void enterPort() {
+    private void portDebugLoop() {
         do {
-            traceContext(prologThis, getCallStack().size(), port.display() + ": ");
+            traceContext(prologThis, getCallStack(-1).size(), port.display() + ": ");
         } while (command());
     }
 
     /**
+     * Retrieve call stack using scoping contextual information. Ignore extra nested stacks.
+     *
+     * @param limit Max list size. -1 indicates any. 0 indicates test IP only (special case).
+     *              >0 indicates a max list of size limit.
      * @return Filtered call stack
      */
-    private List<Scoped> getCallStack() {
+    private List<Scoped> getCallStack(int limit) {
+        if (limit < 0) {
+            limit = Integer.MAX_VALUE;
+        }
         ArrayList<Scoped> stack = new ArrayList<>();
+        Scoped top = exitMap.get(environment.getIP().ref());
+        if (top != null && top != prologThis) {
+            stack.add(top);
+            limit--;
+        }
         ListIterator<InstructionPointer> it = environment.getCallStack().listIterator(environment.getCallStackDepth());
-        while (it.hasPrevious()) {
+        while (it.hasPrevious() && limit > 0) {
             InstructionPointer ip = it.previous();
-            Scoped scoped = callMap.get(ip);
+            Scoped scoped = exitMap.get(ip);
             if (scoped != null) {
                 stack.add(scoped);
             }
@@ -378,36 +327,17 @@ public class ActiveDebugger implements DebuggerHook {
     }
 
     /**
-     * @return Filtered decision stack
+     * @return Decision stack
      */
     private List<Scoped> getDecisionStack() {
         ArrayList<Scoped> stack = new ArrayList<>();
         ListIterator<Backtrack> it = environment.getBacktrackStack().listIterator(environment.getBacktrackDepth());
         Backtrack bt = it.previous();
-        if (bt instanceof DecisionPoint) {
-            Scoped scoped = decisionMap.get(bt);
-            if (scoped != null) {
-                stack.add(scoped);
-            }
+        if (bt instanceof DebugDecisionPoint) {
+            Scoped scoped = ((DebugDecisionPoint) bt).getScope();
+            stack.add(scoped);
         }
         return stack;
-    }
-
-    /**
-     * @return Filtered decision - get most recent decision
-     */
-    private Scoped getTopDecision() {
-        ListIterator<Backtrack> it = environment.getBacktrackStack().listIterator(environment.getBacktrackDepth());
-        while (it.hasPrevious()) {
-            Backtrack bt = it.previous();
-            if (bt instanceof DecisionPoint) {
-                Scoped scoped = decisionMap.get(bt);
-                if (scoped != null) {
-                    return scoped;
-                }
-            }
-        }
-        return Scoped.NULL;
     }
 
     private void traceContext(Scoped scoped, int depth, String portText) {
@@ -453,7 +383,7 @@ public class ActiveDebugger implements DebuggerHook {
     }
 
     private void traceGoal(Scoped scoped) {
-        CompoundTerm goal = scoped.instructionContext.reflect().resolve(scoped.localContext);
+        CompoundTerm goal = scoped.instructionContext.getSource().resolve(scoped.localContext);
         if (scoped.instructionContext == InstructionContext.NULL) {
             return;
         }
@@ -584,32 +514,22 @@ public class ActiveDebugger implements DebuggerHook {
 
     private StepMode skip(String arg, StepMode mode) {
         Optional<Integer> iarg = parseInteger(arg);
-        skipTo.clear();
+        skipSeqId = prologThis.getSeqId();
         if (iarg.isPresent()) {
             boolean hitCall = false;
-            ListIterator<Scoped> callIt = getCallStack().listIterator();
+            ListIterator<Scoped> callIt = getCallStack(-1).listIterator();
             while (callIt.hasPrevious()) {
                 Scoped scoped = callIt.previous();
                 if (hitCall || scoped.instructionContext.getId() == iarg.get()) {
                     hitCall = true;
-                    skipTo.add(scoped.instructionContext);
+                    skipSeqId = scoped.getSeqId();
                 }
             }
-            boolean hitRedo = false;
-            ListIterator<Scoped> redoIt = getDecisionStack().listIterator();
-            while (redoIt.hasPrevious()) {
-                Scoped scoped = redoIt.previous();
-                if (hitRedo || scoped.instructionContext.getId() == iarg.get()) {
-                    hitRedo = true;
-                    skipTo.add(scoped.instructionContext);
-                }
-            }
-            if (hitCall || hitRedo) {
+            if (hitCall) {
                 return mode;
             }
         }
-        skipTo.add(prologThis.instructionContext);
-        if (port == ExecutionPort.EXIT || port == ExecutionPort.FAIL) {
+        if (port == ExecutionPort.EXIT || port == ExecutionPort.FAIL || iarg.isPresent()) {
             traceText("Unable to skip\n");
             return null;
         } else {
@@ -618,14 +538,17 @@ public class ActiveDebugger implements DebuggerHook {
     }
 
     private StepMode out(String arg) {
-        int iarg = parseInteger(arg).orElse(1);
-        skipTo.clear();
-        ListIterator<Scoped> callIt = getCallStack().listIterator();
-        while (callIt.hasPrevious()) {
-            Scoped scoped = callIt.previous();
-            if (--iarg <= 0) {
-                skipTo.add(scoped.instructionContext);
-            }
+        int iarg = parseInteger(arg).orElse(0);
+        List<Scoped> calls;
+        if (iarg <= 0) {
+            calls = Collections.emptyList();
+        } else {
+            calls = getCallStack(iarg);
+        }
+        if (calls.size() < 1) {
+            skipSeqId = prologThis.getSeqId() - 1;
+        } else {
+            skipSeqId = calls.get(calls.size() - 1).getSeqId() - 1;
         }
         return StepMode.SKIP;
     }
@@ -660,7 +583,7 @@ public class ActiveDebugger implements DebuggerHook {
 
     private StepMode ancestors(String arg) {
         Optional<Integer> iarg = parseInteger(arg);
-        List<Scoped> stack = getCallStack();
+        List<Scoped> stack = getCallStack(-1);
         int max = iarg.orElse(stack.size());
         if (max < 1 || max > stack.size()) {
             max = stack.size();
@@ -712,7 +635,7 @@ public class ActiveDebugger implements DebuggerHook {
     }
 
     private void writePredicateCommon(Consumer<Term> writer) {
-        CompoundTerm term = prologThis.instructionContext.reflect();
+        CompoundTerm term = prologThis.instructionContext.getSource();
         Predication pred = new Predication(term.functor(), term.arity()).intern(environment);
         PredicateDefinition defn = environment.lookupPredicate(pred);
         if (defn instanceof BuiltInPredicate) {

@@ -62,6 +62,6 @@ public class BuiltinPredicateArity1 extends BuiltInPredicate {
     @Override
     public void compile(Predication predication, CompileContext compiling, CompoundTerm term) {
         Term a = term.get(0);
-        compiling.add(new Proxy(lambda, a));
+        compiling.add(term, new Proxy(lambda, a));
     }
 }

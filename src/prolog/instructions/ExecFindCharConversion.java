@@ -4,24 +4,21 @@
 package prolog.instructions;
 
 import prolog.constants.PrologCharacter;
-import prolog.debugging.InstructionReflection;
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
-import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.parser.CharConverter;
 
 /**
  * Find and enumerate character conversions
  */
-public class ExecFindCharConversion extends Traceable {
+public class ExecFindCharConversion implements Instruction {
     private final Term fromTerm;
     private final Term toTerm;
 
-    public ExecFindCharConversion(CompoundTerm source, Term fromTerm, Term toTerm) {
-        super(source);
+    public ExecFindCharConversion(Term fromTerm, Term toTerm) {
         this.fromTerm = fromTerm;
         this.toTerm = toTerm;
     }
@@ -58,13 +55,13 @@ public class ExecFindCharConversion extends Traceable {
         }
         TableIterator iter =
                 new TableIterator(environment, converter, start, end, constrainedFrom, constrainedTo, boundFrom, boundTo);
-        iter.next();
+        iter.redo();
     }
 
     /**
      * Operator iterator decision point.
      */
-    private static class TableIterator extends DecisionPoint {
+    private static class TableIterator extends DecisionPointImpl {
 
         final CharConverter converter;
         final int limit;
@@ -96,7 +93,7 @@ public class ExecFindCharConversion extends Traceable {
          * {@inheritDoc}
          */
         @Override
-        protected void next() {
+        public void redo() {
             if (charTo != null) {
                 // scan forward (this means we will have a match, or will have hit limit)
                 index = converter.scan(index, limit, charTo);

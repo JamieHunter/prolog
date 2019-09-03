@@ -8,7 +8,9 @@ import prolog.execution.CompileContext;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
+import prolog.execution.InstructionIterator;
 import prolog.execution.InstructionPointer;
+import prolog.predicates.ClauseEntry;
 
 /**
  * Stub that is used when debugger is inactive
@@ -27,30 +29,26 @@ public class NoDebugger implements DebuggerHook {
     }
 
     @Override
-    public void forward(InstructionPointer ip) {
-        ip.next();
+    public void invoke(Environment environment, DebugInstruction context, Instruction instruction) {
+        instruction.invoke(environment);
     }
 
     @Override
-    public void invoke(Environment environment, Instruction inst) {
-        inst.invoke(environment);
+    public void redo(DebugDecisionPoint context, DecisionPoint decisionPoint) {
+        decisionPoint.redo();
     }
 
     @Override
-    public void backtrack(Backtrack bt) {
-        bt.backtrack();
+    public DecisionPoint acceptDecisionPoint(DecisionPoint decisionPoint) {
+        return decisionPoint;
     }
 
     @Override
-    public void reset() {
+    public void acceptIP(InstructionPointer ip) {
     }
 
     @Override
-    public void decisionPoint(DecisionPoint decisionPoint) {
-    }
-
-    @Override
-    public void pushIP(InstructionPointer ip) {
+    public void leaveIP(InstructionPointer ip) {
     }
 
     @Override

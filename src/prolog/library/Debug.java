@@ -9,7 +9,6 @@ import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologInteger;
-import prolog.debugging.DebugStateChange;
 import prolog.debugging.SpySpec;
 import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologInstantiationError;
@@ -43,7 +42,6 @@ public final class Debug {
     public static void debug(Environment environment) {
         if (!environment.isDebuggerEnabled()) {
             environment.enableDebugger(true);
-            throw new DebugStateChange(); // kick execution loop out of optimal loop
         }
     }
 
@@ -57,7 +55,6 @@ public final class Debug {
         if (!environment.isDebuggerEnabled()) {
             environment.enableDebugger(true);
             environment.debugger().trace();
-            throw new DebugStateChange(); // kick execution loop out of optimal loop
         } else {
             environment.debugger().trace();
         }
@@ -163,10 +160,10 @@ public final class Debug {
         int includeMask = 0;
         int excludeMask = 0;
         int testMask = 0;
-        for(Term t : ports) {
+        for (Term t : ports) {
             int flagType = 0;
             if (t instanceof CompoundTerm) {
-                CompoundTerm tt = (CompoundTerm)t;
+                CompoundTerm tt = (CompoundTerm) t;
                 if (tt.arity() != 1) {
                 }
                 String prefixString = tt.functor().name();
@@ -238,7 +235,7 @@ public final class Debug {
         } else {
             StringBuilder builder = new StringBuilder();
             builder.append("Spy points:");
-            for(String ref : spies) {
+            for (String ref : spies) {
                 builder.append(" ");
                 builder.append(ref);
             }

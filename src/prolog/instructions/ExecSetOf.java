@@ -3,11 +3,9 @@
 //
 package prolog.instructions;
 
-import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.TreeSet;
 
 /**
@@ -15,8 +13,8 @@ import java.util.TreeSet;
  */
 public class ExecSetOf extends ExecBagOf {
 
-    public ExecSetOf(CompoundTerm source, Term template, Term callable, Term list) {
-        super(source, template, callable, list);
+    public ExecSetOf(Term template, Term callable, Term list) {
+        super(template, callable, list);
     }
 
     /**

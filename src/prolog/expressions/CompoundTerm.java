@@ -6,7 +6,6 @@ package prolog.expressions;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologAtomLike;
-import prolog.debugging.InstructionReflection;
 import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
@@ -17,7 +16,7 @@ import prolog.unification.UnifyIterator;
  * in Prolog, we permit it to be any Atomic value internally. We also permit a compound term with no members as a
  * zero-arity predicate head.
  */
-public interface CompoundTerm extends Term, InstructionReflection {
+public interface CompoundTerm extends Term {
 
     /**
      * Utility, create a compound term consisting of only a functor. As the functor is Atomic, the compound term is
@@ -152,6 +151,7 @@ public interface CompoundTerm extends Term, InstructionReflection {
 
     /**
      * Reflection on a compound term is self
+     *
      * @return self
      */
     default CompoundTerm reflect() {

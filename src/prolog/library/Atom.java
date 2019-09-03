@@ -8,7 +8,7 @@ import prolog.constants.PrologAtom;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
 import prolog.exceptions.PrologInstantiationError;
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.Term;
@@ -129,7 +129,7 @@ public final class Atom {
         }
         if (concatString != null) {
             // Final case enumerates all possible permutations
-            new AtomConcat(environment, concatString, leftTerm, rightTerm).next();
+            new AtomConcat(environment, concatString, leftTerm, rightTerm).redo();
             return;
         }
         throw PrologInstantiationError.error(environment, concatTerm);
@@ -154,10 +154,10 @@ public final class Atom {
         } else {
             throw PrologInstantiationError.error(environment, atomTerm);
         }
-        new SubAtom(environment, atomString, beforeTerm, lengthTerm, afterTerm, subAtomTerm).next();
+        new SubAtom(environment, atomString, beforeTerm, lengthTerm, afterTerm, subAtomTerm).redo();
     }
 
-    private static class AtomConcat extends DecisionPoint {
+    private static class AtomConcat extends DecisionPointImpl {
 
         private final String concat;
         private final Term leftTerm;
@@ -172,7 +172,7 @@ public final class Atom {
         }
 
         @Override
-        protected void next() {
+        public void redo() {
             if (split > concat.length()) {
                 environment.backtrack();
                 return;
@@ -192,7 +192,7 @@ public final class Atom {
         }
     }
 
-    private static class SubAtom extends DecisionPoint {
+    private static class SubAtom extends DecisionPointImpl {
         private final String atomString;
         private final Term beforeTerm;
         private final Term lengthTerm;
@@ -449,7 +449,7 @@ public final class Atom {
          * {@inheritDoc}
          */
         @Override
-        protected void next() {
+        public void redo() {
             environment.forward();
             algorithm.run();
         }

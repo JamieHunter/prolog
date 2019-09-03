@@ -3,28 +3,27 @@
 //
 package prolog.debugging;
 
-import prolog.execution.Backtrack;
 import prolog.execution.CompileContext;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
-import prolog.execution.InstructionPointer; /**
+import prolog.execution.InstructionPointer;
+
+/**
  * Interface that allows a debugger to hook into debugger execution
  */
 public interface DebuggerHook {
     void trace();
 
-    void forward(InstructionPointer ip);
+    void invoke(Environment environment, DebugInstruction context, Instruction instruction);
 
-    void invoke(Environment environment, Instruction inst);
+    void redo(DebugDecisionPoint context, DecisionPoint decisionPoint);
 
-    void backtrack(Backtrack bt);
+    DecisionPoint acceptDecisionPoint(DecisionPoint decisionPoint);
 
-    void reset();
+    void acceptIP(InstructionPointer ip);
 
-    void decisionPoint(DecisionPoint decisionPoint);
-
-    void pushIP(InstructionPointer ip);
+    void leaveIP(InstructionPointer ip);
 
     CompileContext newCompileContext(Environment.Shared shared);
 }

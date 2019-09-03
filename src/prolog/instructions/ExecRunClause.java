@@ -4,10 +4,9 @@
 package prolog.instructions;
 
 import prolog.bootstrap.Interned;
-import prolog.debugging.InstructionReflection;
 import prolog.exceptions.PrologExistenceError;
 import prolog.execution.CutPoint;
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.InstructionPointer;
@@ -15,7 +14,6 @@ import prolog.execution.LocalContext;
 import prolog.execution.RestoresLocalContext;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
-import prolog.flags.PrologFlags;
 import prolog.predicates.ClauseEntry;
 import prolog.predicates.ClauseSearchPredicate;
 import prolog.predicates.Predication;
@@ -24,7 +22,7 @@ import prolog.unification.Unifier;
 /**
  * Executes a predicate that consists of (or may consist of) a list of clauses.
  */
-public class ExecRunClause implements InstructionReflection, Instruction {
+public class ExecRunClause implements Instruction {
     private final Predication predication;
     private final ClauseSearchPredicate predicate;
     private final CompoundTerm term;
@@ -54,12 +52,12 @@ public class ExecRunClause implements InstructionReflection, Instruction {
      */
     @Override
     public void invoke(Environment environment) {
-        ClauseEntry [] clauses = predicate.getClauses();
+        ClauseEntry[] clauses = predicate.getClauses();
         if (clauses.length == 0 && !predicate.isDynamic() &&
                 !predicate.isMultifile() &&
                 !predicate.isDiscontiguous()) {
             Predication pred = new Predication(term.functor(), term.arity());
-            switch(environment.getFlags().unknown) {
+            switch (environment.getFlags().unknown) {
                 case ATOM_fail:
                     environment.backtrack();
                     return;
@@ -75,7 +73,7 @@ public class ExecRunClause implements InstructionReflection, Instruction {
         // Clauses are snapshot at time of call.
         ClauseIterator iter =
                 new ClauseIterator(environment, reflect(), predication, clauses, term.resolve(environment.getLocalContext()));
-        iter.next();
+        iter.redo();
     }
 
     /**
@@ -106,6 +104,7 @@ public class ExecRunClause implements InstructionReflection, Instruction {
         Environment environment;
         CutPoint parent;
         int cutDepth;
+
         private CutProxy(Environment environment, CutPoint parent, int cutDepth) {
             this.environment = environment;
             this.parent = parent;
@@ -133,7 +132,7 @@ public class ExecRunClause implements InstructionReflection, Instruction {
     /**
      * Main clause iterator with state. This is kept on the backtracking stack.
      */
-    private static class ClauseIterator extends DecisionPoint implements InstructionReflection {
+    private static class ClauseIterator extends DecisionPointImpl {
 
         final Term term;
         final Predication key;
@@ -150,14 +149,6 @@ public class ExecRunClause implements InstructionReflection, Instruction {
         }
 
         /**
-         * {@inheritDoc}
-        */
-        @Override
-        public CompoundTerm reflect() {
-            return source;
-        }
-
-        /**
          * Executed when clause has partially completed
          */
         void handleEndOfClause() {
@@ -171,7 +162,7 @@ public class ExecRunClause implements InstructionReflection, Instruction {
          * {@inheritDoc}
          */
         @Override
-        protected void next() {
+        public void redo() {
             if (index == clauses.length) {
                 environment.backtrack();
                 return;

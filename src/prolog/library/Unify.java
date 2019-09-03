@@ -40,22 +40,22 @@ public final class Unify {
         Term right = source.get(1);
 
         if (!left.isInstantiated()) {
-            compiling.add(new ExecUnifyInstantiate(source, (Variable) left, right));
+            compiling.add(source, new ExecUnifyInstantiate((Variable) left, right));
             return;
         }
         if (!right.isInstantiated()) {
             // prefer variable on 'left'
-            compiling.add(new ExecUnifyInstantiate(source, (Variable) right, left));
+            compiling.add(source, new ExecUnifyInstantiate((Variable) right, left));
             return;
         }
         if (left.isGrounded() && right.isGrounded()) {
             // if left and right are both grounded, just compare right now
             if (left.compareTo(right) == 0) {
-                // compiling.add(Control.TRUE); - not needed
+                // Control.TRUE
                 // TODO should this be a warning at least?
             } else {
                 // TODO should this be a warning at least?
-                compiling.add(Control.FALSE);
+                compiling.add(source, Control.FALSE);
             }
             return;
         }
@@ -67,12 +67,12 @@ public final class Unify {
         }
         if (left instanceof CompoundTerm && right instanceof CompoundTerm) {
             // unify compound terms (including lists)
-            compiling.add(new ExecUnifyCompounds(source, (CompoundTerm) left, (CompoundTerm) right));
+            compiling.add(source, new ExecUnifyCompounds((CompoundTerm) left, (CompoundTerm) right));
             return;
         }
         // any other combination never unifies
         // TODO should this be a warning at least?
-        compiling.add(Control.FALSE);
+        compiling.add(source, Control.FALSE);
     }
 
 
@@ -87,7 +87,7 @@ public final class Unify {
         Term left = source.get(0);
         Term right = source.get(1);
         CompileMathExpression expr = new CompileMathExpression(compiling).compile(right);
-        compiling.add(new ExecIs(source, expr, left));
+        compiling.add(source, new ExecIs(expr, left));
     }
 
 }

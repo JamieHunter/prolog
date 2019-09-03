@@ -65,6 +65,6 @@ public class BuiltinPredicateArity2 extends BuiltInPredicate {
     public void compile(Predication predication, CompileContext compiling, CompoundTerm term) {
         Term a = term.get(0);
         Term b = term.get(1);
-        compiling.add(new Proxy(lambda, a, b));
+        compiling.add(term, new Proxy(lambda, a, b));
     }
 }

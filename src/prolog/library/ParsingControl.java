@@ -86,15 +86,15 @@ public final class ParsingControl {
      * Query details of an operator/s
      *
      * @param compiling Compiling environment
-     * @param compound  Term containing parameters
+     * @param source    Term containing parameters
      */
     @Predicate(value = "current_op", arity = 3)
-    public static void currentOp(CompileContext compiling, CompoundTerm compound) {
+    public static void currentOp(CompileContext compiling, CompoundTerm source) {
         // this is a search predicate, though rarely used to find more than one
-        Term precedence = compound.get(0);
-        Term type = compound.get(1);
-        Term name = compound.get(2);
-        compiling.add(new ExecFindOp(compound, precedence, type, name));
+        Term precedence = source.get(0);
+        Term type = source.get(1);
+        Term name = source.get(2);
+        compiling.add(source, new ExecFindOp(precedence, type, name));
     }
 
     /**
@@ -122,13 +122,13 @@ public final class ParsingControl {
      * Query details of character conversions
      *
      * @param compiling Compiling environment
-     * @param compound  Term containing parameters
+     * @param source    Term containing parameters
      */
     @Predicate(value = "current_char_conversion", arity = 2)
-    public static void currentCharConversion(CompileContext compiling, CompoundTerm compound) {
+    public static void currentCharConversion(CompileContext compiling, CompoundTerm source) {
         // this is a search predicate, though rarely used to find more than one
-        Term fromChar = compound.get(0);
-        Term toChar = compound.get(1);
-        compiling.add(new ExecFindCharConversion(compound, fromChar, toChar));
+        Term fromChar = source.get(0);
+        Term toChar = source.get(1);
+        compiling.add(source, new ExecFindCharConversion(fromChar, toChar));
     }
 }

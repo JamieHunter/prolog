@@ -12,7 +12,7 @@ import prolog.unification.UnifyBuilder;
 /**
  * Unify two compound terms
  */
-public class ExecUnifyCompounds extends Traceable {
+public class ExecUnifyCompounds implements Instruction {
 
     private final Unifier left;
     private final CompoundTerm right;
@@ -20,12 +20,10 @@ public class ExecUnifyCompounds extends Traceable {
     /**
      * Create unify instruction.
      *
-     * @param source Source compound term
-     * @param left  First term
-     * @param right Second term
+     * @param left   First term
+     * @param right  Second term
      */
-    public ExecUnifyCompounds(CompoundTerm source, CompoundTerm left, CompoundTerm right) {
-        super(source);
+    public ExecUnifyCompounds(CompoundTerm left, CompoundTerm right) {
         this.left = UnifyBuilder.from(left); // precompile as unifier
         this.right = right;
     }

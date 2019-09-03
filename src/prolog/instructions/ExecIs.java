@@ -14,7 +14,7 @@ import prolog.unification.Unifier;
 /**
  * Instantiate variable from data on stack. This is used to implement the final step of IS instruction.
  */
-public class ExecIs extends Traceable {
+public class ExecIs implements Instruction {
 
     private final Instruction ops;
     private final Term target;
@@ -22,10 +22,10 @@ public class ExecIs extends Traceable {
     /**
      * Create instruction that takes value of stack and unifies it with target.
      *
+     * @param expr Math expression for RHS of Is
      * @param target Target term, assumed to be a variable.
      */
-    public ExecIs(CompoundTerm source, CompileMathExpression expr, Term target) {
-        super(source);
+    public ExecIs(CompileMathExpression expr, Term target) {
         this.ops = expr.toInstruction();
         this.target = target;
     }

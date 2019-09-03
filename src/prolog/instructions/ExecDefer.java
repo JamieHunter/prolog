@@ -74,17 +74,5 @@ public class ExecDefer implements Instruction {
             }
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public Instruction peek() {
-            switch (iter) {
-                case Start:
-                    return deferred;
-                default:
-                    return null;
-            }
-        }
     }
 }

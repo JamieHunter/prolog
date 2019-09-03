@@ -144,7 +144,7 @@ public final class Lists {
     public static void member(CompileContext compiling, CompoundTerm source) {
         Term element = source.get(0);
         Term list = source.get(1);
-        compiling.add(new ExecMember(source, element, list));
+        compiling.add(source, new ExecMember(element, list));
     }
 
     // ====================================================================

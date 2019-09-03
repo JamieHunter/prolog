@@ -3,8 +3,7 @@
 //
 package prolog.instructions;
 
-import prolog.debugging.InstructionReflection;
-import prolog.execution.DecisionPoint;
+import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 
@@ -33,7 +32,7 @@ public final class ExecRepeat implements Instruction {
     /**
      * A decision point that always succeeds
      */
-    private static class Repeat extends DecisionPoint {
+    private static class Repeat extends DecisionPointImpl {
         Repeat(Environment environment) {
             super(environment);
         }
@@ -42,7 +41,7 @@ public final class ExecRepeat implements Instruction {
          * {@inheritDoc}
          */
         @Override
-        protected void next() {
+        public void redo() {
             environment.pushBacktrack(this);
             environment.forward();
         }

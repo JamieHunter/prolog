@@ -137,8 +137,8 @@ public final class Consult {
     /**
      * Add goal to list of things to execute after text is loaded
      *
-     * @param environment
-     * @param goal
+     * @param environment Execution environment
+     * @param goal        Goal to execute
      */
     @Predicate("initialization")
     public static void initialization(Environment environment, Term goal) {
