@@ -3,15 +3,19 @@
 //
 package prolog.debugging;
 
+import prolog.constants.PrologAtom;
 import prolog.expressions.CompoundTerm;
+import prolog.expressions.CompoundTermImpl;
 import prolog.predicates.Predication;
 
+import java.lang.ref.WeakReference;
+
 /**
- * Expands beyond InstructionLookup providing dynamic context.
+ * Provides a proxy to a discovered instruction.
  */
 public class InstructionContext {
 
-    private final DebugInstruction instruction;
+    private final CompoundTerm source;
     private final Predication.Interned predication;
     private final long id;
     private long specGen = 0;
@@ -20,13 +24,14 @@ public class InstructionContext {
     public static final InstructionContext NULL = new InstructionContext(null, null, 0);
 
     public InstructionContext(Predication.Interned predication, DebugInstruction instruction, long id) {
+        // Note, reference to instruction will kill the WeakHashMap.
         this.predication = predication;
-        this.instruction = instruction;
+        this.source = instruction == null ? null : instruction.getSource();
         this.id = id;
     }
 
     public CompoundTerm getSource() {
-        return instruction.getSource();
+        return source;
     }
 
     public int spyFlags(SpyPoints spyPoints) {

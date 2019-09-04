@@ -57,7 +57,7 @@ public class ExecBagOf extends ExecFindAll {
         CompoundTerm combined = new CompoundTermImpl(Interned.CAROT_FUNCTOR, template, freeVariables);
 
         BagOfCollector iter = new BagOfCollector(environment, combined, callable, listUnifier);
-        iter.redo();
+        iter.start();
     }
 
     /**

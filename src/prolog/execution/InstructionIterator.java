@@ -9,7 +9,7 @@ package prolog.execution;
 public abstract class InstructionIterator implements InstructionPointer, Cloneable {
 
     protected final Environment environment;
-    protected final Object ref = this; // original iterator
+    protected final Object ref = this; // Mechanism to identify shared origin
 
     /**
      * Create a new iterator.

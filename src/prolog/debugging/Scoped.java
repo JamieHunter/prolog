@@ -5,12 +5,14 @@ package prolog.debugging;
 
 import prolog.execution.LocalContext;
 
+import java.lang.ref.WeakReference;
+
 /**
  * Capture instruction context and local context
  */
 public class Scoped {
-    public final InstructionContext instructionContext;
-    public final LocalContext localContext;
+    private final WeakReference<InstructionContext> instructionContext;
+    private final WeakReference<LocalContext> localContext;
     public final boolean traceable;
     private int iteration = 0;
     private final long seqId;
@@ -18,10 +20,27 @@ public class Scoped {
     public static final Scoped NULL = new Scoped(InstructionContext.NULL, null, false, 0L);
 
     public Scoped(InstructionContext instructionContext, LocalContext localContext, boolean traceable, long seqId) {
-        this.instructionContext = instructionContext;
-        this.localContext = localContext;
+        // Weak references to avoid reference loops for WeakHashMap
+        this.instructionContext = new WeakReference<>(instructionContext);
+        this.localContext = localContext == null ? null : new WeakReference<>(localContext);
         this.traceable = traceable;
         this.seqId = seqId;
+    }
+
+    public InstructionContext instructionContext() {
+        InstructionContext ctx = instructionContext.get();
+        if (ctx == null) {
+            ctx = InstructionContext.NULL;
+        }
+        return ctx;
+    }
+
+    public LocalContext localContext() {
+        if (localContext == null) {
+            return null;
+        } else {
+            return localContext.get();
+        }
     }
 
     public int getIteration() {

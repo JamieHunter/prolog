@@ -166,7 +166,7 @@ public final class Debug {
                 CompoundTerm tt = (CompoundTerm) t;
                 if (tt.arity() != 1) {
                 }
-                String prefixString = tt.functor().name();
+                String prefixString = PrologAtomLike.from(tt.functor()).name();
                 if (prefixString.equals("-")) {
                     flagType = -1;
                 } else if (prefixString.equals("+")) {

@@ -72,7 +72,7 @@ public class DebuggingCompileContext extends CompileContext {
         if (source == null) {
             return null;
         }
-        return new Predication(source.functor(), source.arity()).intern(environmentShared);
+        return source.toPredication().intern(environmentShared);
     }
 
     private SpySpec spec(CompoundTerm source) {

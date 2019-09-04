@@ -65,7 +65,7 @@ public class CompileMathExpression {
         // handle operators/functions
         if (term instanceof CompoundTerm) {
             CompoundTerm compound = (CompoundTerm) term;
-            Predication predication = new Predication(compound.functor(), compound.arity());
+            Predication predication = compound.toPredication();
             StackFunction func = environmentShared.lookupFunction(predication);
             if (func != null) {
                 compileFunction(compound, func);

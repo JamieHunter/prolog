@@ -4,7 +4,7 @@
 package prolog.instructions;
 
 import prolog.bootstrap.Interned;
-import prolog.constants.Atomic;
+import prolog.constants.PrologAtomLike;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
@@ -66,14 +66,14 @@ public class ExecRetractClause implements Instruction {
         }
         if (head.isAtom()) {
             // Normalize matcher to a compound of arity 0
-            matcher = CompoundTerm.from((Atomic) head);
+            matcher = CompoundTerm.from((PrologAtomLike) head);
         } else if (head instanceof CompoundTerm) {
             matcher = (CompoundTerm) head;
         } else {
             throw PrologTypeError.callableExpected(environment, head);
         }
 
-        Predication predication = new Predication(matcher.functor(), matcher.arity());
+        Predication predication = matcher.toPredication();
         PredicateDefinition defn = environment.lookupPredicate(predication);
         if (defn instanceof BuiltInPredicate) {
             // TODO: There can be some ClauseSearchPredicate procedures that are also considered static

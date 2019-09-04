@@ -144,7 +144,7 @@ public class ActiveDebugger implements DebuggerHook {
      */
     @Override
     public DecisionPoint acceptDecisionPoint(DecisionPoint decisionPoint) {
-        if (prologThis.instructionContext != InstructionContext.NULL) {
+        if (prologThis.instructionContext() != InstructionContext.NULL) {
             if (!(decisionPoint instanceof DebugDecisionPoint)) {
                 decisionPoint = new DebugDecisionPoint(environment, decisionPoint, prologThis);
             }
@@ -161,7 +161,7 @@ public class ActiveDebugger implements DebuggerHook {
      */
     @Override
     public void acceptIP(InstructionPointer ip) {
-        if (prologThis.instructionContext != InstructionContext.NULL && port != ExecutionPort.DEFERRED) {
+        if (prologThis.instructionContext() != InstructionContext.NULL && port != ExecutionPort.DEFERRED) {
             // consider ip to be either (a) the execution block for the current instruction, or
             // (b) special return context. In either case, leaving ip (see restore) amounts to an exit
             exitMap.put(ip.ref(), prologThis);
@@ -208,7 +208,7 @@ public class ActiveDebugger implements DebuggerHook {
      * @param action    Action to perform on entry port, or null if handling exit port only.
      */
     private void invoke(Scoped scope, ExecutionPort enterPort, Runnable action) {
-        if (scope.instructionContext == InstructionContext.NULL) {
+        if (scope.instructionContext() == InstructionContext.NULL) {
             if (action != null) {
                 action.run();
             }
@@ -367,7 +367,7 @@ public class ActiveDebugger implements DebuggerHook {
     }
 
     private void traceIsSpy(Scoped scoped) {
-        if (scoped.instructionContext.spyFlags(spyPoints) != 0) {
+        if (scoped.instructionContext().spyFlags(spyPoints) != 0) {
             traceText("+ ");
         } else {
             traceText("  ");
@@ -375,7 +375,7 @@ public class ActiveDebugger implements DebuggerHook {
     }
 
     private void traceId(Scoped scoped) {
-        traceText(String.format("%4d ", scoped.instructionContext.getId()));
+        traceText(String.format("%4d ", scoped.instructionContext().getId()));
     }
 
     private void traceDepth(int depth) {
@@ -383,8 +383,8 @@ public class ActiveDebugger implements DebuggerHook {
     }
 
     private void traceGoal(Scoped scoped) {
-        CompoundTerm goal = scoped.instructionContext.getSource().resolve(scoped.localContext);
-        if (scoped.instructionContext == InstructionContext.NULL) {
+        CompoundTerm goal = scoped.instructionContext().getSource().resolve(scoped.localContext());
+        if (scoped.instructionContext() == InstructionContext.NULL) {
             return;
         }
         WriteOptions options = new WriteOptions(environment, null);
@@ -520,7 +520,7 @@ public class ActiveDebugger implements DebuggerHook {
             ListIterator<Scoped> callIt = getCallStack(-1).listIterator();
             while (callIt.hasPrevious()) {
                 Scoped scoped = callIt.previous();
-                if (hitCall || scoped.instructionContext.getId() == iarg.get()) {
+                if (hitCall || scoped.instructionContext().getId() == iarg.get()) {
                     hitCall = true;
                     skipSeqId = scoped.getSeqId();
                 }
@@ -554,13 +554,13 @@ public class ActiveDebugger implements DebuggerHook {
     }
 
     private StepMode activateSpy(String arg) {
-        SpySpec spySpec = prologThis.instructionContext.spySpec();
+        SpySpec spySpec = prologThis.instructionContext().spySpec();
         spyPoints.addSpy(spySpec);
         return null;
     }
 
     private StepMode removeSpy(String arg) {
-        SpySpec spySpec = prologThis.instructionContext.spySpec();
+        SpySpec spySpec = prologThis.instructionContext().spySpec();
         spyPoints.removeSpy(spySpec);
         return null;
     }
@@ -635,8 +635,8 @@ public class ActiveDebugger implements DebuggerHook {
     }
 
     private void writePredicateCommon(Consumer<Term> writer) {
-        CompoundTerm term = prologThis.instructionContext.getSource();
-        Predication pred = new Predication(term.functor(), term.arity()).intern(environment);
+        CompoundTerm term = prologThis.instructionContext().getSource();
+        Predication pred = term.toPredication();
         PredicateDefinition defn = environment.lookupPredicate(pred);
         if (defn instanceof BuiltInPredicate) {
             traceText("Builtin Predicate.\n");

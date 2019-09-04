@@ -5,18 +5,15 @@ package prolog.library;
 
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Predicate;
-import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
-import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.CompileContext;
 import prolog.execution.CopyTerm;
 import prolog.execution.Environment;
-import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.instructions.ExecExhaust;
@@ -25,7 +22,6 @@ import prolog.instructions.ExecRetractClause;
 import prolog.predicates.BuiltInPredicate;
 import prolog.predicates.ClauseEntry;
 import prolog.predicates.ClauseSearchPredicate;
-import prolog.predicates.MissingPredicate;
 import prolog.predicates.PredicateDefinition;
 import prolog.predicates.Predication;
 import prolog.unification.Unifier;
@@ -91,7 +87,7 @@ public final class Dictionary {
         if (!CompoundTerm.termIsA(predicator, Interned.SLASH_ATOM, 2)) {
             throw PrologTypeError.predicateIndicatorExpected(environment, predicator);
         }
-        CompoundTerm comp = (CompoundTerm)predicator;
+        CompoundTerm comp = (CompoundTerm) predicator;
         abolish(environment, comp.get(0), comp.get(1));
     }
 
@@ -131,7 +127,7 @@ public final class Dictionary {
      * Recursively match clauses
      *
      * @param compiling Compilation context
-     * @param source      The predicate template to retract
+     * @param source    The predicate template to retract
      */
     @Predicate(value = "retract", arity = 1)
     public static void retract(CompileContext compiling, CompoundTerm source) {
@@ -143,7 +139,7 @@ public final class Dictionary {
      * Recursively match and retract clauses.
      *
      * @param compiling Compilation context
-     * @param source      The predicate template to retract
+     * @param source    The predicate template to retract
      */
     @Predicate(value = "retractall", arity = 1)
     public static void retractAll(CompileContext compiling, CompoundTerm source) {
@@ -157,7 +153,7 @@ public final class Dictionary {
      * Recursively match clauses
      *
      * @param compiling Compilation context
-     * @param source      The predicate to call
+     * @param source    The predicate to call
      */
     @Predicate(value = "clause", arity = 2)
     public static void clause(CompileContext compiling, CompoundTerm source) {
@@ -257,7 +253,7 @@ public final class Dictionary {
             throw PrologInstantiationError.error(environment, head);
         }
         if (head.isAtom()) {
-            head = CompoundTerm.from((Atomic) head);
+            head = CompoundTerm.from((PrologAtomLike) head);
         }
         if (!(head instanceof CompoundTerm)) {
             throw PrologTypeError.callableExpected(environment, head);

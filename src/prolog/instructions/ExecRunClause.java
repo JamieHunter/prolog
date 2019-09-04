@@ -4,6 +4,7 @@
 package prolog.instructions;
 
 import prolog.bootstrap.Interned;
+import prolog.constants.PrologAtomLike;
 import prolog.exceptions.PrologExistenceError;
 import prolog.execution.CutPoint;
 import prolog.execution.DecisionPointImpl;
@@ -56,7 +57,7 @@ public class ExecRunClause implements Instruction {
         if (clauses.length == 0 && !predicate.isDynamic() &&
                 !predicate.isMultifile() &&
                 !predicate.isDiscontiguous()) {
-            Predication pred = new Predication(term.functor(), term.arity());
+            Predication pred = new Predication(PrologAtomLike.from(term.functor()), term.arity());
             switch (environment.getFlags().unknown) {
                 case ATOM_fail:
                     environment.backtrack();

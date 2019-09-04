@@ -46,7 +46,7 @@ public abstract class DecisionPointImpl implements DecisionPoint {
      * Called during backtracking process
      */
     @Override
-    public void backtrack() {
+    public final void backtrack() {
         restore();
         redo();
     }

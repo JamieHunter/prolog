@@ -10,7 +10,7 @@ public enum StepMode {
     LEAP {
         @Override
         public int flags(ActiveDebugger debugger, Scoped scope) {
-            return scope.instructionContext.spyFlags(debugger.environment.spyPoints());
+            return scope.instructionContext().spyFlags(debugger.environment.spyPoints());
         }
     },
     CREEP {
@@ -31,7 +31,7 @@ public enum StepMode {
         @Override
         public int flags(ActiveDebugger debugger, Scoped scope) {
             return debugger.isSkipEnd(scope) ? ExecutionPort.EXIT_FLAG | ExecutionPort.FAIL_FLAG :
-                    scope.instructionContext.spyFlags(debugger.environment.spyPoints());
+                    scope.instructionContext().spyFlags(debugger.environment.spyPoints());
         }
     },
     NODEBUG {

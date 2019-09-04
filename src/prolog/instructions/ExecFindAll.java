@@ -64,7 +64,7 @@ public class ExecFindAll implements Instruction {
     protected void invoke2(Environment environment, Term template, Term callable) {
         FindAllCollector iter =
                 new FindAllCollector(environment, template, callable, listUnifier);
-        iter.redo();
+        iter.start();
     }
 
     /**
@@ -99,8 +99,7 @@ public class ExecFindAll implements Instruction {
             return template.enumTerm(new CopyTerm(environment));
         }
 
-        @Override
-        public void redo() {
+        protected void start() {
             //
             // Attempt next possible solution (this will only run once)
             //
@@ -109,8 +108,7 @@ public class ExecFindAll implements Instruction {
         }
 
         @Override
-        public void backtrack() {
-            super.restore();
+        public void redo() {
             environment.forward();
             onDone(builder);
         }
@@ -122,10 +120,10 @@ public class ExecFindAll implements Instruction {
          */
         protected void onDone(List<Term> result) {
             Term collected;
-            if (builder.size() == 0) {
+            if (result.size() == 0) {
                 collected = PrologEmptyList.EMPTY_LIST;
             } else {
-                collected = new TermListImpl(builder, PrologEmptyList.EMPTY_LIST);
+                collected = new TermListImpl(result, PrologEmptyList.EMPTY_LIST);
             }
             if (!listUnifier.unify(environment.getLocalContext(), collected)) {
                 environment.backtrack();

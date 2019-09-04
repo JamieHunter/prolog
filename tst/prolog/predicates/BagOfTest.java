@@ -93,7 +93,7 @@ public class BagOfTest {
     }
 
     @Test
-    public void testFinaAllNumberSet() {
+    public void testFindAllNumberSet() {
         given()
                 .when("?- findall(Z, p(X,Y,Z), Bag).")
                 .assertSuccess()

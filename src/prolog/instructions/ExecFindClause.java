@@ -4,7 +4,7 @@
 package prolog.instructions;
 
 import prolog.bootstrap.Interned;
-import prolog.constants.Atomic;
+import prolog.constants.PrologAtomLike;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
@@ -54,7 +54,7 @@ public class ExecFindClause implements Instruction {
         }
         if (boundHead.isAtom()) {
             // Normalize matcher to a compound of arity 0
-            matcher = CompoundTerm.from((Atomic) boundHead);
+            matcher = CompoundTerm.from((PrologAtomLike) boundHead);
         } else if (boundHead instanceof CompoundTerm) {
             matcher = (CompoundTerm) boundHead;
         } else {
@@ -66,7 +66,7 @@ public class ExecFindClause implements Instruction {
         if (boundBody.isInstantiated() && !(boundBody.isAtom() || boundBody instanceof CompoundTerm)) {
             throw PrologTypeError.callableExpected(environment, boundBody);
         }
-        Predication key = new Predication(matcher.functor(), matcher.arity());
+        Predication key = matcher.toPredication();
         PredicateDefinition defn = environment.lookupPredicate(key);
         if (defn instanceof BuiltInPredicate) {
             throw PrologPermissionError.error(environment,

@@ -9,24 +9,24 @@ import prolog.constants.PrologAtomLike;
 import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
+import prolog.predicates.Predication;
 import prolog.unification.UnifyIterator;
 
 /**
- * Compound term. A compound term (usually) consists of an atom, and one or more components. While a functor is an atom
- * in Prolog, we permit it to be any Atomic value internally. We also permit a compound term with no members as a
- * zero-arity predicate head.
+ * Compound term. A compound term (usually) consists of an atom, and one or more components. We permit a compound term
+ * with no members to exist as a zero-arity predicate head.
  */
 public interface CompoundTerm extends Term {
 
     /**
-     * Utility, create a compound term consisting of only a functor. As the functor is Atomic, the compound term is
+     * Utility, create a compound term consisting of only a functor. As the functor is an atom, the compound term is
      * implicitly grounded.
      *
      * @param functor Functor
      * @return compound term
      */
     static CompoundTerm from(Atomic functor) {
-        return new GroundedCompoundTerm((Atomic) functor);
+        return new GroundedCompoundTerm(functor);
     }
 
     /**
@@ -101,7 +101,7 @@ public interface CompoundTerm extends Term {
      *
      * @return Functor
      */
-    PrologAtomLike functor();
+    Atomic functor();
 
     /**
      * Component of compound term at given index
@@ -150,11 +150,10 @@ public interface CompoundTerm extends Term {
     }
 
     /**
-     * Reflection on a compound term is self
-     *
-     * @return self
+     * Obtain predication of compound term
+     * @return Predication
      */
-    default CompoundTerm reflect() {
-        return this;
+    default Predication toPredication() {
+        return new Predication(PrologAtomLike.from(functor()), arity());
     }
 }

@@ -94,8 +94,8 @@ public class CompoundTermImpl implements CompoundTerm {
      * {@inheritDoc}
      */
     @Override
-    public PrologAtomLike functor() {
-        return (PrologAtomLike) members[0];
+    public Atomic functor() {
+        return (Atomic) members[0];
     }
 
     /**
@@ -123,7 +123,7 @@ public class CompoundTermImpl implements CompoundTerm {
     @Override
     public void compile(CompileContext compiling) {
         Environment.Shared environmentShared = compiling.environmentShared();
-        Predication predication = new Predication(functor(), arity());
+        Predication predication = toPredication();
         PredicateDefinition definition = environmentShared.autoCreateDictionaryEntry(predication);
         definition.compile(predication, compiling, this);
     }
