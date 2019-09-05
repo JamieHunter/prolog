@@ -1,7 +1,7 @@
 package prolog.predicates;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import prolog.test.Given;
 import prolog.test.PrologTest;
 
@@ -16,11 +16,10 @@ public class CharConversionTest {
                 ;
     }
 
-    @Ignore("conversion not yet implemented")
+    @Disabled("conversion not yet implemented")
     @Test
     public void testParserConversion() {
-        // Actual parser conversion is not yet implemented,
-        // but requires setting of the prolog flag
+        // TODO (currently tested via Prolog Vanilla test)
     }
 
     @Test

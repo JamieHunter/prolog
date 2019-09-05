@@ -1,10 +1,10 @@
 package prolog.predicates;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import prolog.test.Given;
 import prolog.test.PrologTest;
 
-import static prolog.test.Matchers.isInteger;
+import static prolog.test.Matchers.*;
 import static org.hamcrest.Matchers.*;
 
 /**

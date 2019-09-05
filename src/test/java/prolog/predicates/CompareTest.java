@@ -1,10 +1,10 @@
 package prolog.predicates;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import prolog.test.Given;
 import prolog.test.PrologTest;
 
-import static prolog.test.Matchers.isAtom;
+import static prolog.test.Matchers.*;
 
 public class CompareTest {
 

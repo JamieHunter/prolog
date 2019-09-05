@@ -1,18 +1,14 @@
 package prolog.library;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import prolog.exceptions.PrologPermissionError;
 import prolog.test.PrologTest;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static prolog.test.Matchers.isAtom;
 import static prolog.test.Matchers.isInteger;
 
 public class FlagsTest {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void testWellKnownFlags() {
@@ -32,8 +28,9 @@ public class FlagsTest {
 
     @Test
     public void testUpdateProtectedFlag() {
-        thrown.expect(PrologPermissionError.class);
-        PrologTest.given().when("?- set_prolog_flag(bounded, true).");
+        assertThrows(PrologPermissionError.class, ()->{
+            PrologTest.given().when("?- set_prolog_flag(bounded, true).");
+        });
     }
 
     @Test
@@ -51,8 +48,9 @@ public class FlagsTest {
 
     @Test
     public void testCreateConstCustomFlag() {
-        thrown.expect(PrologPermissionError.class);
-        PrologTest.given("?- create_prolog_flag(thingy, foo, [access(read_only)]).")
-                .when("?- set_prolog_flag(thingy, bar).");
+        assertThrows(PrologPermissionError.class, ()->{
+            PrologTest.given("?- create_prolog_flag(thingy, foo, [access(read_only)]).")
+                    .when("?- set_prolog_flag(thingy, bar).");
+        });
     }
 }

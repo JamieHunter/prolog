@@ -1,12 +1,12 @@
 package prolog.io;
 
 import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import prolog.bootstrap.Interned;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologEmptyList;
 import prolog.execution.Environment;
-import prolog.bootstrap.Interned;
 import prolog.execution.OperatorEntry;
 import prolog.expressions.Term;
 import prolog.expressions.TermListImpl;
@@ -18,8 +18,9 @@ import prolog.test.StreamUtils;
 
 import java.io.IOException;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.equalToCompressingWhiteSpace;
 import static org.junit.Assert.assertThat;
-import static org.hamcrest.Matchers.*;
 
 /**
  * Test conversion to strings
@@ -28,7 +29,8 @@ public class StructureWriterTest {
 
     private Environment environment;
     private WriteOptions options;
-    @Before
+
+    @BeforeEach
     public void setEnvironment() {
         environment = new Environment();
         options = new WriteOptions(environment, null);
@@ -86,13 +88,13 @@ public class StructureWriterTest {
     @Test
     public void testList() throws IOException {
         options.ignoreOps = false;
-        expect(new TermListImpl(new Term[] { atom("aa"), atom("bb") }, PrologEmptyList.EMPTY_LIST), equalTo("[aa, bb]"));
-        expect(new TermListImpl(new Term[] { atom("a"), atom("b") }, PrologEmptyList.EMPTY_LIST), equalTo("`ab`"));
-        expect(new TermListImpl(new Term[] { atom("aa"), atom("bb") }, atom("cc")), equalTo("[aa, bb| cc]"));
+        expect(new TermListImpl(new Term[]{atom("aa"), atom("bb")}, PrologEmptyList.EMPTY_LIST), equalTo("[aa, bb]"));
+        expect(new TermListImpl(new Term[]{atom("a"), atom("b")}, PrologEmptyList.EMPTY_LIST), equalTo("`ab`"));
+        expect(new TermListImpl(new Term[]{atom("aa"), atom("bb")}, atom("cc")), equalTo("[aa, bb| cc]"));
         options.ignoreOps = true;
-        expect(new TermListImpl(new Term[] { atom("aa"), atom("bb") }, PrologEmptyList.EMPTY_LIST), equalTo(".(aa, .(bb,[]))"));
-        expect(new TermListImpl(new Term[] { atom("a"), atom("b") }, PrologEmptyList.EMPTY_LIST), equalTo(".(a, .(b,[]))"));
-        expect(new TermListImpl(new Term[] { atom("aa"), atom("bb") }, atom("cc")), equalTo(".(aa, .(bb,cc))"));
+        expect(new TermListImpl(new Term[]{atom("aa"), atom("bb")}, PrologEmptyList.EMPTY_LIST), equalTo(".(aa, .(bb,[]))"));
+        expect(new TermListImpl(new Term[]{atom("a"), atom("b")}, PrologEmptyList.EMPTY_LIST), equalTo(".(a, .(b,[]))"));
+        expect(new TermListImpl(new Term[]{atom("aa"), atom("bb")}, atom("cc")), equalTo(".(aa, .(bb,cc))"));
     }
 
     @Test

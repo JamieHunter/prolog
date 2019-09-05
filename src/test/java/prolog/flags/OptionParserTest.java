@@ -1,8 +1,6 @@
 package prolog.flags;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import prolog.constants.PrologAtomLike;
 import prolog.exceptions.FutureFlagValueError;
 import prolog.exceptions.FutureTypeError;
@@ -20,6 +18,7 @@ import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static prolog.test.Matchers.isAtom;
 
 /**
@@ -27,9 +26,6 @@ import static prolog.test.Matchers.isAtom;
  * option.pl {@link prolog.library.OptionTest}
  */
 public class OptionParserTest implements Flags {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     private OptionParser<OptionParserTest> parser = new OptionParser<>();
     private Environment environment = new Environment();
@@ -94,8 +90,9 @@ public class OptionParserTest implements Flags {
 
     @Test
     public void testBooleanOther() {
-        thrown.expect(FutureFlagValueError.class);
-        apply("[bool_flag(other)].");
+        assertThrows(FutureFlagValueError.class, () -> {
+            apply("[bool_flag(other)].");
+        });
     }
 
     @Test
@@ -106,8 +103,9 @@ public class OptionParserTest implements Flags {
 
     @Test
     public void testAtomFlagNotAtom() {
-        thrown.expect(FutureTypeError.class);
-        apply("[atom_flag = X].");
+        assertThrows(FutureTypeError.class, () -> {
+            apply("[atom_flag = X].");
+        });
     }
 
     @Test
@@ -128,8 +126,9 @@ public class OptionParserTest implements Flags {
 
     @Test
     public void testEnumBadValue() {
-        thrown.expect(FutureFlagValueError.class);
-        apply("[enum_flag(four)].");
+        assertThrows(FutureFlagValueError.class, () -> {
+            apply("[enum_flag(four)].");
+        });
     }
 
     @Test

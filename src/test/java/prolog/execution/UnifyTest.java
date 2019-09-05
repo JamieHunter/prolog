@@ -1,10 +1,8 @@
 package prolog.execution;
 
-import org.junit.Test;
-import prolog.expressions.Term;
+import org.junit.jupiter.api.Test;
 import prolog.test.PrologTest;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static prolog.test.Matchers.*;
 
 public class UnifyTest {

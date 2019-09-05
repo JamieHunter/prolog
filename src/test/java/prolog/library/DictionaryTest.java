@@ -1,10 +1,9 @@
 package prolog.library;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import prolog.test.PrologTest;
 
-import static prolog.test.Matchers.isAtom;
-import static prolog.test.Matchers.isUninstantiated;
+import static prolog.test.Matchers.*;
 
 /**
  * Series of tests for simple library lookup and matching

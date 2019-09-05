@@ -1,13 +1,10 @@
 package prolog.library;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import prolog.test.Given;
 import prolog.test.PrologTest;
 
-import static prolog.test.Matchers.isAtom;
-import static prolog.test.Matchers.isInteger;
-import static prolog.test.Matchers.isList;
+import static prolog.test.Matchers.*;
 
 /**
  * Tests for apply.pl (Apply library), not to be confused with the apply/2 predicate.

@@ -1,7 +1,7 @@
 package prolog.parser;
 
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import prolog.execution.Environment;
 import prolog.execution.OperatorEntry;
 import prolog.expressions.Term;

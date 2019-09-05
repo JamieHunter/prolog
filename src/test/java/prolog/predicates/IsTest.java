@@ -1,15 +1,13 @@
 package prolog.predicates;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import prolog.exceptions.PrologEvaluationError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
 import prolog.test.PrologTest;
 
 import static org.hamcrest.Matchers.closeTo;
-import static org.hamcrest.Matchers.isIn;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static prolog.test.Matchers.isFloat;
 import static prolog.test.Matchers.isInteger;
 
@@ -17,9 +15,6 @@ import static prolog.test.Matchers.isInteger;
  * Test various is expressions.
  */
 public class IsTest {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void testIsAdd() {
@@ -61,26 +56,30 @@ public class IsTest {
 
     @Test
     public void testIsMultiplyUndefVar() {
-        thrown.expect(PrologInstantiationError.class);
-        PrologTest.given().when("?- X is 5*Y .");
+        assertThrows(PrologInstantiationError.class, () -> {
+            PrologTest.given().when("?- X is 5*Y .");
+        });
     }
 
     @Test
     public void testIsMultiplyAtomVar() {
-        thrown.expect(PrologTypeError.class);
-        PrologTest.given().when("?- X is foo .");
+        assertThrows(PrologTypeError.class, () -> {
+            PrologTest.given().when("?- X is foo .");
+        });
     }
 
     @Test
     public void testIsIntDivideByZero() {
-        thrown.expect(PrologEvaluationError.class);
-        PrologTest.given().when("?- X is 1//0 .");
+        assertThrows(PrologEvaluationError.class, () -> {
+            PrologTest.given().when("?- X is 1//0 .");
+        });
     }
 
     @Test
     public void testIsFloatDivideByZero() {
-        thrown.expect(PrologEvaluationError.class);
-        PrologTest.given().when("?- X is 1.0/0.0 .");
+        assertThrows(PrologEvaluationError.class, () -> {
+            PrologTest.given().when("?- X is 1.0/0.0 .");
+        });
     }
 
     @Test

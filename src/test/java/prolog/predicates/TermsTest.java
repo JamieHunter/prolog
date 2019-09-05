@@ -1,6 +1,6 @@
 package prolog.predicates;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import prolog.test.PrologTest;
 
 import static prolog.test.Matchers.*;

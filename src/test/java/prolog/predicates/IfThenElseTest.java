@@ -1,9 +1,8 @@
 package prolog.predicates;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import prolog.test.PrologTest;
 
-import static org.junit.Assert.fail;
 import static prolog.test.Matchers.isInteger;
 import static prolog.test.Matchers.isUninstantiated;
 
@@ -128,6 +127,6 @@ public class IfThenElseTest {
                 .anotherSolution()
                 .assertFailed()
                 .expectLog()
-                ;
+        ;
     }
 }

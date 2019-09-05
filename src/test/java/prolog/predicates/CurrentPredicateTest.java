@@ -1,21 +1,17 @@
 package prolog.predicates;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import prolog.exceptions.PrologTypeError;
 import prolog.test.Given;
 import prolog.test.PrologTest;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static prolog.test.Matchers.*;
 
 /**
  * Test the "current_predicate" predicate
  */
 public class CurrentPredicateTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     protected Given given() {
         return PrologTest
@@ -40,14 +36,16 @@ public class CurrentPredicateTest {
 
     @Test
     public void testBadTermAtomic() {
-        expectedException.expect(PrologTypeError.class);
-        given().when("?- current_predicate(4).");
+        assertThrows(PrologTypeError.class, () -> {
+            given().when("?- current_predicate(4).");
+        });
     }
 
     @Test
     public void testBadTermEdge() {
-        expectedException.expect(PrologTypeError.class);
-        given().when("?- current_predicate(4/foo).");
+        assertThrows(PrologTypeError.class, () -> {
+            given().when("?- current_predicate(4/foo).");
+        });
     }
 
     @Test

@@ -1,10 +1,9 @@
 package prolog.io;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,21 +21,21 @@ import static org.hamcrest.Matchers.*;
  */
 public class FileReadWriteStreamsTest {
 
-    @Rule
-    public TemporaryFolder testFolder = new TemporaryFolder();
+    @TempDir
+    public File testFolder;
 
     private File tempFile;
     private FileReadWriteStreams stream;
     private FileChannel observer;
 
-    @Before
+    @BeforeEach
     public void prepareTest() throws IOException {
-        tempFile = testFolder.newFile("random.bin");
+        tempFile = new File(testFolder, "random.bin");
         stream = new FileReadWriteStreams(FileChannel.open(tempFile.toPath(), StandardOpenOption.CREATE,
                 StandardOpenOption.READ, StandardOpenOption.WRITE));
     }
 
-    @After
+    @AfterEach
     public void endTest() throws IOException {
         stream.close();
     }
@@ -48,7 +47,7 @@ public class FileReadWriteStreamsTest {
         // Simple write-then-observe
         stream.write(testDataShort, 0, testDataShort.length);
         stream.flush();
-        assertThat(tempFile.length(), is((long)testDataShort.length));
+        assertThat(tempFile.length(), is((long) testDataShort.length));
         assertPosition(testDataShort.length);
         assertData(0, testDataShort);
     }
@@ -60,7 +59,7 @@ public class FileReadWriteStreamsTest {
         // Simple write-then-observe
         stream.write(testDataMedium, 0, testDataMedium.length);
         stream.flush();
-        assertThat(tempFile.length(), is((long)testDataMedium.length));
+        assertThat(tempFile.length(), is((long) testDataMedium.length));
         assertPosition(testDataMedium.length);
         assertData(0, testDataMedium);
     }
@@ -72,7 +71,7 @@ public class FileReadWriteStreamsTest {
         // Simple write-then-observe
         stream.write(testDataLong, 0, testDataLong.length);
         stream.flush();
-        assertThat(tempFile.length(), is((long)testDataLong.length));
+        assertThat(tempFile.length(), is((long) testDataLong.length));
         assertPosition(testDataLong.length);
         assertData(0, testDataLong);
     }
@@ -84,15 +83,15 @@ public class FileReadWriteStreamsTest {
         byte[] testInner = new byte[513];
         ThreadLocalRandom.current().nextBytes(testInner);
         stream.write(testOuter, 0, testOuter.length);
-        final int base = testOuter.length-1000;
+        final int base = testOuter.length - 1000;
         setPosition(base);
         stream.write(testInner, 0, testInner.length);
         stream.flush();
-        assertThat(tempFile.length(), is((long)testOuter.length));
-        assertPosition(base+testInner.length);
+        assertThat(tempFile.length(), is((long) testOuter.length));
+        assertPosition(base + testInner.length);
         assertData(base, testInner); // test this subset first
-        for(int i = 0; i < testInner.length; i++) {
-            testOuter[base+i] = testInner[i];
+        for (int i = 0; i < testInner.length; i++) {
+            testOuter[base + i] = testInner[i];
         }
         assertData(0, testOuter); // now make sure entire content is as expected
     }
@@ -103,20 +102,20 @@ public class FileReadWriteStreamsTest {
         ThreadLocalRandom.current().nextBytes(testOuter);
         stream.write(testOuter, 0, testOuter.length);
         assertPosition(testOuter.length);
-        int base = testOuter.length-100;
+        int base = testOuter.length - 100;
         setPosition(base);
-        byte [] readData = new byte[90];
+        byte[] readData = new byte[90];
         stream.read(readData, 0, readData.length);
-        byte [] expected = new byte[readData.length];
-        for(int i = 0; i < expected.length; i++) {
-            expected[i] = testOuter[base+i];
+        byte[] expected = new byte[readData.length];
+        for (int i = 0; i < expected.length; i++) {
+            expected[i] = testOuter[base + i];
         }
         assertArrays(readData, expected);
-        base = base + readData.length-300;
+        base = base + readData.length - 300;
         setPosition(base);
         stream.read(readData, 0, readData.length);
-        for(int i = 0; i < expected.length; i++) {
-            expected[i] = testOuter[base+i];
+        for (int i = 0; i < expected.length; i++) {
+            expected[i] = testOuter[base + i];
         }
         assertArrays(readData, expected);
     }
@@ -127,33 +126,33 @@ public class FileReadWriteStreamsTest {
         ThreadLocalRandom.current().nextBytes(testOuter);
         stream.write(testOuter, 0, testOuter.length);
         assertPosition(testOuter.length);
-        int base = testOuter.length-100;
+        int base = testOuter.length - 100;
         setPosition(base);
-        byte [] readData = new byte[20];
+        byte[] readData = new byte[20];
         stream.read(readData, 0, readData.length);
-        assertPosition(base+readData.length);
-        byte [] expected = new byte[readData.length];
-        for(int i = 0; i < expected.length; i++) {
-            expected[i] = testOuter[base+i];
+        assertPosition(base + readData.length);
+        byte[] expected = new byte[readData.length];
+        for (int i = 0; i < expected.length; i++) {
+            expected[i] = testOuter[base + i];
         }
         assertArrays(readData, expected);
         base = base + 10;
         setPosition(base);
-        byte [] layerWrite = new byte[25];
+        byte[] layerWrite = new byte[25];
         ThreadLocalRandom.current().nextBytes(layerWrite);
         stream.write(layerWrite, 0, layerWrite.length);
-        assertPosition(base+layerWrite.length);
-        for(int i = 0; i  < layerWrite.length; i++) {
-            testOuter[base+i] = layerWrite[i];
+        assertPosition(base + layerWrite.length);
+        for (int i = 0; i < layerWrite.length; i++) {
+            testOuter[base + i] = layerWrite[i];
         }
         base = base - 20;
         setPosition(base);
-        byte [] layerRead = new byte[50];
+        byte[] layerRead = new byte[50];
         stream.read(layerRead, 0, layerRead.length);
-        assertPosition(base+layerRead.length);
+        assertPosition(base + layerRead.length);
         expected = new byte[layerRead.length];
-        for(int i = 0; i < expected.length; i++) {
-            expected[i] = testOuter[base+i];
+        for (int i = 0; i < expected.length; i++) {
+            expected[i] = testOuter[base + i];
         }
         assertArrays(layerRead, expected);
     }
@@ -162,21 +161,21 @@ public class FileReadWriteStreamsTest {
     public void testWriteThenReadBytes() throws IOException {
         byte[] testOuter = new byte[991];
         ThreadLocalRandom.current().nextBytes(testOuter);
-        for(int i = 0; i < testOuter.length; i++) {
+        for (int i = 0; i < testOuter.length; i++) {
             stream.write(testOuter[i]);
         }
         assertPosition(testOuter.length);
-        int base = testOuter.length-100;
+        int base = testOuter.length - 100;
         setPosition(base);
-        byte [] readData = new byte[90];
-        for(int i = 0; i < readData.length; i++) {
+        byte[] readData = new byte[90];
+        for (int i = 0; i < readData.length; i++) {
             int c = stream.read();
-            readData[i] = (byte)c;
+            readData[i] = (byte) c;
             assertThat(c, greaterThanOrEqualTo(0));
         }
-        byte [] expected = new byte[readData.length];
-        for(int i = 0; i < expected.length; i++) {
-            expected[i] = testOuter[base+i];
+        byte[] expected = new byte[readData.length];
+        for (int i = 0; i < expected.length; i++) {
+            expected[i] = testOuter[base + i];
         }
         assertArrays(readData, expected);
     }
@@ -198,11 +197,11 @@ public class FileReadWriteStreamsTest {
     //
     // Utility, read back from file to observe what changes were made
     //
-    private byte [] observe(int start, int len) throws IOException {
-        try(FileChannel channel = FileChannel.open(tempFile.toPath(), StandardOpenOption.READ)) {
+    private byte[] observe(int start, int len) throws IOException {
+        try (FileChannel channel = FileChannel.open(tempFile.toPath(), StandardOpenOption.READ)) {
             ByteBuffer buffer = ByteBuffer.allocate(len);
             int total = 0;
-            while(total < len) {
+            while (total < len) {
                 int chunk = channel.read(buffer, start + total);
                 if (chunk <= 0) {
                     break;
@@ -210,7 +209,7 @@ public class FileReadWriteStreamsTest {
                 total += chunk;
             }
             buffer.flip();
-            byte [] result = new byte[total];
+            byte[] result = new byte[total];
             buffer.get(result);
             return result;
         }
@@ -228,12 +227,12 @@ public class FileReadWriteStreamsTest {
         assertThat(a, arrayContaining(b));
     }
 
-    private static void assertArrays(byte[] a, byte [] b) {
+    private static void assertArrays(byte[] a, byte[] b) {
         assertArrays(conv(a), conv(b));
     }
 
-    private void assertData(int start, byte [] expected) throws IOException {
-        byte [] observed = observe(start, expected.length);
+    private void assertData(int start, byte[] expected) throws IOException {
+        byte[] observed = observe(start, expected.length);
         assertArrays(observed, expected);
     }
 }

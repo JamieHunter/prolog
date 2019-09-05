@@ -1,8 +1,8 @@
 package prolog.parser;
 
 import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import prolog.constants.PrologEOF;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
@@ -22,8 +22,8 @@ public class TokenizerTest {
 
     private Environment environment;
 
-    @Before
-    public void setEnvironment() {
+    @BeforeEach
+    private void setEnvironment() {
         environment = new Environment();
     }
 

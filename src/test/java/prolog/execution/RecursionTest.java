@@ -1,6 +1,6 @@
 package prolog.execution;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import prolog.test.PrologTest;
 
 /**

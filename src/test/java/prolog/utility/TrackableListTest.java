@@ -1,7 +1,6 @@
 package prolog.utility;
 
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 
 import java.util.ListIterator;
 
@@ -18,7 +17,7 @@ public class TrackableListTest {
         TrackableList<Foo> list = new TrackableList<>();
         assertThat(list.isEmpty(), is(true));
         assertThat(list.count(), is(0));
-        LinkNode<Foo> [] nodes = list.snapshot();
+        LinkNode<Foo>[] nodes = list.snapshot();
         assertThat(nodes, notNullValue());
         assertThat(nodes.length, is(0));
     }
@@ -32,7 +31,7 @@ public class TrackableListTest {
         list.addTail(node);
         assertThat(node.isRemoved(), is(false));
         assertThat(list.count(), is(1));
-        LinkNode<Foo> [] nodes = list.snapshot();
+        LinkNode<Foo>[] nodes = list.snapshot();
         assertThat(nodes.length, is(1));
         assertThat(nodes[0], is(node));
         // iterate a single element as nodes
@@ -71,7 +70,7 @@ public class TrackableListTest {
         list.addHead(node3);
 
         assertThat(list.count(), is(3));
-        LinkNode<Foo> [] nodes = list.snapshot();
+        LinkNode<Foo>[] nodes = list.snapshot();
         assertThat(nodes.length, is(3));
         assertThat(nodes[0], is(node3));
         assertThat(nodes[1], is(node2));
@@ -142,20 +141,20 @@ public class TrackableListTest {
         list.addTail(node3);
 
         assertThat(list.count(), is(3));
-        LinkNode<Foo> [] nodes = list.snapshot();
+        LinkNode<Foo>[] nodes = list.snapshot();
         assertThat(nodes.length, is(3));
         assertThat(nodes[0], is(node1));
         assertThat(nodes[1], is(node2));
         assertThat(nodes[2], is(node3));
 
-        Foo [] elements = list.elements(new Foo[0]);
+        Foo[] elements = list.elements(new Foo[0]);
         assertThat(elements.length, is(3));
         assertThat(elements[0], is(el1));
         assertThat(elements[1], is(el2));
         assertThat(elements[2], is(el3));
 
-        Foo [] elements2 = new Foo[elements.length+1];
-        Foo [] elements3 = list.elements(elements2);
+        Foo[] elements2 = new Foo[elements.length + 1];
+        Foo[] elements3 = list.elements(elements2);
         assertThat(elements3, is(elements2));
         assertThat(elements3[0], is(el1));
         assertThat(elements3[1], is(el2));
