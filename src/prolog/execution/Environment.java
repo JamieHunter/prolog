@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 /**
  * Runtime environment of Prolog. Note that in the current version, Environments are not thread safe. That is, only
@@ -165,6 +166,14 @@ public class Environment {
          */
         public StackFunction lookupFunction(Predication predication) {
             return functions.get(predication.intern(this));
+        }
+
+        /**
+         * Enumerate all known predicates as a stream.
+         * @return All predicates as a stream.
+         */
+        public Stream<Map.Entry<Predication.Interned, PredicateDefinition>> allPredicates() {
+            return dictionary.entrySet().stream();
         }
     }
 

@@ -16,6 +16,7 @@ import prolog.execution.CopyTerm;
 import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.instructions.ExecCurrentPredicate;
 import prolog.instructions.ExecExhaust;
 import prolog.instructions.ExecFindClause;
 import prolog.instructions.ExecRetractClause;
@@ -160,6 +161,15 @@ public final class Dictionary {
         Term head = source.get(0);
         Term body = source.get(1);
         compiling.add(source, new ExecFindClause(head, body));
+    }
+
+    /**
+     * Recursively determine user-defined procedures.
+     */
+    @Predicate(value = "current_predicate", arity = 1)
+    public static void currentPredicate(CompileContext compiling, CompoundTerm source) {
+        Term indicator = source.get(0);
+        compiling.add(source, new ExecCurrentPredicate(indicator));
     }
 
     /**

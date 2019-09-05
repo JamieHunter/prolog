@@ -23,6 +23,14 @@ public abstract class PredicateDefinition {
     }
 
     /**
+     * Predicate that is considered for current_predicate()
+     * @return true if predicate is user-defined and contains at least one clause.
+     */
+    public boolean isCurrentPredicate() {
+        return false;
+    }
+
+    /**
      * @return true if dynamic inserts allowed.
      */
     public abstract boolean isDynamic();
@@ -36,4 +44,5 @@ public abstract class PredicateDefinition {
      * @return true if discontiguous behavior enabled.
      */
     public abstract boolean isDiscontiguous();
+
 }

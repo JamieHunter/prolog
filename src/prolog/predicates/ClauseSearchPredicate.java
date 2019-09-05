@@ -126,6 +126,15 @@ public class ClauseSearchPredicate extends PredicateDefinition {
     }
 
     /**
+     * Predicate is considered current if it has at least one clause defined.
+     * @return true if at least one clause defined.
+     */
+    @Override
+    public boolean isCurrentPredicate() {
+        return !clauses.isEmpty();
+    }
+
+    /**
      * Retrieve snapshot of all clauses.
      *
      * @return clauses

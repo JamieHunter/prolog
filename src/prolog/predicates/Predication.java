@@ -17,7 +17,7 @@ import java.math.BigInteger;
 /**
  * A predication is defined by the functor and arity.
  */
-public class Predication {
+public class Predication implements Comparable<Predication> {
     public static final Predication UNDEFINED = new Predication(prolog.bootstrap.Interned.UNKNOWN_ATOM, 0);
     private final PrologAtomLike functor;
     private final int arity;
@@ -111,6 +111,19 @@ public class Predication {
     @Override
     public String toString() {
         return functor.toString() + "/" + arity;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int compareTo(Predication o) {
+        // Follows Prolog rules of order, see {@link CompoundTerm).
+        int cmp = Integer.compare(arity, o.arity);
+        if (cmp != 0) {
+            return cmp;
+        }
+        return functor.compareTo(o.functor);
     }
 
     /**
