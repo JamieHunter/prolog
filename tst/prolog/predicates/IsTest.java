@@ -85,9 +85,9 @@ public class IsTest {
 
     @Test
     public void testIsIntMod() {
-        PrologTest.given().when("?- Y=20.0, X is Y mod 3 .")
+        PrologTest.given().when("?- Y=20, X is Y mod 3 .")
                 .assertSuccess()
-                .variable("Y", isFloat(20))
+                .variable("Y", isInteger(20))
                 .variable("X", isInteger(2));
     }
 
