@@ -38,4 +38,15 @@
             <version>1.5.1</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.pl</include>
+                </includes>
+            </resource>
+        </resources>
+    </build>
 </project>

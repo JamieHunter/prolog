@@ -98,38 +98,38 @@ public class StructureWriterTest {
     @Test
     public void testExpression() throws IOException {
         options.ignoreOps = false;
-        expect(read("1 + 2 * 3."), equalToIgnoringWhiteSpace("1+2*3"));
-        expect(read("+(1, *(2, 3))."), equalToIgnoringWhiteSpace("1+2*3"));
-        expect(read("1 * 2 + 3."), equalToIgnoringWhiteSpace("1*2+3"));
-        expect(read("1 * (2 + 3)."), equalToIgnoringWhiteSpace("1*(2+3)"));
-        expect(read("(1 + 2) * (3 + 4)."), equalToIgnoringWhiteSpace("(1+2)*(3+4)"));
-        expect(read("(1 * 2) + (3 * 4)."), equalToIgnoringWhiteSpace("1*2+3*4"));
-        expect(read("1 * 2 * 3 * 4."), equalToIgnoringWhiteSpace("1*2*3*4"));
-        expect(read("1 * (2 * 3) * 4."), equalToIgnoringWhiteSpace("1*(2*3)*4"));
-        expect(read("(1 =:= 2) =:= (3 =:= 4)."), equalToIgnoringWhiteSpace("(1=:=2)=:=(3=:=4)"));
+        expect(read("1 + 2 * 3."), equalToCompressingWhiteSpace("1+2*3"));
+        expect(read("+(1, *(2, 3))."), equalToCompressingWhiteSpace("1+2*3"));
+        expect(read("1 * 2 + 3."), equalToCompressingWhiteSpace("1*2+3"));
+        expect(read("1 * (2 + 3)."), equalToCompressingWhiteSpace("1*(2+3)"));
+        expect(read("(1 + 2) * (3 + 4)."), equalToCompressingWhiteSpace("(1+2)*(3+4)"));
+        expect(read("(1 * 2) + (3 * 4)."), equalToCompressingWhiteSpace("1*2+3*4"));
+        expect(read("1 * 2 * 3 * 4."), equalToCompressingWhiteSpace("1*2*3*4"));
+        expect(read("1 * (2 * 3) * 4."), equalToCompressingWhiteSpace("1*(2*3)*4"));
+        expect(read("(1 =:= 2) =:= (3 =:= 4)."), equalToCompressingWhiteSpace("(1=:=2)=:=(3=:=4)"));
         options.ignoreOps = true;
-        expect(read("1 + 2 * 3."), equalToIgnoringWhiteSpace("+(1, *(2,3))"));
-        expect(read("+(1, *(2,3))."), equalToIgnoringWhiteSpace("+(1, *(2,3))"));
+        expect(read("1 + 2 * 3."), equalToCompressingWhiteSpace("+(1, *(2,3))"));
+        expect(read("+(1, *(2,3))."), equalToCompressingWhiteSpace("+(1, *(2,3))"));
     }
 
     @Test
     public void testCommaHandling() throws IOException {
         options.ignoreOps = false;
-        expect(read("a(1,(2,3))."), equalToIgnoringWhiteSpace("a(1,(2,3))"));
+        expect(read("a(1,(2,3))."), equalToCompressingWhiteSpace("a(1,(2,3))"));
         options.ignoreOps = true;
-        expect(read("a(1,(2,3))."), equalToIgnoringWhiteSpace("a(1,(,(2,3)))"));
+        expect(read("a(1,(2,3))."), equalToCompressingWhiteSpace("a(1,(,(2,3)))"));
     }
 
     @Test
     public void testUnaryPrefixHandling() throws IOException {
-        expect(read("-(1^2)."), equalToIgnoringWhiteSpace("-(1^2)"));
-        expect(read("?(1^2)."), equalToIgnoringWhiteSpace("?1^2"));
+        expect(read("-(1^2)."), equalToCompressingWhiteSpace("-(1^2)"));
+        expect(read("?(1^2)."), equalToCompressingWhiteSpace("?1^2"));
     }
 
     @Test
     public void testUnaryPostfixHandling() throws IOException {
-        expect(read("(1;2)@@@ ."), equalToIgnoringWhiteSpace("(1;2)@@@"));
-        expect(read("(1^2)@@@ ."), equalToIgnoringWhiteSpace("1^2@@@"));
+        expect(read("(1;2)@@@ ."), equalToCompressingWhiteSpace("(1;2)@@@"));
+        expect(read("(1^2)@@@ ."), equalToCompressingWhiteSpace("1^2@@@"));
     }
 
 }

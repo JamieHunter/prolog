@@ -48,6 +48,9 @@ public class LoadResourceOnDemand implements OnDemand {
     @Override
     public void load(Environment environment) {
         try (InputStream javaStream = cls.getResourceAsStream(resource)) {
+            if (javaStream == null) {
+                throw new IOException("Unable to resolve resource " + resource);
+            }
             PrologInputStream baseStream = new SequentialInputStream(javaStream);
             PrologInputStream bufferedStream = new InputBuffered(new InputLineHandler(baseStream, StreamProperties.NewLineMode.ATOM_detect), -1);
             Tokenizer tokenizer = new Tokenizer(environment,
