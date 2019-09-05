@@ -6,6 +6,7 @@ package prolog.constants;
 import prolog.bootstrap.Interned;
 import prolog.exceptions.FutureDomainError;
 import prolog.exceptions.FutureEvaluationError;
+import prolog.exceptions.FutureTypeError;
 import prolog.expressions.Term;
 import prolog.expressions.TypeRank;
 import prolog.io.WriteContext;
@@ -164,6 +165,16 @@ public final class PrologFloat extends AtomicBase implements PrologNumber {
      * {@inheritDoc}
      */
     @Override
+    public PrologInteger truncate() {
+        return new PrologInteger(
+                BigDecimal.valueOf(value).toBigInteger()
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public PrologInteger ceiling() {
         return new PrologInteger(
                 BigDecimal.valueOf(Math.ceil(value)).toBigInteger()
@@ -175,9 +186,7 @@ public final class PrologFloat extends AtomicBase implements PrologNumber {
      */
     @Override
     public PrologInteger toPrologInteger() {
-        return new PrologInteger(
-                BigDecimal.valueOf(value).toBigInteger()
-        );
+        throw new FutureTypeError(Interned.INTEGER_TYPE, this);
     }
 
     /**

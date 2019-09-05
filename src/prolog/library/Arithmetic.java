@@ -107,7 +107,7 @@ public final class Arithmetic {
      * Convert number to integer via truncation
      */
     @Function(value = "truncate", arity = 1)
-    public static final UnaryFunction TRUNCATE = unary(PrologNumber::toPrologInteger);
+    public static final UnaryFunction TRUNCATE = unary(PrologNumber::truncate);
 
     @Function(value = "sin", arity = 1)
     public static final UnaryFunction SIN = unaryFloat(x -> PrologFloat.from(Math.sin(x)));

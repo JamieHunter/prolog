@@ -84,18 +84,25 @@ public interface PrologNumber extends Atomic {
     }
 
     /**
-     * Round this number to an integer
+     * Round this number down to an integer
      *
-     * @return round
+     * @return floor
      */
     default PrologInteger floor() {
         return toPrologInteger();
     }
 
     /**
-     * Round this number to an integer
+     * Truncate this number to an integer
      *
-     * @return round
+     * @return truncated
+     */
+    default PrologInteger truncate() { return toPrologInteger(); }
+
+    /**
+     * Round this number up to an integer
+     *
+     * @return ceiling
      */
     default PrologInteger ceiling() {
         return toPrologInteger();
