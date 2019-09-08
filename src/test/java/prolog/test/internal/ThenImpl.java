@@ -17,7 +17,10 @@ import prolog.library.Dictionary;
 import prolog.test.StreamUtils;
 import prolog.test.Then;
 import prolog.variables.BoundVariable;
+import prolog.variables.Variable;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -34,6 +37,16 @@ public class ThenImpl implements Then {
     private ExecutionState lastExec = null;
     private Map<String, BoundVariable> vars = Collections.emptyMap();
 
+    @Override
+    public Term getVariableValue(String name) {
+        BoundVariable var = vars.get(name);
+        LocalContext throwAway = state.environment().newLocalContext();
+        if (var == null) {
+            var = new BoundVariable(throwAway, name, 0);
+        }
+        return var.resolve(throwAway).value(state.environment()); // make sure all recursive variables are resolved.
+    }
+
     ThenImpl(StateImpl state) {
         this.state = state;
         query = new TestQuery(state.environment);
@@ -45,21 +58,23 @@ public class ThenImpl implements Then {
      * @param text Text to interpret
      */
     void parse(String text) {
-        state.reset();
-        query.reset();
-        lastExec = null;
-        LogicalStream stream = StreamUtils.logical(StreamUtils.prologString(text));
-        Term term = stream.read(state.environment, null, new ReadOptions(state.environment, null));
-        if (CompoundTerm.termIsA(term, Interned.QUERY_FUNCTOR, 1)) {
-            CompoundTerm clause = (CompoundTerm) term;
-            query.compile(clause.get(0));
+        try(ThenScope scope = new ThenScope(this)) {
+            state.reset();
             query.reset();
-            cycle();
-        } else if (CompoundTerm.termIsA(term, Interned.CLAUSE_FUNCTOR, 1)) {
-            // Directive, not implemented for tests at this time
-            throw new UnsupportedOperationException("NYI");
-        } else {
-            Dictionary.addClauseZ(state.environment, term);
+            lastExec = null;
+            LogicalStream stream = StreamUtils.logical(StreamUtils.prologString(text));
+            Term term = stream.read(state.environment, null, new ReadOptions(state.environment, null));
+            if (CompoundTerm.termIsA(term, Interned.QUERY_FUNCTOR, 1)) {
+                CompoundTerm clause = (CompoundTerm) term;
+                query.compile(clause.get(0));
+                query.reset();
+                cycle();
+            } else if (CompoundTerm.termIsA(term, Interned.CLAUSE_FUNCTOR, 1)) {
+                // Directive, not implemented for tests at this time
+                throw new UnsupportedOperationException("NYI");
+            } else {
+                Dictionary.addClauseZ(state.environment, term);
+            }
         }
     }
 
@@ -70,33 +85,32 @@ public class ThenImpl implements Then {
 
     @Override
     public Then variable(String name, Matcher<? super Term> matcher) {
-        BoundVariable var = vars.get(name);
-        LocalContext throwAway = state.environment().newLocalContext();
-        if (var == null) {
-            var = new BoundVariable(throwAway, name, 0);
+        Term value = getVariableValue(name);
+        try(ThenScope scope = new ThenScope(this)) {
+            match(matcher, value);
+            return this;
         }
-        Term value = var.resolve(throwAway).value(state.environment()); // make sure all recursive variables are resolved.
-        match(matcher, value);
-        return this;
     }
 
     @Override
     @SafeVarargs
     public final Then expectLog(Matcher<? super Term>... matchers) {
-        if (matchers == null || matchers.length == 0) {
-            assertTrue("Log is not empty", state.log.isEmpty());
+        try(ThenScope scope = new ThenScope(this)) {
+            if (matchers == null || matchers.length == 0) {
+                assertTrue("Log is not empty", state.log.isEmpty());
+                return this;
+            }
+            for (Matcher<? super Term> m : matchers) {
+                if (m == null) {
+                    assertTrue("Log is not empty", state.log.isEmpty());
+                    continue;
+                }
+                assertFalse("Log is empty", state.log.isEmpty());
+                Term t = state.log.pop();
+                match(m, t);
+            }
             return this;
         }
-        for (Matcher<? super Term> m : matchers) {
-            if (m == null) {
-                assertTrue("Log is not empty", state.log.isEmpty());
-                continue;
-            }
-            assertFalse("Log is empty", state.log.isEmpty());
-            Term t = state.log.pop();
-            match(m, t);
-        }
-        return this;
     }
 
     @Override
@@ -113,14 +127,18 @@ public class ThenImpl implements Then {
 
     @Override
     public Then callDepth(Matcher<? super Integer> m) {
-        assertThat(state.callDepth, m);
-        return this;
+        try(ThenScope scope = new ThenScope(this)) {
+            assertThat(state.callDepth, m);
+            return this;
+        }
     }
 
     @Override
     public Then backtrackDepth(Matcher<? super Integer> m) {
-        assertThat(state.backtrackDepth, m);
-        return this;
+        try(ThenScope scope = new ThenScope(this)) {
+            assertThat(state.backtrackDepth, m);
+            return this;
+        }
     }
 
     @Override

@@ -11,6 +11,8 @@ import prolog.execution.Environment;
 import prolog.bootstrap.Interned;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.test.internal.ThenScope;
+import prolog.variables.BoundVariable;
 import prolog.variables.UnboundVariable;
 import prolog.variables.Variable;
 
@@ -211,12 +213,47 @@ public final class Matchers {
         }
     }
 
+    private static class IsVariableByName<T> extends IsVariable<T> {
+
+        private final String name;
+
+        public IsVariableByName(String name) {
+            this.name = name;
+        }
+
+        private Term getReferencedVariable() {
+            return ThenScope.getScope().getVariableValue(name);
+        }
+
+        @Override
+        public void describeTo(Description description) {
+            description.appendText("unified with variable '" + name + "'");
+        }
+
+        @Override
+        protected boolean matches(Object o, Description mismatch) {
+            if (!super.matches(o, mismatch)) {
+                return false;
+            }
+            Term refed = getReferencedVariable();
+            if (refed.compareTo((Term)o) != 0) {
+                mismatch.appendText("not unified with variable '" + name + "'");
+                return false;
+            }
+            return true;
+        }
+    }
+
     private static class IsUnboundVariable<T> extends IsVariable<T> {
 
         private final String name;
 
         public IsUnboundVariable(String name) {
             this.name = name;
+        }
+
+        private Term getVariableValue() {
+            return ThenScope.getScope().getVariableValue(name);
         }
 
         @Override
@@ -236,30 +273,6 @@ public final class Matchers {
             UnboundVariable value = (UnboundVariable)o;
             if (!name.equals(value.name())) {
                 mismatch.appendText("name '" + value.name() + "'");
-                return false;
-            }
-            return true;
-        }
-    }
-
-    private static class IsAnonymousVariable<T> extends IsVariable<T> {
-
-        public IsAnonymousVariable() {
-        }
-
-        @Override
-        public void describeTo(Description description) {
-            description.appendText("anonymous variable");
-        }
-
-        @Override
-        protected boolean matches(Object o, Description mismatch) {
-            if (!super.matches(o, mismatch)) {
-                return false;
-            }
-            Variable v = (Variable)o;
-            if (!v.name().equals("_")) {
-                mismatch.appendText("not anonymous");
                 return false;
             }
             return true;
@@ -485,16 +498,16 @@ public final class Matchers {
         return new IsVariable<>();
     }
 
+    public static <T extends Term> Matcher<T> isVariable(String name) {
+        return new IsVariableByName<>(name);
+    }
+
     public static <T extends Term> Matcher<T> isUninstantiated() {
         return new IsUninstantiated<>();
     }
 
     public static <T extends Term> Matcher<T> isUnboundVariable(String name) {
         return new IsUnboundVariable<>(name);
-    }
-
-    public static <T extends Term> Matcher<T> isAnonymousVariable() {
-        return new IsAnonymousVariable<>();
     }
 
     public static <T extends Term> Matcher<T> isCompoundTerm(String functor, Matcher<? super Term> ... components) {

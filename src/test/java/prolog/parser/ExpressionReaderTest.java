@@ -128,7 +128,7 @@ public class ExpressionReaderTest {
 
     @Test
     public void testAnonymousVariable() {
-        expect("_.", isAnonymousVariable());
+        expect("_.", isUninstantiated());
     }
 
     @Test

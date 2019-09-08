@@ -26,7 +26,7 @@ public class ListsTest {
                 .when("?- length(X, 2).")
                 .assertSuccess()
                 .variable("X",
-                        isList(isAnonymousVariable(), isAnonymousVariable()));
+                        isList(isUninstantiated(), isUninstantiated()));
     }
 
     @Test

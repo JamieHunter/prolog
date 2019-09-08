@@ -67,7 +67,7 @@ public class TokenizerTest {
                 isInteger(12),
                 isAtom(")"),
                 isAtom("*"),
-                isAnonymousVariable());
+                isUninstantiated());
     }
 
     /**
@@ -120,8 +120,8 @@ public class TokenizerTest {
         expect(".12", isAtom("."), isInteger(12));
 
         // Underscores are tricky
-        expect("_12.3", isAnonymousVariable(), isFloat(12.3));
-        expect("12._3", isInteger(12), isAtom("."), isAnonymousVariable(), isInteger(3));
+        expect("_12.3", isUninstantiated(), isFloat(12.3));
+        expect("12._3", isInteger(12), isAtom("."), isUninstantiated(), isInteger(3));
     }
 
     @Test
@@ -158,6 +158,17 @@ public class TokenizerTest {
                 isAtom(","),
                 isAtom("]"),
                 isAtom("]"));
+    }
+
+    @Test
+    public void testQuotedCharList() {
+        expect("`123` `abc`",
+                isList(isAtom("1"), isAtom("2"), isAtom("3")),
+                isList(isAtom("a"), isAtom("b"), isAtom("c")));
+        expect("```` `\\`` `\\x41\\`",
+                isList(isAtom("`")),
+                isList(isAtom("`")),
+                isList(isAtom("A")));
     }
 
     @Test

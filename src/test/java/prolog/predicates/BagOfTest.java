@@ -157,4 +157,13 @@ public class BagOfTest {
                 .assertFailed();
     }
 
+    @Test
+    public void testBagOfWithUnboundInriaSuite() {
+        // this is the Inria Suite Test bagof(A,(A=B;A=C),D)
+        given()
+                .when("?- bagof(A,(A=B;A=C),D).")
+                .assertSuccess()
+                .variable("D", isList(isVariable("B"), isVariable("C")));
+                ;
+    }
 }

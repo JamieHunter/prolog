@@ -26,6 +26,9 @@ public class ConversionsTest {
                 .andWhen("?- atom_chars(bx, Y).")
                 .assertSuccess()
                 .variable("Y", isList(isAtom("b"), isAtom("x")))
+                .andWhen("?- atom_chars(Q, `12`).")
+                .assertSuccess()
+                .variable("Q", isAtom("12"))
                 .andWhen("?- atom_chars(Q, \"pq\").")
                 .assertSuccess()
                 .variable("Q", isAtom("pq"));

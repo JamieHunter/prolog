@@ -10,6 +10,14 @@ import java.util.function.Consumer;
 
 public interface Then {
     /**
+     * Retrieve the value of a given variable name
+     *
+     * @param name    Name of variable.
+     * @return value of named variable
+     */
+    Term getVariableValue(String name);
+
+    /**
      * Verify a variable is as expected. What mostly meaningful for successful queries, it also has meaning
      * for some failure cases.
      *
