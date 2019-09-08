@@ -14,7 +14,7 @@ public class Suite {
     protected static final String USER_DIR = "user.dir";
 
     protected void runSuite(Path directory, String... goals) {
-        Path cwd = Paths.get("suites").toAbsolutePath();
+        Path cwd = Paths.get("src/test/prolog").toAbsolutePath();
         Path testDir = cwd.resolve(directory).normalize().toAbsolutePath();
         assertTrue("Directory not found", Files.isDirectory(testDir));
         Given given = PrologTest.given().cwd(testDir);
