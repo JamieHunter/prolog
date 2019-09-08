@@ -39,6 +39,9 @@ import prolog.execution.LocalContext;
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public CompoundTerm enumTerm(EnumTermStrategy strategy) {
         if (strategy.pruneGroundedCompound()) {

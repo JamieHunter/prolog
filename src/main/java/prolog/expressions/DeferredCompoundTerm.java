@@ -40,7 +40,8 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
      *
      * @return Actual compound term
      */
-    private CompoundTerm makeTerm() {
+    @Override
+    public CompoundTerm extract() {
         if (cache != null) {
             return cache;
         }
@@ -59,22 +60,31 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
      */
     @Override
     public CompoundTerm resolve(LocalContext context) {
-        return makeTerm().resolve(context);
+        return extract().resolve(context);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public CompoundTerm enumTerm(EnumTermStrategy strategy) {
-        return value(strategy.environment()).enumTerm(strategy);
+    public Term enumTerm(EnumTermStrategy strategy) {
+        return strategy.visitContainer(this);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public CompoundTerm mutateCompoundTerm(EnumTermStrategy strategy) {
-        throw new UnsupportedOperationException("Call value() first");
+    public CompoundTerm enumAndCopyCompoundTermMembers(EnumTermStrategy strategy) {
+        throw new UnsupportedOperationException("Call extract() first");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public CompoundTerm enumCompoundTerm(EnumTermStrategy strategy) {
-        throw new UnsupportedOperationException("Call value() first");
+    public CompoundTerm enumCompoundTermMembers(EnumTermStrategy strategy) {
+        throw new UnsupportedOperationException("Call extract() first");
     }
 
     /**
@@ -82,7 +92,7 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
      */
     @Override
     public void write(WriteContext context) throws IOException {
-        makeTerm().write(context);
+        extract().write(context);
     }
 
     /**
@@ -106,7 +116,7 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
      */
     @Override
     public Term get(int i) {
-        return makeTerm().get(i);
+        return extract().get(i);
     }
 
     /**
@@ -114,7 +124,7 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
      */
     @Override
     public UnifyIterator getUnifyIterator() {
-        return makeTerm().getUnifyIterator();
+        return extract().getUnifyIterator();
     }
 
     /**

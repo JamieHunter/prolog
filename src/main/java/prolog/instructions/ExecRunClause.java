@@ -63,7 +63,7 @@ public class ExecRunClause implements Instruction {
                     environment.backtrack();
                     return;
                 case ATOM_warning:
-                    System.err.format("Undefined predicate %s\n", pred.toString());
+                    System.err.format("(Warning) Undefined predicate: %s\n", pred.toString());
                     environment.backtrack();
                     return;
                 default:

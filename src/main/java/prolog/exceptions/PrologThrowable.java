@@ -49,7 +49,15 @@ public class PrologThrowable extends RuntimeException implements Container {
      */
     @Override
     public Term enumTerm(EnumTermStrategy strategy) {
-        return strategy.visit(this, t -> thrown.enumTerm(strategy));
+        return strategy.visitContainer(this);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Term extract() {
+        return thrown;
     }
 
     /**

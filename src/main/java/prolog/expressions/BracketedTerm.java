@@ -46,7 +46,8 @@ public final class BracketedTerm implements Term, Container {
      *
      * @return Tree or single term
      */
-    private Term expand() {
+    @Override
+    public Term extract() {
         if (terms.length == 1) {
             // single term
             return terms[0];
@@ -68,7 +69,7 @@ public final class BracketedTerm implements Term, Container {
      */
     @Override
     public Term value(Environment environment) {
-        return expand().value(environment);
+        return extract().value(environment);
     }
 
     /**
@@ -79,7 +80,7 @@ public final class BracketedTerm implements Term, Container {
      */
     @Override
     public Term resolve(LocalContext context) {
-        return expand().resolve(context);
+        return extract().resolve(context);
     }
 
     /**
@@ -87,7 +88,7 @@ public final class BracketedTerm implements Term, Container {
      */
     @Override
     public Term enumTerm(EnumTermStrategy strategy) {
-        return strategy.visit(this, t -> expand().enumTerm(strategy));
+        return strategy.visitContainer(this);
     }
 
     /**

@@ -66,6 +66,18 @@ abstract class VariableBase implements Variable {
      * {@inheritDoc}
      */
     @Override
+    public Term extract() {
+        if (value != null) {
+            return value;
+        } else {
+            return this;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Term resolve(LocalContext context) {
         if (value != null) {
             return value.resolve(context);

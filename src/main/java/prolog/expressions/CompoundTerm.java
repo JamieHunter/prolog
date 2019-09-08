@@ -60,26 +60,20 @@ public interface CompoundTerm extends Term {
     CompoundTerm resolve(LocalContext context);
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    CompoundTerm enumTerm(EnumTermStrategy strategy);
-
-    /**
-     * Called by {@link EnumTermStrategy#visit(CompoundTerm)} for mutation
+     * Called by {@link EnumTermStrategy#visitCompoundTerm(CompoundTerm)} for mutation
      *
      * @param strategy Underlying strategy
      * @return new compound term
      */
-    CompoundTerm mutateCompoundTerm(EnumTermStrategy strategy);
+    CompoundTerm enumAndCopyCompoundTermMembers(EnumTermStrategy strategy);
 
     /**
-     * Called by {@link EnumTermStrategy#visit(CompoundTerm)} for simple enumeration
+     * Called by {@link EnumTermStrategy#visitCompoundTerm(CompoundTerm)} for simple enumeration
      *
      * @param strategy Underlying strategy
      * @return self
      */
-    CompoundTerm enumCompoundTerm(EnumTermStrategy strategy);
+    CompoundTerm enumCompoundTermMembers(EnumTermStrategy strategy);
 
     /**
      * {@inheritDoc}

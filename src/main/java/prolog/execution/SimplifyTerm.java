@@ -3,11 +3,8 @@
 //
 package prolog.execution;
 
-import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.variables.Variable;
-
-import java.util.function.Function;
 
 /**
  * Context for simplifying and unbinding a tree of terms
@@ -18,18 +15,15 @@ public class SimplifyTerm extends EnumTermStrategy {
         super(environment);
     }
 
-    @Override
-    public Term visit(Term src, Function<? super Term, ? extends Term> mappingFunction) {
-        return copyVisitor(src, mappingFunction);
-    }
-
-    public CompoundTerm visit(CompoundTerm compound) {
-        return compound.mutateCompoundTerm(this);
-    }
-
+    /**
+     * Variables are replaced with an unbound version, performed with caching.
+     *
+     * @param variable Variable reference
+     * @return unbound variable.
+     */
     @Override
     public Term visitVariable(Variable variable) {
-        return visit(variable, tt -> unbindVariable(variable));
+        return this.computeUncachedTerm(variable, t -> unbindVariable(variable));
     }
 
 }

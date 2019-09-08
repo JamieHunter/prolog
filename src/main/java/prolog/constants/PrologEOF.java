@@ -3,6 +3,7 @@
 //
 package prolog.constants;
 
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.expressions.Container;
 import prolog.expressions.Term;
@@ -29,7 +30,7 @@ public class PrologEOF extends AtomicBase implements Container {
      */
     @Override
     public PrologAtomInterned get() {
-        return Io.END_OF_FILE;
+        return extract();
     }
 
     /**
@@ -37,7 +38,7 @@ public class PrologEOF extends AtomicBase implements Container {
      */
     @Override
     public String toString() {
-        return Io.END_OF_FILE.name();
+        return extract().name();
     }
 
     /**
@@ -47,7 +48,7 @@ public class PrologEOF extends AtomicBase implements Container {
      */
     @Override
     public Term value(Environment environment) {
-        return Io.END_OF_FILE;
+        return extract();
     }
 
     /**
@@ -58,4 +59,19 @@ public class PrologEOF extends AtomicBase implements Container {
         value(context.environment()).write(context);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Term enumTerm(EnumTermStrategy strategy) {
+        return strategy.visitContainer(this);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PrologAtomInterned extract() {
+        return Io.END_OF_FILE;
+    }
 }

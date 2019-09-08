@@ -4,7 +4,6 @@
 package prolog.expressions;
 
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtomLike;
 import prolog.execution.CompileContext;
 import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
@@ -166,15 +165,15 @@ public class CompoundTermImpl implements CompoundTerm {
      */
     @Override
     public CompoundTerm enumTerm(EnumTermStrategy strategy) {
-        return strategy.visit(this);
+        return strategy.visitCompoundTerm(this);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public CompoundTerm mutateCompoundTerm(EnumTermStrategy strategy) {
-        return (CompoundTerm) strategy.visit(this, tt -> {
+    public CompoundTerm enumAndCopyCompoundTermMembers(EnumTermStrategy strategy) {
+        return (CompoundTerm) strategy.computeUncachedTerm(this, tt -> {
             Term[] copy = members.clone();
             boolean grounded = true;
             for (int i = 0; i < copy.length; i++) {
@@ -194,7 +193,7 @@ public class CompoundTermImpl implements CompoundTerm {
      * {@inheritDoc}
      */
     @Override
-    public CompoundTerm enumCompoundTerm(EnumTermStrategy strategy) {
+    public CompoundTerm enumCompoundTermMembers(EnumTermStrategy strategy) {
         for (Term t : members) {
             t.enumTerm(strategy);
         }

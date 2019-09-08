@@ -132,9 +132,7 @@ public interface Term extends Comparable<Term> {
      * @param strategy Strategy for enumerating a term
      * @return modified term if applicable
      */
-    default Term enumTerm(EnumTermStrategy strategy) {
-        return strategy.visit(this, t -> value(strategy.environment()));
-    }
+    Term enumTerm(EnumTermStrategy strategy);
 
     /**
      * Render this term per rules and target given in context.

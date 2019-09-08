@@ -44,11 +44,12 @@ test_call :-
 	test_true((Z=!,call((Z=!,cut_a(X),Z)))),
 	test_true(call((Z=!,cut_a(X),Z))),
         error_test(call((write(3), X)),instantiation_error),
-        error_test(call((write(3), 1)), type_error(callable, 1)), 
+        error_test(call((write(3), 1)), type_error(callable, (write(3), 1))),
 	error_test(call(1),type_error(callable,1)),
 	error_test(call(X),instantiation_error),
 	error_test(call((fail,1)),type_error(callable,(fail,1))),
-	error_test((call((1,true))),type_error(callable,(1,true))).
+	error_test((call((1,true))),type_error(callable,(1,true))),
+	error_test((call((1;true))),type_error(callable,(1;true))).
 
         
 

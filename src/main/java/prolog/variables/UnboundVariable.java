@@ -121,6 +121,14 @@ public class UnboundVariable implements Variable {
      * {@inheritDoc}
      */
     @Override
+    public Term extract() {
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String toString() {
         return name();
     }

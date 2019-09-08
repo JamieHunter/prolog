@@ -3,6 +3,7 @@
 //
 package prolog.expressions;
 
+import prolog.execution.Environment;
 import prolog.expressions.Term;
 
 /**
@@ -10,6 +11,12 @@ import prolog.expressions.Term;
  * In particular, variables are containers.
  */
 public interface Container extends Term {
+
+    /**
+     * Extract contained term
+     * @return extracted term, may be computed
+     */
+    Term extract();
 
     /**
      * Each Term type is given a rank per Prolog standard,

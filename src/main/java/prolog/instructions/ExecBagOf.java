@@ -205,24 +205,35 @@ public class ExecBagOf extends ExecFindAll {
             super(environment);
         }
 
+        /**
+         * Compound terms are enumerated not recomputed
+         * @param compound Compound term being visited
+         * @return self
+         */
         @Override
-        public Term visit(Term src, Function<? super Term, ? extends Term> mappingFunction) {
-            return src;
+        public CompoundTerm visitCompoundTerm(CompoundTerm compound) {
+            return compound.enumCompoundTermMembers(this);
         }
 
-        @Override
-        public CompoundTerm visit(CompoundTerm compound) {
-            return compound.enumCompoundTerm(this);
-        }
-
+        /**
+         * Call to begin free variables after existential variables have been processed.
+         */
         public void beginFreeVariables() {
             beginFreeVariables = true;
         }
 
+        /**
+         * @return List of free variables.
+         */
         public List<Term> getFreeVariables() {
             return freeVariables;
         }
 
+        /**
+         * Visit and collect variables
+         * @param source Source variable
+         * @return bound variable
+         */
         @Override
         public Variable visitVariable(Variable source) {
             boolean seen = hasVariable(source);

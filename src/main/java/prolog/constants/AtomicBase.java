@@ -4,6 +4,7 @@
 package prolog.constants;
 
 import prolog.bootstrap.Interned;
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.Term;
@@ -45,6 +46,14 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public Term resolve(LocalContext context) {
         return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Term enumTerm(EnumTermStrategy strategy) {
+        return strategy.visitAtomic(this);
     }
 
     /**

@@ -115,15 +115,15 @@ public class TermListImpl implements TermList {
      */
     @Override
     public TermList enumTerm(EnumTermStrategy strategy) {
-        return (TermList) strategy.visit(this);
+        return (TermList) strategy.visitCompoundTerm(this);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public TermList mutateCompoundTerm(EnumTermStrategy strategy) {
-        return (TermList) strategy.visit(this, tt -> {
+    public TermList enumAndCopyCompoundTermMembers(EnumTermStrategy strategy) {
+        return (TermList) strategy.computeUncachedTerm(this, tt -> {
             Term[] copy = Arrays.copyOfRange(terms, index, terms.length);
             boolean grounded = true;
             for (int i = 0; i < copy.length; i++) {
@@ -145,7 +145,7 @@ public class TermListImpl implements TermList {
      * {@inheritDoc}
      */
     @Override
-    public TermList enumCompoundTerm(EnumTermStrategy strategy) {
+    public TermList enumCompoundTermMembers(EnumTermStrategy strategy) {
         for (int i = index; i < terms.length; i++) {
             terms[i].enumTerm(strategy);
         }

@@ -6,6 +6,7 @@ package prolog.constants;
 import prolog.bootstrap.Interned;
 import prolog.exceptions.FutureTypeError;
 import prolog.execution.CompileContext;
+import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
@@ -138,6 +139,14 @@ public abstract class PrologAtomLike extends AtomicBase {
         }
         // generic comparison that can do relative comparison
         return name().compareTo(((PrologAtomLike) o).name());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Term enumTerm(EnumTermStrategy strategy) {
+        return strategy.visitAtom(this);
     }
 
     /**

@@ -3,11 +3,8 @@
 //
 package prolog.execution;
 
-import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.variables.Variable;
-
-import java.util.function.Function;
 
 /**
  * Context for copying a tree of terms
@@ -18,17 +15,14 @@ public class CopyTerm extends EnumTermStrategy {
         super(environment);
     }
 
-    @Override
-    public Term visit(Term src, Function<? super Term, ? extends Term> mappingFunction) {
-        return copyVisitor(src, mappingFunction);
-    }
-
-    public CompoundTerm visit(CompoundTerm compound) {
-        return compound.mutateCompoundTerm(this);
-    }
-
+    /**
+     * Any variable is replaced with a relabled variable.
+     *
+     * @param variable Variable reference
+     * @return relabeld variable.
+     */
     @Override
     public Term visitVariable(Variable variable) {
-        return visit(variable, tt -> renameVariable(variable));
+        return computeUncachedTerm(variable, t -> renameVariable(variable));
     }
 }

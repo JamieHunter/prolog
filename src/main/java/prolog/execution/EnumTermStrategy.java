@@ -3,8 +3,12 @@
 //
 package prolog.execution;
 
+import prolog.constants.AtomicBase;
+import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologStringAsList;
+import prolog.exceptions.PrologThrowable;
 import prolog.expressions.CompoundTerm;
+import prolog.expressions.Container;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
 import prolog.variables.UnboundVariable;
@@ -16,7 +20,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Strategy for enumerating a tree of terms
+ * Strategy for enumerating a tree of terms. This follows a visitor pattern to allow maintaining different
+ * strategies.
  */
 public abstract class EnumTermStrategy {
     private final Environment environment;
@@ -37,33 +42,70 @@ public abstract class EnumTermStrategy {
     }
 
     /**
-     * Visitor that is typically used for copy-tree, de-duped.
+     * If not overridden, computes term with caching.
      *
-     * @param src             Original term
-     * @param mappingFunction Mutation
-     * @return Replacement term
+     * @param src             Source term
+     * @param computeFunction src -> modified src (if used)
+     * @return computed term
      */
-    public Term copyVisitor(Term src, Function<? super Term, ? extends Term> mappingFunction) {
-        return refMap.computeIfAbsent(src, mappingFunction);
+    public Term computeUncachedTerm(Term src, Function<? super Term, ? extends Term> computeFunction) {
+        return refMap.computeIfAbsent(src, computeFunction);
     }
 
     /**
-     * Visit a single term. Mapping function is only called if term has not been seen before (copyVisitor)
+     * Visit an atom term - override for, e.g., interning atoms. Default delegates to {@link #visitAtomic(AtomicBase)}.
      *
-     * @param src             Source term
-     * @param mappingFunction src -> modified src (if used)
-     * @return mapped term
+     * @param atom Atom being visited
+     * @return modified atom term
      */
-    public abstract Term visit(Term src, Function<? super Term, ? extends Term> mappingFunction);
+    public Term visitAtom(PrologAtomLike atom) {
+        return visitAtomic(atom);
+    }
 
     /**
-     * Visit a compound term - call {@link CompoundTerm#mutateCompoundTerm(EnumTermStrategy)} or
-     * {@link CompoundTerm#enumCompoundTerm(EnumTermStrategy)} depending on use case.
+     * Visit an atomic (non compound but instantiated) term that is not an atom (unless delegated).
+     *
+     * @param atomic Atomic value being visited
+     * @return modified atom term
+     */
+    public Term visitAtomic(AtomicBase atomic) {
+        return atomic;
+    }
+
+    /**
+     * Visit a compound term - override for optimal visit pattern.
      *
      * @param compound Compound term being visited
      * @return modified compound term
      */
-    public abstract CompoundTerm visit(CompoundTerm compound);
+    public CompoundTerm visitCompoundTerm(CompoundTerm compound) {
+        // Safe default does a deep recursion
+        return compound.enumAndCopyCompoundTermMembers(this);
+    }
+
+    /**
+     * Visit a variable. May mutate the variable. Default is to not touch the variable.
+     *
+     * @param variable Variable reference
+     * @return Replacement term
+     */
+    public Term visitVariable(Variable variable) {
+        return variable;
+    }
+
+    /**
+     * Visit a container term. Safest option is to evaluate contained item.
+     * @param container Prolog container term
+     * @return replacement term
+     */
+    public Term visitContainer(Container container) {
+        Term contained = container.extract();
+        if (contained != container) {
+            return contained.enumTerm(this);
+        } else {
+            return contained;
+        }
+    }
 
     /**
      * Utility - call to rename a variable, cached in variable map.
@@ -103,16 +145,6 @@ public abstract class EnumTermStrategy {
      */
     protected boolean hasVariable(Variable source) {
         return varMap.containsKey(source.id());
-    }
-
-    /**
-     * Override to visit uninstantiated variables.
-     *
-     * @param variable Variable reference
-     * @return Replacement term
-     */
-    public Term visitVariable(Variable variable) {
-        return variable;
     }
 
     /**

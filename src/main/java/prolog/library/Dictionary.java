@@ -11,6 +11,7 @@ import prolog.constants.PrologInteger;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
+import prolog.execution.CallifyTerm;
 import prolog.execution.CompileContext;
 import prolog.execution.CopyTerm;
 import prolog.execution.Environment;
@@ -28,6 +29,7 @@ import prolog.predicates.Predication;
 import prolog.unification.Unifier;
 import prolog.unification.UnifyBuilder;
 
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 /**
@@ -234,14 +236,17 @@ public final class Dictionary {
     private static void addClause(Environment environment, Term term,
                                   BiConsumer<ClauseSearchPredicate, ClauseEntry> add,
                                   boolean isDynamic) {
-        term = term.enumTerm(new CopyTerm(environment));
-        if (CompoundTerm.termIsA(term, Interned.CLAUSE_FUNCTOR, 2)) {
+        // Copy done here, as the variables left and right of :- must relate to each other
+        Term copy = term.enumTerm(new CopyTerm(environment));
+        if (CompoundTerm.termIsA(copy, Interned.CLAUSE_FUNCTOR, 2)) {
             // Rule
-            CompoundTerm clause = (CompoundTerm) term;
-            addClauseRule(environment, clause.get(0), clause.get(1), add, isDynamic);
+            CompoundTerm clause = (CompoundTerm) copy;
+            Term head = clause.get(0);
+            Term tail = clause.get(1).enumTerm(new CallifyTerm(environment, Optional.empty()));
+            addClauseRule(environment, head, tail, add, isDynamic);
         } else {
             // Fact
-            addClauseRule(environment, term, Interned.TRUE_ATOM, add, isDynamic);
+            addClauseRule(environment, copy, Interned.TRUE_ATOM, add, isDynamic);
         }
     }
 

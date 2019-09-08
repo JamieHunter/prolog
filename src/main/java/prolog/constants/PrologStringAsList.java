@@ -89,18 +89,27 @@ public abstract class PrologStringAsList implements TermList, Grounded {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public TermList enumTerm(EnumTermStrategy strategy) {
         return strategy.visitStringAsList(this);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public TermList mutateCompoundTerm(EnumTermStrategy strategy) {
+    public TermList enumAndCopyCompoundTermMembers(EnumTermStrategy strategy) {
         throw new UnsupportedOperationException("Use visitCodePoints");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public TermList enumCompoundTerm(EnumTermStrategy strategy) {
+    public TermList enumCompoundTermMembers(EnumTermStrategy strategy) {
         throw new UnsupportedOperationException("Use visitCodePoints");
     }
 
