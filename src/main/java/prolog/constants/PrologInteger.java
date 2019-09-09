@@ -106,8 +106,7 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
      * @return character value
      */
     public char toChar() {
-        notLessThanZero();
-        if (value.compareTo(BigInteger.valueOf(Character.MAX_VALUE))> 0) {
+        if (value.compareTo(BigInteger.ZERO) < 0 || value.compareTo(BigInteger.valueOf(Character.MAX_VALUE))> 0) {
             throw new FutureRepresentationError(Interned.CHARACTER_CODE_REPRESENTATION);
         }
         return (char)value.intValue();

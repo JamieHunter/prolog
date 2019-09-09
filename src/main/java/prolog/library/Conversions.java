@@ -71,6 +71,8 @@ public class Conversions {
      */
     @Predicate("char_code")
     public static void charCode(Environment environment, Term atomTerm, Term codeTerm) {
+        PrologInteger codeFromAtom = null;
+        PrologCharacter charFromCode = null;
         if (atomTerm.isInstantiated()) {
             String charString = "";
 
@@ -80,18 +82,20 @@ public class Conversions {
             if (charString.length() != 1) {
                 throw PrologTypeError.characterExpected(environment, atomTerm);
             }
-            PrologInteger code = PrologInteger.from(charString.charAt(0));
-            if(!Unifier.unify(environment.getLocalContext(), codeTerm, code)) {
-                environment.backtrack();
-            }
-            return;
-        } else if (codeTerm.isInstantiated()) {
+            codeFromAtom = PrologInteger.from(charString.charAt(0));
+        }
+        if (codeTerm.isInstantiated()) {
             int code = PrologInteger.from(codeTerm).toChar();
-            PrologCharacter chr = new PrologCharacter((char)code);
-            if(!Unifier.unify(environment.getLocalContext(), atomTerm, chr)) {
+            charFromCode = new PrologCharacter((char) code);
+        }
+        if (charFromCode != null) {
+            if (!Unifier.unify(environment.getLocalContext(), atomTerm, charFromCode)) {
                 environment.backtrack();
             }
-            return;
+        } else if (codeFromAtom != null) {
+            if(!Unifier.unify(environment.getLocalContext(), codeTerm, codeFromAtom)) {
+                environment.backtrack();
+            }
         } else {
             throw PrologInstantiationError.error(environment, atomTerm);
         }
