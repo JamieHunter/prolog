@@ -5,6 +5,7 @@ package prolog.test;
 
 import org.hamcrest.Matcher;
 import prolog.expressions.Term;
+import prolog.test.internal.OutputMonitor;
 
 import java.util.function.Consumer;
 
@@ -87,4 +88,19 @@ public interface Then {
      * @return self
      */
     Then anotherSolution();
+
+    /**
+     * Retrieve a '##text_log' textual monitor
+     * @param alias Alias as when text_log was created
+     * @return monitor
+     */
+    OutputMonitor getTextLog(String alias);
+
+    /**
+     * Test the given alias match count is as given.
+     * @param alias Alias to monitor
+     * @param matcher Matcher to validate value
+     * @return self
+     */
+    Then textMatches(String alias, Matcher<Integer> matcher);
 }

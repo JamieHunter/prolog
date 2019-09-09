@@ -67,4 +67,12 @@ public class StringOutputStream implements PrologOutputStream, Closeable {
     public String toString() {
         return writer.toString();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void seekEndOfStream() throws IOException {
+        throw new IOException("Cannot seek");
+    }
 }

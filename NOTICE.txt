@@ -1,0 +1,7 @@
+This version of Prolog was created by Jamie Hunter, and made available 2019 with the license described in LICENSE.TXT.
+
+Additional copyrights:
+Compliance test suite "vanilla" Copyright Jonathan Hodgson dated October 2, 1998 with modifications as needed to match
+compliance variances, fix some bugs, and insert into the testing infrastructure.
+Compliance test suite "inriasuite" Copyright J.P.E. Hodgson dated February 9, 1999 with modifications as needed to match
+compliance variances, fix some bugs, and insert into the testing infrastructure.

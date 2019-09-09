@@ -66,4 +66,12 @@ public class SequentialOutputStream implements PrologOutputStream {
             closed = true;
         }
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void seekEndOfStream() throws IOException {
+        throw new IOException("Cannot seek");
+    }
 }

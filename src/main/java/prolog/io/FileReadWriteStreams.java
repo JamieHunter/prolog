@@ -245,6 +245,15 @@ public class FileReadWriteStreams implements PrologInputStream, PrologOutputStre
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void seekEndOfStream() throws IOException {
+        // TODO: implement seek
+        throw new IOException("Cannot seek - not yet implemented");
+    }
+
     private enum State {
         CLEAN,
         HAS_INPUT,

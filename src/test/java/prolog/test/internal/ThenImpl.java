@@ -17,10 +17,7 @@ import prolog.library.Dictionary;
 import prolog.test.StreamUtils;
 import prolog.test.Then;
 import prolog.variables.BoundVariable;
-import prolog.variables.Variable;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -159,6 +156,19 @@ public class ThenImpl implements Then {
     public Then anotherSolution() {
         state.environment().backtrack();
         cycle();
+        return this;
+    }
+
+    @Override
+    public OutputMonitor getTextLog(String alias) {
+        return state.getTextLog(alias);
+    }
+
+    @Override
+    public Then textMatches(String alias, Matcher<Integer> matcher) {
+        OutputMonitor monitor = getTextLog(alias);
+        int count = monitor.getCount();
+        assertThat(alias + " match count mismatch", count, matcher);
         return this;
     }
 

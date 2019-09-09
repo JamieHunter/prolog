@@ -1,18 +1,21 @@
 package prolog.suite;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class VanillaTest extends Suite {
 
-
-    @Disabled("Vanilla suite ignored, it will fail")
     @Test
     public void testVanillaSuite() {
-        runSuite(Paths.get("vanilla"),
-                "?- ['vanilla.pl'].",
-                "?- validate.");
+        given(Paths.get("vanilla"))
+                .when("?- '##text_log'(log, \"^\\\\[Failed\\\\]\"), set_output(log), '##set_default_streams'.")
+                .andWhen("?- ['vanilla.pl'].").assertSuccess()
+                .andWhen("?- validate.").assertSuccess()
+                .textMatches("log", is(0));
     }
 }

@@ -73,7 +73,7 @@ public final class StreamUtils {
 
         @Override
         public void close() throws IOException {
-            close(new CloseOptions(environment, null));
+            close(environment, new CloseOptions(environment, null));
         }
     }
 }

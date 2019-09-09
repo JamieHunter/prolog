@@ -123,8 +123,8 @@ find_flags :-
 %
 
 
-test_halt1 :-
-	test_true(halt(7)).
+%test_halt1 :-
+%	test_true(halt(7)).
 
 
 
@@ -133,8 +133,8 @@ test_817 :-
         log('testing flags'), log_nl,
 	find_flags,
         log_nl,
-        log('testing  halt/1'), log_nl,
-        test_halt1,
-        log_nl,
+%        log('testing  halt/1'), log_nl,
+%        test_halt1,
+%        log_nl,
         log('All tests completed').
         

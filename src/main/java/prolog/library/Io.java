@@ -3,7 +3,6 @@
 //
 package prolog.library;
 
-import prolog.bootstrap.DefaultIoBinding;
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
@@ -21,7 +20,6 @@ import prolog.exceptions.PrologExistenceError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
-import prolog.execution.Backtrack;
 import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
@@ -83,6 +81,8 @@ public final class Io {
     public static final PrologAtomInterned CHAR_POS = Interned.internAtom("char");
     public static final PrologAtomInterned COLUMN_POS = Interned.internAtom("column");
     public static final PrologAtomInterned LINE_POS = Interned.internAtom("line");
+    public static final PrologAtomInterned END_OF_STREAM = Interned.internAtom("end_of_stream");
+    public static final PrologAtomInterned AT = Interned.internAtom("at");
 
     /**
      * Open a stream
@@ -122,9 +122,7 @@ public final class Io {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
         // verify and prepare stream, return value ignored
         logicalStream.getInputStream(environment, (Atomic) streamIdent);
-        LogicalStream oldInputStream = environment.setInputStream(logicalStream);
-        // TODO, this may be wrong
-        environment.pushBacktrack(new RestoreInput(environment, oldInputStream));
+        environment.setInputStream(logicalStream);
     }
 
     /**
@@ -155,9 +153,7 @@ public final class Io {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
         // verify and prepare stream, return value ignored
         logicalStream.getOutputStream(environment, (Atomic) streamIdent);
-        LogicalStream oldOutputStream = environment.setOutputStream(logicalStream);
-        // TODO, this may be wrong
-        environment.pushBacktrack(new RestoreOutput(environment, oldOutputStream));
+        environment.setOutputStream(logicalStream);
     }
 
     /**
@@ -198,8 +194,9 @@ public final class Io {
     @Predicate("close")
     public static void close(Environment environment, Term streamIdent, Term options) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
+        CloseOptions closeOptions = new CloseOptions(environment, options);
         try {
-            if (!logicalStream.close(new CloseOptions(environment, options))) {
+            if (!logicalStream.close(environment, closeOptions)) {
                 return;
             }
         } catch (IOException ioe) {
@@ -208,10 +205,10 @@ public final class Io {
         LogicalStream inputStream = environment.getInputStream();
         LogicalStream outputStream = environment.getOutputStream();
         if (logicalStream == inputStream) {
-            environment.setInputStream(DefaultIoBinding.USER_INPUT);
+            environment.setInputStream(environment.getDefaultInputStream());
         }
         if (logicalStream == outputStream) {
-            environment.setOutputStream(DefaultIoBinding.USER_OUTPUT);
+            environment.setOutputStream(environment.getDefaultOutputStream());
         }
         environment.removeStream(logicalStream.getId(), logicalStream);
         ArrayList<PrologAtomInterned> aliases = logicalStream.getAliases();
@@ -306,7 +303,6 @@ public final class Io {
         if (!position.isInstantiated()) {
             throw PrologInstantiationError.error(environment, position);
         }
-        // TODO: end_of_stream(at)
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
         logicalStream.restorePosition(environment, (Atomic) streamIdent, position);
     }
@@ -1099,62 +1095,6 @@ public final class Io {
         } else {
             environment.backtrack();
             return false;
-        }
-    }
-
-    /**
-     * Undoes an alias on backtrack
-     */
-    private static class RestoreStreamBinding implements Backtrack {
-        private final Environment environment;
-        private final PrologAtomInterned alias;
-        private final LogicalStream binding;
-
-        RestoreStreamBinding(Environment environment, PrologAtomInterned alias, LogicalStream binding) {
-            this.environment = environment;
-            this.alias = alias;
-            this.binding = binding;
-        }
-
-        @Override
-        public void undo() {
-            environment.addStreamAlias(alias, binding);
-        }
-    }
-
-    /**
-     * Restores the previous input stream
-     */
-    private static class RestoreInput implements Backtrack {
-        private final Environment environment;
-        private final LogicalStream binding;
-
-        RestoreInput(Environment environment, LogicalStream binding) {
-            this.environment = environment;
-            this.binding = binding;
-        }
-
-        @Override
-        public void undo() {
-            environment.setInputStream(binding);
-        }
-    }
-
-    /**
-     * Restores the previous output stream
-     */
-    private static class RestoreOutput implements Backtrack {
-        private final Environment environment;
-        private final LogicalStream binding;
-
-        RestoreOutput(Environment environment, LogicalStream binding) {
-            this.environment = environment;
-            this.binding = binding;
-        }
-
-        @Override
-        public void undo() {
-            environment.setOutputStream(binding);
         }
     }
 

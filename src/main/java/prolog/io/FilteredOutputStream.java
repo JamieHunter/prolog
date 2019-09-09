@@ -86,6 +86,14 @@ public class FilteredOutputStream implements PrologOutputStream {
      * {@inheritDoc}
      */
     @Override
+    public void seekEndOfStream() throws IOException {
+        stream.seekEndOfStream();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean approveClose(CloseOptions options) {
         return stream.approveClose(options);
     }

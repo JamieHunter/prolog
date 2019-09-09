@@ -6,9 +6,8 @@ package prolog.constants;
 import prolog.bootstrap.Interned;
 import prolog.exceptions.FutureDomainError;
 import prolog.exceptions.FutureEvaluationError;
+import prolog.exceptions.FutureRepresentationError;
 import prolog.exceptions.FutureTypeError;
-import prolog.exceptions.PrologDomainError;
-import prolog.exceptions.PrologEvaluationError;
 import prolog.expressions.Term;
 import prolog.expressions.TypeRank;
 import prolog.io.WriteContext;
@@ -109,7 +108,7 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
     public char toChar() {
         notLessThanZero();
         if (value.compareTo(BigInteger.valueOf(Character.MAX_VALUE))> 0) {
-            throw new FutureDomainError(Interned.CHARACTER_CODE_REPRESENTATION, this);
+            throw new FutureRepresentationError(Interned.CHARACTER_CODE_REPRESENTATION);
         }
         return (char)value.intValue();
     }

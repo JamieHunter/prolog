@@ -7,6 +7,7 @@ import prolog.bootstrap.DefaultIoBinding;
 import prolog.bootstrap.Interned;
 import prolog.exceptions.PrologAborted;
 import prolog.exceptions.PrologError;
+import prolog.exceptions.PrologHalt;
 import prolog.exceptions.PrologThrowable;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
@@ -63,8 +64,11 @@ public class Run {
                 InteractiveQuery query = new InteractiveQuery(environment);
                 query.compile(term);
                 query.run();
+            } catch (PrologHalt ph) {
+                System.exit(ph.getHaltCode());
             } catch (PrologAborted pa) {
                 displaySimpleError(pa);
+                environment.abortReset();
             } catch (PrologThrowable pe) {
                 displayError(pe);
             } catch (RuntimeException re) {

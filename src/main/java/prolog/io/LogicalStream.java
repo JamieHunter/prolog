@@ -39,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -48,7 +49,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class LogicalStream {
 
     // provides a unique identifier over lifetime of execution.
-    private static final AtomicInteger counter = new AtomicInteger(1);
+    private static final AtomicInteger counter = new AtomicInteger(10000); // at least not 0,1 or 2
+    public static final LogicalStream NONE = new LogicalStream();
 
     /**
      * Create a unique stream ID
@@ -60,6 +62,10 @@ public class LogicalStream {
         return PrologInteger.from(n);
     }
 
+    private WeakHashMap<Environment,Integer> protection = null;
+    public static final int PROTECT_INPUT = 1;
+    public static final int PROTECT_OUTPUT = 2;
+    public static final int PROTECT_ERROR = 4;
     private final PrologInteger id;
     private final PrologInputStream baseInput;
     private final PrologOutputStream baseOutput;
@@ -73,6 +79,7 @@ public class LogicalStream {
     private Long bufferSize = null;
     private boolean closeOnAbort = true;
     private boolean closeOnExec = true;
+    private boolean closed = false;
     private StreamProperties.Encoding encoding = StreamProperties.Encoding.ATOM_utf8;
     private StreamProperties.EofAction eofAction = StreamProperties.EofAction.ATOM_error;
     private StreamProperties.Type type = StreamProperties.Type.ATOM_text;
@@ -98,12 +105,27 @@ public class LogicalStream {
         this.ioChanged = true; // set each time IO needs reconfiguring
     }
 
+    private LogicalStream() {
+        this.id = PrologInteger.from(-1);
+        this.baseInput = null;
+        this.baseOutput = null;
+        this.openMode = null;
+        this.ioChanged = false;
+        this.closed = true;
+    }
+
     /**
      * Close streams.
      *
      * @throws IOException IO Error
      */
-    public boolean close(CloseOptions options) throws IOException {
+    public synchronized boolean close(Environment environment, CloseOptions options) throws IOException {
+        if (closed) {
+            return false; // cannot close streams that have previously been closed
+        }
+        if (isProtected(environment) && !options.force) {
+            return false;
+        }
         if (!((input == null || input.approveClose(options))
                 && (output == null || output.approveClose(options)))) {
             return false;
@@ -114,6 +136,7 @@ public class LogicalStream {
         if (output != null) {
             output.close(options);
         }
+        closed = true;
         return true;
     }
 
@@ -405,6 +428,12 @@ public class LogicalStream {
     public void restorePosition(Environment environment, Atomic streamIdent, Term positionTerm) {
         PrologStream stream = getStream();
         Position pos = new Position();
+        if (CompoundTerm.termIsA(positionTerm, Io.END_OF_STREAM, 1) &&
+                ((CompoundTerm)positionTerm).get(0).compareTo(Io.AT) == 0) {
+            // seek to end of stream
+            seekEndOfStream(environment, streamIdent, stream);
+            return;
+        }
         TermList.TermIterator iter = TermList.listIterator(positionTerm);
         while (iter.hasNext()) {
             Term element = iter.next();
@@ -433,6 +462,14 @@ public class LogicalStream {
         }
         throw PrologPermissionError.error(environment, "modify", "position", streamIdent,
                 String.format("Cannot modify stream position on %s", streamIdent));
+    }
+
+    private void seekEndOfStream(Environment environment, Atomic name, PrologStream stream) {
+        try {
+            stream.seekEndOfStream();
+        } catch (IOException e) {
+            throw PrologPermissionError.error(environment, "reposition", "stream", name, "Cannot reposition on stream");
+        }
     }
 
     private static void mapOptionalPosElement(ArrayList<Term> list, Atomic name, Optional<Long> element) {
@@ -935,5 +972,49 @@ public class LogicalStream {
      */
     private static PrologError writeError(Throwable cause, Environment environment) {
         return PrologError.systemError(environment, cause);
+    }
+
+    /**
+     * A stream is a default for the given environment.
+     * @param environment Environment that has default reference
+     * @param mask mask of what is considered protected
+     */
+    public synchronized void protect(Environment environment, int mask) {
+        if (protection == null) {
+            protection = new WeakHashMap<>();
+        }
+        protection.compute(environment, (key,prior) -> prior == null ? mask : mask|prior);
+    }
+
+    /**
+     * Remove default-ness protection
+     * @param environment Environment that has default reference
+     * @param mask indicating which protection to remove
+     */
+    public synchronized void unprotect(Environment environment, int mask) {
+        if (protection == null) {
+            return;
+        }
+        protection.computeIfPresent(environment, (key,prior) -> (prior & ~mask) == 0 ? null : prior & ~mask);
+        if (protection.isEmpty()) {
+            protection = null; // remove map if no longer applying protection
+        }
+    }
+
+    /**
+     * True if stream is considered protected
+     * @param environment Environment to check for
+     * @return true if protected
+     */
+    public synchronized boolean isProtected(Environment environment) {
+        return protection != null && protection.containsKey(environment);
+    }
+
+    /**
+     * True if stream is considered already closed
+     * @return true if closed
+     */
+    public synchronized boolean isClosed() {
+        return closed;
     }
 }

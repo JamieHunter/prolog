@@ -15,8 +15,10 @@ import prolog.debugging.DebuggerHook;
 import prolog.debugging.NoDebugger;
 import prolog.debugging.SpyPoints;
 import prolog.exceptions.PrologError;
+import prolog.exceptions.PrologHalt;
 import prolog.exceptions.PrologPermissionError;
 import prolog.expressions.Term;
+import prolog.flags.CloseOptions;
 import prolog.flags.PrologFlags;
 import prolog.functions.StackFunction;
 import prolog.io.LogicalStream;
@@ -31,6 +33,7 @@ import prolog.predicates.Predication;
 import prolog.predicates.VarArgDefinition;
 import prolog.utility.TrackableList;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -175,6 +178,19 @@ public class Environment {
         public Stream<Map.Entry<Predication.Interned, PredicateDefinition>> allPredicates() {
             return dictionary.entrySet().stream();
         }
+
+        private void abortReset(Environment environment) {
+            CloseOptions options = new CloseOptions(environment, null);
+            for(LogicalStream stream : streamById.values()) {
+                if (stream.getCloseOnAbort()) {
+                    try {
+                        stream.close(environment, options);
+                    } catch (IOException e) {
+                        // ignore
+                    }
+                }
+            }
+        }
     }
 
     // shared state between related environments
@@ -186,6 +202,9 @@ public class Environment {
     // active streams
     private LogicalStream inputStream;
     private LogicalStream outputStream;
+    // default streams
+    private LogicalStream defaultInputStream;
+    private LogicalStream defaultOutputStream;
     // active search path
     private final TrackableList<Path> searchPath = new TrackableList<>();
     // current directory
@@ -236,8 +255,10 @@ public class Environment {
     public Environment(Environment parent) {
         this.shared = parent.shared;
         breakLevel = parent.breakLevel + 1;
-        this.inputStream = parent.inputStream;
-        this.outputStream = parent.outputStream;
+        this.defaultInputStream = this.inputStream = parent.defaultInputStream;
+        this.defaultOutputStream = this.outputStream = parent.defaultOutputStream;
+        this.defaultInputStream.protect(this, LogicalStream.PROTECT_INPUT);
+        this.defaultOutputStream.protect(this, LogicalStream.PROTECT_OUTPUT);
         this.cwd = parent.cwd;
         changeLoadGroup(new LoadGroup.Interactive());
     }
@@ -251,10 +272,31 @@ public class Environment {
     public Environment(Environment.Shared shared) {
         this.shared = shared;
         breakLevel = 0; // assume top level
-        this.inputStream = DefaultIoBinding.USER_INPUT;
-        this.outputStream = DefaultIoBinding.USER_OUTPUT;
+        this.defaultInputStream = this.inputStream = DefaultIoBinding.USER_INPUT;
+        this.defaultOutputStream = this.outputStream = DefaultIoBinding.USER_OUTPUT;
+        this.defaultInputStream.protect(this, LogicalStream.PROTECT_INPUT);
+        this.defaultOutputStream.protect(this, LogicalStream.PROTECT_OUTPUT);
         this.cwd = Paths.get(".").normalize().toAbsolutePath();
         changeLoadGroup(new LoadGroup.Interactive());
+    }
+
+    /**
+     *  Abort-time behavior
+     */
+    public void abortReset() {
+        this.inputStream = this.defaultInputStream;
+        this.outputStream = this.defaultOutputStream;
+        shared.abortReset(this);
+    }
+
+    /**
+     * Should be called prior to releasing environment
+     */
+    public void release() {
+        this.defaultInputStream.unprotect(this, -1);
+        this.defaultOutputStream.unprotect(this, -1);
+        this.inputStream = this.defaultInputStream = LogicalStream.NONE;
+        this.outputStream = this.defaultOutputStream = LogicalStream.NONE;
     }
 
     /**
@@ -620,6 +662,9 @@ public class Environment {
                 if (executionState.isTerminal()) {
                     return executionState;
                 }
+            } catch (PrologHalt ph) {
+                // I.e. PrologHalt is uncaught.
+                throw ph;
             } catch (RuntimeException e) {
                 // convert Java exceptions into Prolog exceptions
                 throwing(PrologError.convert(this, e));
@@ -779,12 +824,9 @@ public class Environment {
      * Change input stream.
      *
      * @param logicalStream New stream
-     * @return old stream
      */
-    public LogicalStream setInputStream(LogicalStream logicalStream) {
-        LogicalStream oldStream = inputStream;
+    public void setInputStream(LogicalStream logicalStream) {
         this.inputStream = logicalStream;
-        return oldStream;
     }
 
     /**
@@ -793,10 +835,24 @@ public class Environment {
      * @param logicalStream New stream
      * @return old stream
      */
-    public LogicalStream setOutputStream(LogicalStream logicalStream) {
-        LogicalStream oldStream = outputStream;
+    public void setOutputStream(LogicalStream logicalStream) {
         this.outputStream = logicalStream;
-        return oldStream;
+    }
+
+    /**
+     * Make current streams the default streams
+     */
+    public void setDefaultStreams() {
+        this.outputStream.protect(this, LogicalStream.PROTECT_OUTPUT);
+        this.inputStream.protect(this, LogicalStream.PROTECT_INPUT);
+        if (this.defaultInputStream != this.inputStream) {
+            this.defaultInputStream.unprotect(this, LogicalStream.PROTECT_INPUT);
+            this.defaultInputStream = this.inputStream;
+        }
+        if (this.defaultOutputStream != this.outputStream) {
+            this.defaultOutputStream.unprotect(this, LogicalStream.PROTECT_OUTPUT);
+            this.defaultOutputStream = this.outputStream;
+        }
     }
 
     /**
@@ -809,12 +865,30 @@ public class Environment {
     }
 
     /**
+     * Get default input stream
+     *
+     * @return input stream
+     */
+    public LogicalStream getDefaultInputStream() {
+        return defaultInputStream;
+    }
+
+    /**
      * Get current output stream
      *
      * @return output stream
      */
     public LogicalStream getOutputStream() {
         return outputStream;
+    }
+
+    /**
+     * Get default output stream
+     *
+     * @return output stream
+     */
+    public LogicalStream getDefaultOutputStream() {
+        return defaultOutputStream;
     }
 
     /**

@@ -17,7 +17,9 @@
 %                                              %
 %   All messages are written to a the standard %
 %   output.                                    %
-%   Version for Calypso  1 oct 1998            %
+%                                              %
+%   This version contains changes by           %
+%   Jamie Hunter 2019                          %
 %                                              %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -138,18 +140,20 @@ error_test(Goal, ExpectedError) :-
 
 
 try(G, Goal) :-
-	call(G), log( 'Unexpected success rather than error in: '), log(Goal),log_nl
+	call(G),
+	    log('[Failed] Unexpected success rather than error in: '),
+	    log(Goal),log_nl
         ;
-        log('Unexpected failure rather than error in: '),
+        log('[Failed] Unexpected failure rather than error in: '),
         log(Goal),log_nl.
-	
+
 
 report_difference(Goal, Expected, Actual):-
 	log('Goal: '), log(Goal), log(' attempted.'), 
        log_nl,
         log('Standard Part of Expected Error: '), 
         log( error(Expected,ImpDef)),log_nl,
-	log( 'Error Thrown: '), log( Actual),log_nl, 
+	log( '[Failed] Error Thrown: '), log( Actual),log_nl,
         log_nl.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -160,13 +164,22 @@ report_difference(Goal, Expected, Actual):-
 %	Test the goal G with "output" Arg to check for
 %  Expected value
 
+compare_value(A, Expected) :-
+    % allow for rounding errors
+    float(Expected),
+    float(A),
+    round(A*10000) =:= round(Expected*10000)
+    .
+
+compare_value(A, Expected) :- A = Expected.
+
 test_val(Goal, Arg, Expected) :-
        copy_term(Goal/Arg, G/A), 
 	catch( (call(G),
-                   ( A = Expected -> true
+                   ( compare_value(A, Expected) -> true
                     ;
                     log( 'Goal: '), log( Goal),log_nl,
-                    log( ' gave unexpected value: '), log(  A),   
+                    log( '[Failed] gave unexpected value: '), log(  A),
                    log_nl,
                     log(' expected value: '), log(Expected),  
                    log_nl
@@ -176,7 +189,7 @@ test_val(Goal, Arg, Expected) :-
                 report_error(Goal,B)
              ), !.
 test_val(Goal, Arg, _) :-
-	log( 'Unexpected failure of the goal '),
+	log( '[Failed] Unexpected failure of the goal '),
         log( Goal),
         log_nl.
 
@@ -195,13 +208,13 @@ test_true(G) :- copy_term(G,G1),
                       ), 
                 !.
 test_true(G)  :- log( 'Goal: '), log( G),log_nl,
-		log( 'failed, when it should have succeeded.'),
+		log( '[Failed] Goal failed when it should have succeeded.'),
                log_nl.
 
 test_false(G) :- copy_term(G,G1), 
                  catch( (call(G1), log( 'Goal:  '), 
                          log(G),log_nl,
-	                 log('succeeded when it should fail.'),
+	                 log('[Failed] Goal succeeded when it should fail.'),
                         log_nl),
                         B,
                         report_error(G,B)
@@ -212,7 +225,7 @@ test_false(G).
 
 
 report_error(G,B) :-
-	log( 'Unexpected error:'), log(B),log_nl,
+	log( '[Failed] Unexpected error:'), log(B),log_nl,
         log( 'raised by goal: '), log( G), log_nl,
         log( 'that should not raise an error'),
        log_nl, log_nl.
@@ -238,26 +251,6 @@ do_catch(X,Y,Z) :-
 
 eval_or_fail(X) :-
 	catch( call(X), _, fail).
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%     resume_log(+LogFile) 
-%
-%   send standard out to the log file with alias log.
-%
-
-resume_log(LogFile) :-
-	open(Logfile, append, S, [alias(log)]),
-        set_output(log).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%      halt_log(+LogFile)
-%
-%   set output back to standard out 
-
-halt_log(LogFile) :- close(log).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

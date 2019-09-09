@@ -1,11 +1,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %  haness for the validation
-%  suite for calypso
+%  suite
 %
 %  Jonathan Hodgson.
 %
 %   2 October 1998.
+%
+%   This version contains changes by
+%   Jamie Hunter 2019
 %
 
 
@@ -84,9 +87,5 @@ run_tests:-
          test_817.
 
 validate:-
-   start_log,
-   run_tests,
-   end_log.
+   run_tests.
 validate.
-
-	

@@ -136,4 +136,11 @@ public class PositionTracker implements PrologStream {
     @Override
     public void close(CloseOptions options) {
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void seekEndOfStream() throws IOException {
+    }
 }

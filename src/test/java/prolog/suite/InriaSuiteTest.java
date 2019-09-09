@@ -10,8 +10,8 @@ public class InriaSuiteTest extends Suite {
     @Disabled("INRIA Suite ignored, it will fail")
     @Test
     public void testInriaSuite() {
-        runSuite(Paths.get("inriasuite"),
-                "?- ['inriasuite.pl'].",
-                "?- run_all_tests.");
+        given(Paths.get("inriasuite"))
+                .when("?- ['inriasuite.pl'].").assertSuccess()
+                .andWhen("?- run_all_tests.").assertSuccess();
     }
 }

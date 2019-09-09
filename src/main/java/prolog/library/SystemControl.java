@@ -7,6 +7,7 @@ import prolog.bootstrap.Predicate;
 import prolog.cli.Run;
 import prolog.constants.PrologInteger;
 import prolog.exceptions.PrologAborted;
+import prolog.exceptions.PrologHalt;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 
@@ -19,24 +20,24 @@ public final class SystemControl {
     }
 
     /**
-     * Exit prolog
+     * Exit prolog - thrown as an exception to allow behavior override.
      *
      * @param environment Execution environment
      */
     @Predicate("halt")
     public static void halt(Environment environment) {
-        System.exit(0);
+        throw new PrologHalt(0, "halt");
     }
 
     /**
-     * Exit prolog
+     * Exit prolog - thrown as an exception to allow behavior override.
      *
      * @param environment Execution environment
      * @param exitCode code to exit with
      */
     @Predicate("halt")
     public static void halt(Environment environment, Term exitCode) {
-        System.exit(PrologInteger.from(exitCode).toInteger());
+        throw new PrologHalt(PrologInteger.from(exitCode).toInteger(), "halt");
     }
 
     /**
@@ -55,6 +56,10 @@ public final class SystemControl {
     @Predicate("break")
     public static void doBreak(Environment environment) {
         Environment child = new Environment(environment);
-        new Run(child).run();
+        try {
+            new Run(child).run();
+        } finally {
+            child.release();
+        }
     }
 }

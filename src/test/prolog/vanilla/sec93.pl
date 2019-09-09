@@ -38,7 +38,7 @@
 test_pow :-
    eval_or_fail(_ is 2 ** 3),
    test_true(X1   is 15 ** 2),
-   test_val(X2 is 2 ** 3 ,X2 ,8.0),
+   test_val(X2 is 2 ** 3 ,X2 ,8), % ISO assumes 8.0
    error_test(X3 is 3 ** N ,instantiation_error).
    
    

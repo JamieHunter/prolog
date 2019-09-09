@@ -57,4 +57,9 @@ public interface PrologStream {
      * @return true if closed
      */
     void close(CloseOptions options) throws IOException;
+
+    /**
+     * Seek to end of stream if supported.
+     */
+    void seekEndOfStream() throws IOException;
 }
