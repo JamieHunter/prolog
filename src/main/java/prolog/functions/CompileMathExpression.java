@@ -13,7 +13,7 @@ import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.instructions.ExecPushConstant;
-import prolog.instructions.ExecPushNumberVariable;
+import prolog.instructions.ExecEvaluateVariable;
 import prolog.instructions.ExecSimpleBlock;
 import prolog.predicates.Predication;
 import prolog.variables.Variable;
@@ -59,7 +59,7 @@ public class CompileMathExpression {
         }
         if (term instanceof Variable) {
             // variables need to be resolved and checked as they are executed
-            compiling.add(new ExecPushNumberVariable((Variable) term));
+            compiling.add(new ExecEvaluateVariable((Variable) term));
             return this;
         }
         // handle operators/functions

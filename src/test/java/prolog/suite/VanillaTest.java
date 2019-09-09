@@ -4,9 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class VanillaTest extends Suite {
 
