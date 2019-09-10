@@ -8,6 +8,7 @@ import prolog.exceptions.FutureDomainError;
 import prolog.exceptions.FutureEvaluationError;
 import prolog.exceptions.FutureRepresentationError;
 import prolog.exceptions.FutureTypeError;
+import prolog.execution.Environment;
 import prolog.expressions.Term;
 import prolog.expressions.TypeRank;
 import prolog.io.WriteContext;
@@ -69,15 +70,16 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
 
     /**
      * Bounded long
+     *
      * @return long value
      */
     public long toLong() {
         if (value.compareTo(BigInteger.ZERO) > 0) {
-            if (value.compareTo(BigInteger.valueOf(Long.MAX_VALUE))> 0) {
+            if (value.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0) {
                 throw new FutureDomainError(new PrologAtom("max_long"), this);
             }
         } else {
-            if (value.compareTo(BigInteger.valueOf(Long.MIN_VALUE))< 0) {
+            if (value.compareTo(BigInteger.valueOf(Long.MIN_VALUE)) < 0) {
                 throw new FutureDomainError(new PrologAtom("min_long"), this);
             }
         }
@@ -86,15 +88,16 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
 
     /**
      * Bounded integer
+     *
      * @return integer value
      */
     public int toInteger() {
         if (value.compareTo(BigInteger.ZERO) > 0) {
-            if (value.compareTo(BigInteger.valueOf(Integer.MAX_VALUE))> 0) {
+            if (value.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) {
                 throw new FutureDomainError(new PrologAtom("max_integer"), this);
             }
         } else {
-            if (value.compareTo(BigInteger.valueOf(Integer.MIN_VALUE))< 0) {
+            if (value.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
                 throw new FutureDomainError(new PrologAtom("min_integer"), this);
             }
         }
@@ -103,13 +106,27 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
 
     /**
      * Bounded character
+     *
      * @return character value
      */
     public char toChar() {
-        if (value.compareTo(BigInteger.ZERO) < 0 || value.compareTo(BigInteger.valueOf(Character.MAX_VALUE))> 0) {
+        if (value.compareTo(BigInteger.ZERO) < 0 || value.compareTo(BigInteger.valueOf(Character.MAX_VALUE)) > 0) {
             throw new FutureRepresentationError(Interned.CHARACTER_CODE_REPRESENTATION);
         }
-        return (char)value.intValue();
+        return (char) value.intValue();
+    }
+
+    /**
+     * Representation as an arity
+     *
+     * @return arity value
+     */
+    public int toArity(Environment environment) {
+        long maxArity = environment.getFlags().maxArity;
+        if (value.compareTo(BigInteger.ZERO) < 0 || value.compareTo(BigInteger.valueOf(maxArity)) > 0) {
+            throw new FutureRepresentationError(Interned.MAX_ARITY_REPRESENTATION);
+        }
+        return (char) value.intValue();
     }
 
     /**
@@ -329,6 +346,6 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
      */
     @Override
     public int compareSameType(Term o) {
-        return get().compareTo(((PrologInteger)o).get());
+        return get().compareTo(((PrologInteger) o).get());
     }
 }

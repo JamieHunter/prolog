@@ -110,7 +110,7 @@ public final class Dictionary {
             throw PrologInstantiationError.error(environment, functor);
         }
         PrologAtomInterned functorAtom = PrologAtomInterned.from(environment, functor);
-        int arityInt = PrologInteger.from(arity).notLessThanZero().toInteger();
+        int arityInt = PrologInteger.from(arity).notLessThanZero().toArity(environment);
         Predication.Interned predication = new Predication.Interned(functorAtom, arityInt);
         PredicateDefinition defn =
                 environment.lookupPredicate(predication);

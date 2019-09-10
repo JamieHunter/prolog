@@ -99,6 +99,7 @@ public final class Interned {
     public static final PrologAtomInterned OPERATOR_SPECIFIER_DOMAIN = internAtom("operator_specifier");
     public static final PrologAtomInterned CHARACTER_CODE_LIST_DOMAIN = internAtom("character_code_list");
     public static final PrologAtomInterned CHARACTER_CODE_REPRESENTATION = internAtom("character_code");
+    public static final PrologAtomInterned MAX_ARITY_REPRESENTATION = internAtom("max_arity");
     public static final PrologAtomInterned ZERO_DIVISOR_EVALUATION = internAtom("zero_divisor");
     public static final PrologAtomInterned DOLLAR_VAR = internAtom("$VAR");
     public static final PrologAtomInterned OP_FX = internAtom("fx");

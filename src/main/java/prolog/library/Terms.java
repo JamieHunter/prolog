@@ -206,7 +206,7 @@ public class Terms {
             if (!name.isAtomic()) {
                 throw PrologTypeError.atomicExpected(environment, name);
             }
-            int arityInt = PrologInteger.from(arity).notLessThanZero().toInteger();
+            int arityInt = PrologInteger.from(arity).notLessThanZero().toArity(environment);
             if (arityInt > 0 && !name.isAtom()) {
                 throw PrologTypeError.atomExpected(environment, name);
             }

@@ -9,6 +9,7 @@ import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologInteger;
 import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologInstantiationError;
+import prolog.exceptions.PrologRepresentationError;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.CompileContext;
 import prolog.execution.Environment;
@@ -22,7 +23,6 @@ import prolog.instructions.ExecMember;
 import prolog.unification.Unifier;
 import prolog.variables.UnboundVariable;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -85,6 +85,9 @@ public final class Lists {
                     structFromList = head;
                 } else {
                     listArr = TermList.extractList(list);
+                    if ((listArr.size() - 1) > environment.getFlags().maxArity) {
+                        throw PrologRepresentationError.error(environment, Interned.MAX_ARITY_REPRESENTATION);
+                    }
                     structFromList = new CompoundTermImpl(
                             listArr.toArray(new Term[listArr.size()]));
                 }
@@ -137,8 +140,9 @@ public final class Lists {
 
     /**
      * Determine if a term is a member of a list
+     *
      * @param compiling Compiling context
-     * @param source Source term member(term,list)
+     * @param source    Source term member(term,list)
      */
     @Predicate(value = "member", arity = 2)
     public static void member(CompileContext compiling, CompoundTerm source) {

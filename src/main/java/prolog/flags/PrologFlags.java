@@ -7,6 +7,7 @@ import prolog.bootstrap.Interned;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtom;
 import prolog.constants.PrologAtomLike;
+import prolog.exceptions.FutureRepresentationError;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
 
@@ -21,6 +22,7 @@ import static prolog.bootstrap.Interned.internAtom;
 public class PrologFlags implements Flags {
 
     private static final PrologFlagsParser global = new PrologFlagsParser();
+    private static final long DEFAULT_MAX_ARITY = 255;
 
     public class Scope {
         public final Environment environment;
@@ -55,8 +57,8 @@ public class PrologFlags implements Flags {
                 read(o -> o.flags.floatFormat).protect();
         global.protectedFlag(internAtom("integer_rounding_function")).
                 constant(internAtom("toward_zero")).protect();
-        global.protectedFlag(internAtom("max_arity")).
-                constant(internAtom("unbounded")).protect();
+        global.intFlag(internAtom("max_arity"), (o,v) -> o.flags.maxArity = validateMaxArity(v)).
+                readInteger(o -> o.flags.maxArity).protect();
         global.enumFlag(internAtom("unknown"), Unknown.class, (o, v) -> o.flags.unknown = v).
                 readEnum(Unknown.class, o -> o.flags.unknown).protect();
     }
@@ -90,7 +92,11 @@ public class PrologFlags implements Flags {
     /**
      * Default float format
      */
-    public PrologAtomLike floatFormat = new PrologAtom("%.6g");
+    public PrologAtomLike floatFormat = new PrologAtom("%g");
+    /**
+     * Maximum arity - this is a soft maximum
+     */
+    public long maxArity = 255;
     /**
      * What to do if a predicate is not found
      */
@@ -168,6 +174,18 @@ public class PrologFlags implements Flags {
     public Map<Atomic, Term> getAll(Environment environment) {
         Scope scope = new Scope(environment, this);
         return local.getAll(scope);
+    }
+
+    /**
+     * While this version of prolog permits increasing MAX_ARITY, MAX_ARITY cannot be reduced.
+     * @param v New value
+     * @return new value
+     */
+    private static long validateMaxArity(long v) {
+        if (v < DEFAULT_MAX_ARITY || v > Integer.MAX_VALUE) {
+            throw new FutureRepresentationError(Interned.MAX_ARITY_REPRESENTATION);
+        }
+        return v;
     }
 
     public enum Quotes {
