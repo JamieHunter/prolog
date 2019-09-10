@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import prolog.constants.PrologEOF;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
+import prolog.flags.PrologFlags;
 import prolog.flags.ReadOptions;
 import prolog.io.PrologInputStream;
 import prolog.test.StreamUtils;
@@ -21,17 +22,19 @@ import static prolog.test.Matchers.*;
 public class TokenizerTest {
 
     private Environment environment;
+    private ReadOptions readOptions;
 
     @BeforeEach
-    private void setEnvironment() {
+    private void init() {
         environment = new Environment();
+        readOptions = new ReadOptions(environment, null);
     }
 
     private void expect(String text, Matcher<? super Term>... terms) {
         PrologInputStream stream = StreamUtils.bufferedString(text);
         Tokenizer tok = new Tokenizer(
                 environment,
-                new ReadOptions(environment, null),
+                readOptions,
                 stream);
         for (int i = 0; i < terms.length; i++) {
             Term t = tok.nextToken();
@@ -188,6 +191,35 @@ public class TokenizerTest {
                 isAtom("foox#"), // first '#' is translated, second '#' is not
                 isUnboundVariable("Foo"),
                 isAtom("."));
+    }
+
+    @Test
+    public void testBackQuoteToString() {
+        readOptions.backquotedString = true;
+        expect("`123` `abc`",
+                isString("123"),
+                isString("abc"));
+    }
+
+    @Test
+    public void testDoubleQuotedCharList() {
+        readOptions.doubleQuotes = PrologFlags.Quotes.ATOM_symbol_char;
+        expect("\"123\" \"abc\"",
+                isList(isAtom("1"), isAtom("2"), isAtom("3")),
+                isList(isAtom("a"), isAtom("b"), isAtom("c")));
+        readOptions.doubleQuotes = PrologFlags.Quotes.ATOM_codes;
+        expect("\"123\" \"abc\"",
+                isList(isInteger('1'), isInteger('2'), isInteger('3')),
+                isList(isInteger('a'), isInteger('b'), isInteger('c')));
+    }
+
+    @Test
+    public void testNoEscape() {
+        readOptions.characterEscapes = false;
+        expect("```` `\\`` `\\x41\\`",
+                isList(isAtom("`")),
+                isList(isAtom("\\"), isAtom("`")),
+                isList(isAtom("\\"), isAtom("x"), isAtom("4"), isAtom("1"), isAtom("\\")));
     }
 
 }

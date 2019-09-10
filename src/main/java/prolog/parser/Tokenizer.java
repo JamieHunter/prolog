@@ -16,8 +16,11 @@ import prolog.variables.UnboundVariable;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -33,7 +36,7 @@ public final class Tokenizer extends TokenRegex {
     private final Environment environment;
     private final ReadOptions options;
     private final PrologInputStream inputStream;
-    private final Map<String, UnboundVariable> variableMap = new HashMap<>();
+    private final Map<String, UnboundVariable> variableMap = new LinkedHashMap<>(); // order preserved
     private final Position startOfLine = new Position();
     private final Position nextLine = new Position();
     private final Position tokenMark = new Position();
@@ -338,17 +341,21 @@ public final class Tokenizer extends TokenRegex {
         return decodeInteger(10, text);
     }
 
+    /**
+     * Access all variables collected.
+     * @return Collection of variables.
+     */
+    public Map<String, UnboundVariable> getVariableMap() {
+        return Collections.unmodifiableMap(variableMap);
+    }
+
     Term parseVariable(String text) {
         return variableMap.computeIfAbsent(text,
                 n -> new UnboundVariable(n, environment.nextVariableId()));
     }
 
     Term parseAnonymousVariable(String text) {
-        if (text.equals("_")) {
-            return new UnboundVariable("_", environment.nextVariableId());
-        } else {
-            throw new UnsupportedOperationException("NYI");
-        }
+        return new UnboundVariable("_", environment.nextVariableId());
     }
 
     PrologInteger decodeInteger(int base, CharSequence chars) {

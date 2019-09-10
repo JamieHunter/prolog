@@ -33,7 +33,6 @@ import prolog.parser.Tokenizer;
 import prolog.unification.Unifier;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -62,7 +61,7 @@ public class LogicalStream {
         return PrologInteger.from(n);
     }
 
-    private WeakHashMap<Environment,Integer> protection = null;
+    private WeakHashMap<Environment, Integer> protection = null;
     public static final int PROTECT_INPUT = 1;
     public static final int PROTECT_OUTPUT = 2;
     public static final int PROTECT_ERROR = 4;
@@ -429,7 +428,7 @@ public class LogicalStream {
         PrologStream stream = getStream();
         Position pos = new Position();
         if (CompoundTerm.termIsA(positionTerm, Io.END_OF_STREAM, 1) &&
-                ((CompoundTerm)positionTerm).get(0).compareTo(Io.AT) == 0) {
+                ((CompoundTerm) positionTerm).get(0).compareTo(Io.AT) == 0) {
             // seek to end of stream
             seekEndOfStream(environment, streamIdent, stream);
             return;
@@ -976,26 +975,28 @@ public class LogicalStream {
 
     /**
      * A stream is a default for the given environment.
+     *
      * @param environment Environment that has default reference
-     * @param mask mask of what is considered protected
+     * @param mask        mask of what is considered protected
      */
     public synchronized void protect(Environment environment, int mask) {
         if (protection == null) {
             protection = new WeakHashMap<>();
         }
-        protection.compute(environment, (key,prior) -> prior == null ? mask : mask|prior);
+        protection.compute(environment, (key, prior) -> prior == null ? mask : mask | prior);
     }
 
     /**
      * Remove default-ness protection
+     *
      * @param environment Environment that has default reference
-     * @param mask indicating which protection to remove
+     * @param mask        indicating which protection to remove
      */
     public synchronized void unprotect(Environment environment, int mask) {
         if (protection == null) {
             return;
         }
-        protection.computeIfPresent(environment, (key,prior) -> (prior & ~mask) == 0 ? null : prior & ~mask);
+        protection.computeIfPresent(environment, (key, prior) -> (prior & ~mask) == 0 ? null : prior & ~mask);
         if (protection.isEmpty()) {
             protection = null; // remove map if no longer applying protection
         }
@@ -1003,6 +1004,7 @@ public class LogicalStream {
 
     /**
      * True if stream is considered protected
+     *
      * @param environment Environment to check for
      * @return true if protected
      */
@@ -1012,6 +1014,7 @@ public class LogicalStream {
 
     /**
      * True if stream is considered already closed
+     *
      * @return true if closed
      */
     public synchronized boolean isClosed() {

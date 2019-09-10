@@ -4,10 +4,12 @@
 package prolog.parser;
 
 import prolog.constants.PrologChars;
+import prolog.constants.PrologCodePoints;
 import prolog.constants.PrologInteger;
 import prolog.constants.PrologQuotedAtom;
 import prolog.constants.PrologString;
 import prolog.exceptions.PrologSyntaxError;
+import prolog.expressions.Term;
 
 import java.io.IOException;
 import java.util.regex.Pattern;
@@ -20,6 +22,7 @@ class QuotedContextState extends ActiveParsingState {
     private final StringBuilder builder = new StringBuilder();
     private final String quote;
     private final boolean once;
+    private final boolean escapes = tokenizer.options().characterEscapes;
     private LineMatcher lineMatcher;
 
     /**
@@ -119,14 +122,32 @@ class QuotedContextState extends ActiveParsingState {
                 return tokenizer.parseReachedEOF();
             }
         } else {
+            Term str;
             switch (quote) {
                 case "`":
-                    return ParseState.finish(new PrologChars(builder.toString()));
+                    if (tokenizer.options().backquotedString) {
+                        str = new PrologString(builder.toString());
+                    } else {
+                        str = new PrologChars(builder.toString());
+                    }
+                    break;
                 case "'":
-                    return ParseState.finish(new PrologQuotedAtom(builder.toString()));
+                    str = new PrologQuotedAtom(builder.toString());
+                    break;
                 default:
-                    return ParseState.finish(new PrologString(builder.toString()));
+                    switch(tokenizer.options().doubleQuotes) {
+                        case ATOM_symbol_char:
+                            str = new PrologChars(builder.toString());
+                            break;
+                        case ATOM_codes:
+                            str = new PrologCodePoints(builder.toString());
+                            break;
+                        default:
+                            str = new PrologString(builder.toString());
+                            break;
+                    }
             }
+            return ParseState.finish(str);
         }
     }
 
@@ -160,61 +181,63 @@ class QuotedContextState extends ActiveParsingState {
         if (match != null) {
             return proceed(match);
         }
-        match = lineMatcher.group(Tokenizer.META_ESCAPE_TAG);
-        if (match != null) {
-            return proceed(match.substring(1));
-        }
-        match = lineMatcher.group(Tokenizer.CONTROL_ESCAPE_TAG);
-        if (match != null) {
-            char c;
-            switch (match.substring(1)) {
-                //abrftnv
-                case "a":
-                    c = '\007';
-                    break;
-                case "b":
-                    c = '\b';
-                    break;
-                case "r":
-                    c = '\r';
-                    break;
-                case "f":
-                    c = '\f';
-                    break;
-                case "t":
-                    c = '\t';
-                    break;
-                case "n":
-                    c = '\n';
-                    break;
-                case "v":
-                    c = '\013';
-                    break;
-                default:
-                    return proceed();
+        if (escapes) {
+            match = lineMatcher.group(Tokenizer.META_ESCAPE_TAG);
+            if (match != null) {
+                return proceed(match.substring(1));
             }
-            builder.append(c);
-            return proceed();
-        }
-        match = lineMatcher.group(Tokenizer.CODE_ESCAPE_TAG);
-        if (match != null) {
-            String code = match.substring(1, match.length() - 1); // strip \...\
-            if (code.startsWith("x")) {
-                int hex = Integer.parseInt(code.substring(1), 16);
-                builder.append((char) hex);
-            } else {
-                int oct = Integer.parseInt(code, 8);
-                builder.append((char) oct);
+            match = lineMatcher.group(Tokenizer.CONTROL_ESCAPE_TAG);
+            if (match != null) {
+                char c;
+                switch (match.substring(1)) {
+                    //abrftnv
+                    case "a":
+                        c = '\007';
+                        break;
+                    case "b":
+                        c = '\b';
+                        break;
+                    case "r":
+                        c = '\r';
+                        break;
+                    case "f":
+                        c = '\f';
+                        break;
+                    case "t":
+                        c = '\t';
+                        break;
+                    case "n":
+                        c = '\n';
+                        break;
+                    case "v":
+                        c = '\013';
+                        break;
+                    default:
+                        return proceed();
+                }
+                builder.append(c);
+                return proceed();
             }
-            return proceed();
+            match = lineMatcher.group(Tokenizer.CODE_ESCAPE_TAG);
+            if (match != null) {
+                String code = match.substring(1, match.length() - 1); // strip \...\
+                if (code.startsWith("x")) {
+                    int hex = Integer.parseInt(code.substring(1), 16);
+                    builder.append((char) hex);
+                } else {
+                    int oct = Integer.parseInt(code, 8);
+                    builder.append((char) oct);
+                }
+                return proceed();
+            }
+            match = lineMatcher.group(Tokenizer.BAD_BACKSLASH_TAG);
+            if (match != null) {
+                throw PrologSyntaxError.stringError(tokenizer.environment(), "Error parsing string at '" + match + "'");
+            }
         }
         match = lineMatcher.group(Tokenizer.QUOTE_TAG);
         if (match != null) {
             return proceed(quote);
-        }
-        match = lineMatcher.group(Tokenizer.BAD_BACKSLASH_TAG);
-        if (match != null) {
-            throw PrologSyntaxError.stringError(tokenizer.environment(), "Error parsing string at '" + match + "'");
         }
         match = lineMatcher.group(Tokenizer.CATCH_ALL_TAG);
         if (match != null) {
@@ -222,7 +245,7 @@ class QuotedContextState extends ActiveParsingState {
                 // assume finish of line
                 return nextLine("\n");
             }
-            if (match.equals("\\")) {
+            if (match.equals("\\") && escapes) {
                 // assume \ before finish of line
                 return nextLine("");
             }

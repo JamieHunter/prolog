@@ -1,7 +1,9 @@
 package prolog.parser;
 
 import org.hamcrest.Matcher;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import prolog.exceptions.PrologSyntaxError;
 import prolog.execution.Environment;
 import prolog.execution.OperatorEntry;
 import prolog.expressions.Term;
@@ -9,9 +11,11 @@ import prolog.flags.ReadOptions;
 import prolog.io.PrologInputStream;
 import prolog.library.Io;
 import prolog.test.StreamUtils;
+import prolog.variables.Variable;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static prolog.test.Matchers.*;
 
 /**
@@ -19,14 +23,22 @@ import static prolog.test.Matchers.*;
  */
 public class ExpressionReaderTest {
 
+    private Environment environment;
+    private ReadOptions readOptions;
+
+    @BeforeEach
+    private void init() {
+        environment = new Environment();
+        readOptions = new ReadOptions(environment, null);
+        // fake postfix operator
+        environment.makeOperator(450, OperatorEntry.Code.YF, environment.internAtom("@@@")); // between * and +
+    }
+
     // Note that generally, text should end with "."
     @SuppressWarnings("unchecked")
     private void expect(String text, Matcher<? super Term>... terms) {
-        Environment environment = new Environment();
-        // fake postfix operator
-        environment.makeOperator(450, OperatorEntry.Code.YF, environment.internAtom("@@@")); // between * and +
         PrologInputStream stream = StreamUtils.bufferedString(text);
-        Tokenizer tok = new Tokenizer(environment, new ReadOptions(environment, null), stream);
+        Tokenizer tok = new Tokenizer(environment, readOptions, stream);
         ExpressionReader reader = new ExpressionReader(tok);
 
         for (int i = 0; i < terms.length; i++) {
@@ -35,6 +47,12 @@ public class ExpressionReaderTest {
         }
         Term t = reader.read();
         assertThat(t, is(Io.END_OF_FILE));
+    }
+
+    private Variable newVar(String text) {
+        PrologInputStream stream = StreamUtils.bufferedString(text);
+        Tokenizer tok = new Tokenizer(environment, readOptions, stream);
+        return (Variable) tok.nextToken().resolve(environment.getLocalContext());
     }
 
     @Test
@@ -100,6 +118,29 @@ public class ExpressionReaderTest {
     @Test
     public void testExpression() {
         expect("a + (b - c).",
+                isCompoundTerm("+",
+                        isAtom("a"),
+                        isCompoundTerm("-",
+                                isAtom("b"),
+                                isAtom("c"))));
+    }
+
+    @Test
+    public void testExpressionNoDotFail() {
+        assertThrows(PrologSyntaxError.class, () -> {
+            expect("a + (b - c)",
+                    isCompoundTerm("+",
+                            isAtom("a"),
+                            isCompoundTerm("-",
+                                    isAtom("b"),
+                                    isAtom("c"))));
+        });
+    }
+
+    @Test
+    public void testExpressionNoDotSuccess() {
+        readOptions.fullStop = ReadOptions.FullStop.ATOM_optional;
+        expect("a + (b - c)",
                 isCompoundTerm("+",
                         isAtom("a"),
                         isCompoundTerm("-",

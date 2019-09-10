@@ -6,6 +6,7 @@ package prolog.parser;
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Operators;
 import prolog.constants.Atomic;
+import prolog.constants.PrologAtom;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologEOF;
 import prolog.constants.PrologEmptyList;
@@ -21,11 +22,15 @@ import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.expressions.TermListImpl;
 import prolog.flags.ReadOptions;
+import prolog.unification.Unifier;
+import prolog.variables.UnboundVariable;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
+import java.util.stream.Collectors;
 
 /**
  * Given a stream of tokens (expression), produce a Prolog term obeying operators.
@@ -70,17 +75,64 @@ public final class ExpressionReader {
         boolean assumedAtEof = options.fullStop == ReadOptions.FullStop.ATOM_optional;
         Term t = read(Interned.DOT, () -> !tokenizer.isNext('('), tokenizer.nextToken(), assumedAtEof);
         tokenizer.skipEOLN();
-        return t.enumTerm(new SimplifyTerm(environment));
+        Term reduced = t.enumTerm(new SimplifyTerm(environment));
+        if (options.variables.isPresent()) {
+            Term variables = collectVariables(tokenizer.getVariableMap());
+            if (!Unifier.unify(environment.getLocalContext(), options.variables.get(), variables)) {
+                environment.backtrack();
+            }
+        }
+        if (options.variableNames.isPresent()) {
+            Term variables = collectVariableNames(tokenizer.getVariableMap());
+            if (!Unifier.unify(environment.getLocalContext(), options.variableNames.get(), variables)) {
+                environment.backtrack();
+            }
+        }
+        return reduced;
+    }
+
+    /**
+     * Variables by reference only.
+     *
+     * @param varMap Map of variables
+     * @return List
+     */
+    private Term collectVariables(Map<String, UnboundVariable> varMap) {
+        List<Term> termList = new ArrayList<>();
+        termList.addAll(varMap.values());
+        if (termList.isEmpty()) {
+            return PrologEmptyList.EMPTY_LIST;
+        } else {
+            return new TermListImpl(termList, PrologEmptyList.EMPTY_LIST);
+        }
+    }
+
+    /**
+     * Variables by name=reference.
+     *
+     * @param varMap Map of variables
+     * @return List
+     */
+    private Term collectVariableNames(Map<String, UnboundVariable> varMap) {
+        List<Term> termList = varMap.values().stream().map(
+                v -> new CompoundTermImpl(Interned.EQUALS_FUNCTOR,
+                        new PrologAtom(v.name()),
+                        v)).collect(Collectors.toList());
+        if (termList.isEmpty()) {
+            return PrologEmptyList.EMPTY_LIST;
+        } else {
+            return new TermListImpl(termList, PrologEmptyList.EMPTY_LIST);
+        }
     }
 
     /**
      * Read and parse a term expression. Terminal term is specified, and depends on context. This version
      * is called if initial token is known.
      *
-     * @param terminal     Atom that indicates end of parse
+     * @param terminal        Atom that indicates end of parse
      * @param confirmTerminal Called to make sure terminal really is a terminal
-     * @param initialToken Initial token.
-     * @param assumedAtEoF If true, terminal is optional at end of file
+     * @param initialToken    Initial token.
+     * @param assumedAtEoF    If true, terminal is optional at end of file
      * @return Resulting term of expression
      */
     private Term read(PrologAtomLike terminal, BooleanSupplier confirmTerminal, Term initialToken, boolean assumedAtEoF) {
