@@ -41,6 +41,9 @@ public class Flags {
 
     @Predicate("set_prolog_flag")
     public static void setPrologFlag(Environment environment, Term key, Term value) {
+        if (!key.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, key);
+        }
         if (!key.isAtom()) {
             throw PrologTypeError.atomExpected(environment, key);
         }
@@ -53,6 +56,9 @@ public class Flags {
 
     @Predicate("create_prolog_flag")
     public static void createPrologFlag(Environment environment, Term key, Term value, Term optionsTerm) {
+        if (!key.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, key);
+        }
         if (!key.isAtom()) {
             throw PrologTypeError.atomExpected(environment, key);
         }

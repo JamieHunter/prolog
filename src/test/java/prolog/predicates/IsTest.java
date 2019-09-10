@@ -8,8 +8,7 @@ import prolog.test.PrologTest;
 
 import static org.hamcrest.Matchers.closeTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static prolog.test.Matchers.isFloat;
-import static prolog.test.Matchers.isInteger;
+import static prolog.test.Matchers.*;
 
 /**
  * Test various is expressions.
@@ -102,5 +101,13 @@ public class IsTest {
         PrologTest.given().when("?- X is sign(10-1).")
                 .assertSuccess()
                 .variable("X", isInteger(1));
+    }
+
+    @Test
+    public void testRecursiveExpression() {
+        PrologTest.given().when("?- (X = ((1 + 2)), 'is'(Y, ((X)) * 3)).")
+                .assertSuccess()
+                .variable("X", isCompoundTerm("+", isInteger(1), isInteger(2)))
+                .variable("Y", isInteger(9));
     }
 }

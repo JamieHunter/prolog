@@ -10,6 +10,8 @@ import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.functions.CompileMathExpression;
+import prolog.instructions.ExecBlock;
+import prolog.instructions.ExecIfThenElse;
 import prolog.instructions.ExecIs;
 import prolog.instructions.ExecUnifyCompounds;
 import prolog.instructions.ExecUnifyInstantiate;
@@ -75,6 +77,22 @@ public final class Unify {
         compiling.add(source, Control.FALSE);
     }
 
+    /**
+     * Success if left and right fails to unify. Fails (with no unification) if they can unify.
+     *
+     * @param compiling Compiling context
+     * @param source Left/Right terms to unify.
+     */
+    @Predicate(value = "\\=", arity = 2)
+    public static void notUnify(CompileContext compiling, CompoundTerm source) {
+        CompileContext nested = compiling.newContext();
+        unify(nested, source);
+        compiling.add(source,
+                new ExecIfThenElse(
+                        nested.toInstruction(),
+                        Control.FALSE,
+                        Control.TRUE));
+    }
 
     /**
      * Instantiate variable from expression
