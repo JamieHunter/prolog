@@ -1,0 +1,1 @@
+[functor(X,foo,3), [[X <-- foo(A,B,C)]]].  % A, B and C are 3 new variables

@@ -593,6 +593,9 @@ loop_through(F, S) :-
         -> true
        ;
         reset_flags,
+        write('Read: '),
+        writeq(X),
+        nl,
         test(F,X),
         loop_through(F,S)
        ).

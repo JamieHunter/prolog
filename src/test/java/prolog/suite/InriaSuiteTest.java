@@ -14,4 +14,12 @@ public class InriaSuiteTest extends Suite {
                 .when("?- ['inriasuite.pl'].").assertSuccess()
                 .andWhen("?- run_all_tests.").assertSuccess();
     }
+
+    @Disabled("Exists to help debug INRIA Suite")
+    @Test
+    public void testInriaSuiteMicro() {
+        given(Paths.get("inriasuite"))
+                .when("?- ['inriasuite.pl'].").assertSuccess()
+                .andWhen("?- run_tests(zzz).").assertSuccess();
+    }
 }
