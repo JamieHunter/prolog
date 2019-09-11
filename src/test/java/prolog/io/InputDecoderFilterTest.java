@@ -6,10 +6,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.arrayContaining;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static prolog.test.Matchers.*;
 
 public class InputDecoderFilterTest {
 
@@ -28,7 +28,7 @@ public class InputDecoderFilterTest {
     @Test
     public void testSimpleRead1() throws IOException {
         // Regression test vs base implementation
-        assertTrue("Assume arrays mismatch", testData.length != chars.length);
+        assertTrue(testData.length != chars.length, "Assume arrays mismatch");
         for (int i = 0; i < chars.length; i++) {
             int c = stream.read();
             assertThat(c, is((int) chars[i]));

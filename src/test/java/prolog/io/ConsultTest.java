@@ -20,10 +20,10 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static prolog.test.Matchers.isAtom;
-import static prolog.test.Matchers.isInteger;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static prolog.test.Matchers.*;
 
 public class ConsultTest {
 

@@ -22,7 +22,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static prolog.test.Matchers.*;
 
 /**
  * PrologTest then clause. This clause allows testing results of a directive.
@@ -94,15 +97,15 @@ public class ThenImpl implements Then {
     public final Then expectLog(Matcher<? super Term>... matchers) {
         try(ThenScope scope = new ThenScope(this)) {
             if (matchers == null || matchers.length == 0) {
-                assertTrue("Log is not empty", state.log.isEmpty());
+                assertTrue(state.log.isEmpty(), "Log is not empty");
                 return this;
             }
             for (Matcher<? super Term> m : matchers) {
                 if (m == null) {
-                    assertTrue("Log is not empty", state.log.isEmpty());
+                    assertTrue(state.log.isEmpty(), "Log is not empty");
                     continue;
                 }
-                assertFalse("Log is empty", state.log.isEmpty());
+                assertFalse(state.log.isEmpty(), "Log is empty");
                 Term t = state.log.pop();
                 match(m, t);
             }
@@ -112,13 +115,13 @@ public class ThenImpl implements Then {
 
     @Override
     public Then assertSuccess() {
-        assertTrue("directive failed", lastExec == ExecutionState.SUCCESS);
+        assertTrue(lastExec == ExecutionState.SUCCESS, "directive failed");
         return this;
     }
 
     @Override
     public Then assertFailed() {
-        assertTrue("directive succeeded", lastExec == ExecutionState.FAILED);
+        assertTrue(lastExec == ExecutionState.FAILED, "directive succeeded");
         return this;
     }
 
