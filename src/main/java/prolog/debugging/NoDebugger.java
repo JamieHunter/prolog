@@ -3,14 +3,11 @@
 //
 package prolog.debugging;
 
-import prolog.execution.Backtrack;
 import prolog.execution.CompileContext;
 import prolog.execution.DecisionPoint;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
-import prolog.execution.InstructionIterator;
 import prolog.execution.InstructionPointer;
-import prolog.predicates.ClauseEntry;
 
 /**
  * Stub that is used when debugger is inactive

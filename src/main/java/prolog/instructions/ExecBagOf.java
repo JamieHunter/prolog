@@ -15,6 +15,7 @@ import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
 import prolog.expressions.TermListImpl;
+import prolog.generators.DoRedo;
 import prolog.unification.Unifier;
 import prolog.unification.UnifyBuilder;
 import prolog.variables.UnboundVariable;
@@ -24,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 
 /**
  * Extended/modified behavior from FindAll. This version understands free variables vs existential variables,
@@ -45,6 +45,8 @@ public class ExecBagOf extends ExecFindAll {
      */
     @Override
     protected void invoke2(Environment environment, Term template, Term callable) {
+        // This will collect all solutions
+        ArrayList<Term> builder = new ArrayList<>();
 
         //
         // decompose callable to identify the free variables
@@ -52,12 +54,25 @@ public class ExecBagOf extends ExecFindAll {
         //
         FreeVariableCollector fvc = new FreeVariableCollector(environment);
         template.enumTerm(fvc); // identify existential variables in the template
-        callable = collectFreeVariables(fvc, callable); // any additional existential and free variables
+        Term modifiedCallable = collectFreeVariables(fvc, callable); // any additional existential and free variables
         CompoundTerm freeVariables = new CompoundTermImpl(Interned.DOT, fvc.getFreeVariables());
-        CompoundTerm combined = new CompoundTermImpl(Interned.CAROT_FUNCTOR, template, freeVariables);
+        CompoundTerm combinedTemplate = new CompoundTermImpl(Interned.CAROT_FUNCTOR, template, freeVariables);
+        final Set<Long> freeVariableIds = new HashSet<Long>();
+        for (int i = 0; i < freeVariables.arity(); i++) {
+            freeVariableIds.add(((Variable) freeVariables.get(i)).id());
+        }
 
-        BagOfCollector iter = new BagOfCollector(environment, combined, callable, listUnifier);
-        iter.start();
+        DoRedo.invoke(environment,
+                // Perform the findAll phase and obtain all solutions. Unlike findall, this also considers
+                // free variables.
+                () -> getSourceSolutions(environment, modifiedCallable, () -> {
+                    builder.add(combinedTemplate.enumTerm(new BagOfCopyTerm(environment, freeVariableIds)));
+                }),
+                // Once the find-all portion completes, move to the production phase, which will yield multiple
+                // solutions
+                () -> {
+                    new ProduceIterator(environment, freeVariables, builder, listUnifier).redo();
+                });
     }
 
     /**
@@ -88,53 +103,19 @@ public class ExecBagOf extends ExecFindAll {
         return source;
     }
 
-    // Variation of FindAllCollector with a different terminal operation
-    private class BagOfCollector extends FindAllCollector {
-        final Term realTemplate;
-        final CompoundTerm freeVariables;
-        final Set<Long> freeVariableIds;
-
-        public BagOfCollector(Environment environment, CompoundTerm combinedTemplate, Term callable,
-                              Unifier listUnifier) {
-            super(environment, combinedTemplate, callable, listUnifier);
-            realTemplate = combinedTemplate.get(0);
-            freeVariables = (CompoundTerm) combinedTemplate.get(1);
-            freeVariableIds = new HashSet<Long>();
-            for (int i = 0; i < freeVariables.arity(); i++) {
-                freeVariableIds.add(((Variable) freeVariables.get(i)).id());
-            }
-        }
-
-        @Override
-        protected Term copyTemplate() {
-            return template.enumTerm(new BagOfCopyTerm(environment, freeVariableIds));
-        }
-
-        @Override
-        protected void onDone(List<Term> solutions) {
-            // chain to a new decision point iterator to produce collated solutions
-            ProduceIterator iter = new ProduceIterator(environment, realTemplate, freeVariables, solutions, listUnifier);
-            iter.redo();
-        }
-    }
-
     /**
      * This decision-point iterator produces a new solution with a new set of free-variables on each iteration.
      */
     private class ProduceIterator extends DecisionPointImpl {
 
-        private final Term template;
-        private final CompoundTerm freeVariables;
         private final Unifier listUnifier;
         private final Unifier varUnifier;
         private final List<Term> solutions;
         private int iter = 0;
 
-        protected ProduceIterator(Environment environment, Term template, CompoundTerm freeVariables,
+        protected ProduceIterator(Environment environment, CompoundTerm freeVariables,
                                   List<Term> solutions, Unifier listUnifier) {
             super(environment);
-            this.template = template;
-            this.freeVariables = freeVariables;
             this.varUnifier = UnifyBuilder.from(freeVariables);
             this.listUnifier = listUnifier;
             this.solutions = solutions;
@@ -207,6 +188,7 @@ public class ExecBagOf extends ExecFindAll {
 
         /**
          * Compound terms are enumerated not recomputed
+         *
          * @param compound Compound term being visited
          * @return self
          */
@@ -231,6 +213,7 @@ public class ExecBagOf extends ExecFindAll {
 
         /**
          * Visit and collect variables
+         *
          * @param source Source variable
          * @return bound variable
          */

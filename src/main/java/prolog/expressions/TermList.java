@@ -226,7 +226,7 @@ public interface TermList extends CompoundTerm {
         StringBuilder builder = new StringBuilder();
         while (list != PrologEmptyList.EMPTY_LIST) {
             if (list instanceof PrologStringAsList) {
-                builder.append(((PrologStringAsList)list).getStringValue());
+                builder.append(((PrologStringAsList) list).getStringValue());
                 return builder.toString();
             }
             if (list instanceof PrologString) {
@@ -255,6 +255,20 @@ public interface TermList extends CompoundTerm {
             }
         }
         return builder.toString();
+    }
+
+    /**
+     * Convert Java list to a Prolog list
+     *
+     * @param list Java list
+     * @return Prolog list
+     */
+    static Term from(List<Term> list) {
+        if (list.isEmpty()) {
+            return PrologEmptyList.EMPTY_LIST;
+        } else {
+            return new TermListImpl(list, PrologEmptyList.EMPTY_LIST);
+        }
     }
 
 }

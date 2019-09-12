@@ -7,20 +7,18 @@ import prolog.bootstrap.Interned;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
-import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologTypeError;
-import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
+import prolog.generators.YieldSolutions;
 import prolog.predicates.PredicateDefinition;
 import prolog.predicates.Predication;
 import prolog.unification.Unifier;
 import prolog.unification.UnifyBuilder;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -77,9 +75,9 @@ public class ExecCurrentPredicate implements Instruction {
             environment.backtrack();
             return;
         }
-        PredicateIterator iter =
-                new PredicateIterator(environment, bound, predications.iterator());
-        iter.redo();
+        Unifier indicatorUnifier = UnifyBuilder.from(indicator);
+        YieldSolutions.forAll(environment, predications.stream(),
+                p -> indicatorUnifier.unify(environment.getLocalContext(), p.term()));
     }
 
     /**
@@ -90,8 +88,7 @@ public class ExecCurrentPredicate implements Instruction {
      * @param arity       Arity to filter, else null
      * @return stream of matching predications
      */
-    protected static Stream<Predication.Interned> filter(Environment environment, PrologAtomLike functor, Integer arity) {
-        Stream<Map.Entry<Predication.Interned, PredicateDefinition>> allPredicates;
+    private static Stream<Predication.Interned> filter(Environment environment, PrologAtomLike functor, Integer arity) {
         if (functor != null && arity != null) {
             Predication.Interned key = new Predication(functor, arity).intern(environment);
             PredicateDefinition singleDefinition = environment.lookupPredicate(key);
@@ -105,45 +102,6 @@ public class ExecCurrentPredicate implements Instruction {
                             (arity == null || arity == e.getKey().arity()) &&
                             e.getValue().isCurrentPredicate())
                     .map(Map.Entry::getKey);
-        }
-    }
-
-    /**
-     * Predicate iterator decision point.
-     */
-    private static class PredicateIterator extends DecisionPointImpl {
-
-        final Term indicator;
-        final Unifier indicatorUnifier;
-        final Iterator<Predication.Interned> predications;
-
-        PredicateIterator(Environment environment, Term indicator, Iterator<Predication.Interned> predications) {
-            super(environment);
-            this.indicator = indicator;
-            this.predications = predications;
-            this.indicatorUnifier = UnifyBuilder.from(indicator);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void redo() {
-            if (!predications.hasNext()) {
-                // final fail
-                environment.backtrack();
-                return;
-            }
-            environment.forward();
-            // Next predication
-            Term thisTerm = predications.next().term();
-            if (predications.hasNext()) {
-                // Backtracking will try another clause
-                environment.pushDecisionPoint(this);
-            }
-            if (!indicatorUnifier.unify(environment.getLocalContext(), thisTerm)) {
-                environment.backtrack(); // not expected
-            }
         }
     }
 }
