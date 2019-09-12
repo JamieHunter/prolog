@@ -3,18 +3,9 @@
 //
 package prolog.constants;
 
-import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
-import prolog.execution.LocalContext;
-import prolog.expressions.CompoundTerm;
 import prolog.expressions.TermList;
 import prolog.expressions.Term;
-import prolog.io.StructureWriter;
-import prolog.io.TermWriter;
-import prolog.io.WriteContext;
-
-import java.io.IOException;
-import java.util.ArrayList;
 
 /**
  * Represents a list of code points (integers).

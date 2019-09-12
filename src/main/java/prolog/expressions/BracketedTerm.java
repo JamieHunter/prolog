@@ -4,10 +4,10 @@
 package prolog.expressions;
 
 import prolog.bootstrap.Interned;
-import prolog.execution.EnumTermStrategy;
+import prolog.enumerators.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
-import prolog.execution.SimplifyTerm;
+import prolog.enumerators.SimplifyTerm;
 import prolog.io.WriteContext;
 
 import java.io.IOException;

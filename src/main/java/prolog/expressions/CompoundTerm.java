@@ -6,7 +6,7 @@ package prolog.expressions;
 import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologAtomLike;
-import prolog.execution.EnumTermStrategy;
+import prolog.enumerators.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.predicates.Predication;

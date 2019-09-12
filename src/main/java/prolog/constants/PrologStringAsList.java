@@ -3,12 +3,11 @@
 //
 package prolog.constants;
 
-import prolog.execution.EnumTermStrategy;
+import prolog.enumerators.EnumTermStrategy;
 import prolog.execution.LocalContext;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
 import prolog.io.StructureWriter;
-import prolog.io.TermWriter;
 import prolog.io.WriteContext;
 
 import java.io.IOException;

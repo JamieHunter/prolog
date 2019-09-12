@@ -5,7 +5,7 @@ package prolog.expressions;
 
 import prolog.constants.PrologEmptyList;
 import prolog.execution.CompileContext;
-import prolog.execution.EnumTermStrategy;
+import prolog.enumerators.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.io.StructureWriter;

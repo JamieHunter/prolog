@@ -15,7 +15,7 @@ import prolog.constants.PrologQuotedAtom;
 import prolog.exceptions.PrologSyntaxError;
 import prolog.execution.Environment;
 import prolog.execution.OperatorEntry;
-import prolog.execution.SimplifyTerm;
+import prolog.enumerators.SimplifyTerm;
 import prolog.expressions.BracketedTerm;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;

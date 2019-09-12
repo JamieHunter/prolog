@@ -6,7 +6,7 @@ package prolog.constants;
 import prolog.bootstrap.Interned;
 import prolog.exceptions.FutureTypeError;
 import prolog.execution.CompileContext;
-import prolog.execution.EnumTermStrategy;
+import prolog.enumerators.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;

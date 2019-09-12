@@ -1,14 +1,15 @@
 // Author: Jamie Hunter, 2019
 // Refer to LICENSE.TXT for copyright and license information
 //
-package prolog.execution;
+package prolog.enumerators;
 
 import prolog.bootstrap.Interned;
-import prolog.constants.Atomic;
 import prolog.constants.AtomicBase;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologAtomLike;
+import prolog.enumerators.EnumTermStrategy;
 import prolog.exceptions.PrologTypeError;
+import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;

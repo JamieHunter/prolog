@@ -4,7 +4,7 @@
 package prolog.expressions;
 
 import prolog.constants.Grounded;
-import prolog.execution.EnumTermStrategy;
+import prolog.enumerators.EnumTermStrategy;
 import prolog.execution.LocalContext;
 
 /**

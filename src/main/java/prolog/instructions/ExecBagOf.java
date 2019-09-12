@@ -5,9 +5,9 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.PrologEmptyList;
-import prolog.execution.CopyTerm;
+import prolog.enumerators.VariableCollector;
+import prolog.enumerators.CopyTerm;
 import prolog.execution.DecisionPointImpl;
-import prolog.execution.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
@@ -52,10 +52,10 @@ public class ExecBagOf extends ExecFindAll {
         // decompose callable to identify the free variables
         // build a new template that collects the free variables
         //
-        FreeVariableCollector fvc = new FreeVariableCollector(environment);
+        VariableCollector fvc = new VariableCollector(environment, VariableCollector.Mode.IGNORE);
         template.enumTerm(fvc); // identify existential variables in the template
         Term modifiedCallable = collectFreeVariables(fvc, callable); // any additional existential and free variables
-        CompoundTerm freeVariables = new CompoundTermImpl(Interned.DOT, fvc.getFreeVariables());
+        CompoundTerm freeVariables = new CompoundTermImpl(Interned.DOT, fvc.getVariables());
         CompoundTerm combinedTemplate = new CompoundTermImpl(Interned.CAROT_FUNCTOR, template, freeVariables);
         final Set<Long> freeVariableIds = new HashSet<Long>();
         for (int i = 0; i < freeVariables.arity(); i++) {
@@ -82,13 +82,13 @@ public class ExecBagOf extends ExecFindAll {
      * @param callable Originally specified Goal
      * @return Actual goal
      */
-    protected Term collectFreeVariables(FreeVariableCollector context, Term callable) {
+    protected Term collectFreeVariables(VariableCollector context, Term callable) {
         while (CompoundTerm.termIsA(callable, Interned.CAROT_FUNCTOR, 2)) {
             CompoundTerm compound = (CompoundTerm) callable;
             compound.get(0).enumTerm(context); // copy & throw away, side-effects only
             callable = compound.get(1); // keep processing the right
         }
-        context.beginFreeVariables();
+        context.setMode(VariableCollector.Mode.COLLECT);
         callable = callable.enumTerm(context); // right of X^Y^xxx construct
         return callable;
     }
@@ -170,61 +170,6 @@ public class ExecBagOf extends ExecFindAll {
                 environment.backtrack();
                 return;
             }
-        }
-    }
-
-    /**
-     * used with Term enumeration capability to identify all free variables.
-     */
-    protected static class FreeVariableCollector extends EnumTermStrategy {
-
-        // TODO: Refactoring of EnumTermStrategy
-        protected boolean beginFreeVariables = false;
-        protected final ArrayList<Term> freeVariables = new ArrayList<>();
-
-        public FreeVariableCollector(Environment environment) {
-            super(environment);
-        }
-
-        /**
-         * Compound terms are enumerated not recomputed
-         *
-         * @param compound Compound term being visited
-         * @return self
-         */
-        @Override
-        public CompoundTerm visitCompoundTerm(CompoundTerm compound) {
-            return compound.enumCompoundTermMembers(this);
-        }
-
-        /**
-         * Call to begin free variables after existential variables have been processed.
-         */
-        public void beginFreeVariables() {
-            beginFreeVariables = true;
-        }
-
-        /**
-         * @return List of free variables.
-         */
-        public List<Term> getFreeVariables() {
-            return freeVariables;
-        }
-
-        /**
-         * Visit and collect variables
-         *
-         * @param source Source variable
-         * @return bound variable
-         */
-        @Override
-        public Variable visitVariable(Variable source) {
-            boolean seen = hasVariable(source);
-            Variable bound = bindVariable(source);
-            if (beginFreeVariables && !seen) {
-                freeVariables.add(bound);
-            }
-            return bound;
         }
     }
 

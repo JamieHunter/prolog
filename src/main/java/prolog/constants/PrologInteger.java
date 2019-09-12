@@ -6,6 +6,7 @@ package prolog.constants;
 import prolog.bootstrap.Interned;
 import prolog.exceptions.FutureDomainError;
 import prolog.exceptions.FutureEvaluationError;
+import prolog.exceptions.FutureInstantiationError;
 import prolog.exceptions.FutureRepresentationError;
 import prolog.exceptions.FutureTypeError;
 import prolog.execution.Environment;
@@ -328,6 +329,8 @@ public final class PrologInteger extends AtomicBase implements PrologNumber {
     public static PrologInteger from(Term value) {
         if (value.isInteger()) {
             return (PrologInteger) value;
+        } else if (!value.isInstantiated()) {
+            throw new FutureInstantiationError(value);
         } else {
             throw new FutureTypeError(Interned.INTEGER_TYPE, value);
         }

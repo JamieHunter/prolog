@@ -14,7 +14,7 @@ import prolog.exceptions.FutureInstantiationError;
 import prolog.exceptions.FutureTypeError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
-import prolog.execution.EnumTermStrategy;
+import prolog.enumerators.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.unification.HeadTailUnifyIterator;

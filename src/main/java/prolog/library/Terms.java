@@ -5,12 +5,10 @@ package prolog.library;
 
 import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
-import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
-import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
-import prolog.execution.CopyTerm;
+import prolog.enumerators.CopyTerm;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
@@ -18,8 +16,6 @@ import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.unification.Unifier;
 import prolog.variables.UnboundVariable;
-
-import java.math.BigInteger;
 
 /**
  * File is referenced by {@link Library} to parse all annotations.

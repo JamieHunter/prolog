@@ -4,9 +4,9 @@
 package prolog.instructions;
 
 import prolog.bootstrap.Interned;
+import prolog.enumerators.CopyTerm;
 import prolog.exceptions.PrologTypeError;
 import prolog.execution.CompileContext;
-import prolog.execution.CopyTerm;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.execution.LocalContext;
@@ -18,7 +18,6 @@ import prolog.unification.Unifier;
 import prolog.unification.UnifyBuilder;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Find all possible solutions of a subgoal. This is overridden for bagof and setof implementations.

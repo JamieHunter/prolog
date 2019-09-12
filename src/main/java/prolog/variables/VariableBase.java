@@ -1,19 +1,13 @@
 package prolog.variables;
 
-import prolog.bootstrap.Interned;
 import prolog.execution.CompileContext;
-import prolog.execution.EnumTermStrategy;
+import prolog.enumerators.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
-import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
-import prolog.instructions.DeferredCallInstruction;
-import prolog.instructions.ExecCall;
 import prolog.io.WriteContext;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Base variable implementation shared between Coreference and BoundVariable

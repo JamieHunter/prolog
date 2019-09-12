@@ -1,12 +1,13 @@
 // Author: Jamie Hunter, 2019
 // Refer to LICENSE.TXT for copyright and license information
 //
-package prolog.execution;
+package prolog.enumerators;
 
 import prolog.constants.AtomicBase;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologStringAsList;
 import prolog.exceptions.PrologThrowable;
+import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Container;
 import prolog.expressions.Term;
@@ -135,6 +136,16 @@ public abstract class EnumTermStrategy {
      */
     protected Variable bindVariable(Variable source) {
         return varMap.computeIfAbsent(source.id(), id -> environment.getLocalContext().bind(source.name(), id));
+    }
+
+    /**
+     * Utility - simply add the variable
+     *
+     * @param source Source variable
+     * @return variable
+     */
+    protected Variable addVariable(Variable source) {
+        return varMap.computeIfAbsent(source.id(), id -> source);
     }
 
     /**

@@ -4,12 +4,11 @@
 package prolog.instructions;
 
 import prolog.exceptions.PrologInstantiationError;
-import prolog.execution.CallifyTerm;
+import prolog.enumerators.CallifyTerm;
 import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.Term;
-import prolog.predicates.ClauseEntry;
 
 import java.util.Optional;
 

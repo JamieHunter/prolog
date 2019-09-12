@@ -3,7 +3,7 @@
 //
 package prolog.exceptions;
 
-import prolog.execution.EnumTermStrategy;
+import prolog.enumerators.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.Container;

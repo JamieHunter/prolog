@@ -32,5 +32,6 @@ public final class Library extends LibraryBase {
         consult(ThrowCatch.class);
         consult(Time.class);
         consult(Unify.class);
+        consult(Variables.class);
     }
 }

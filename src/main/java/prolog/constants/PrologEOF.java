@@ -3,7 +3,7 @@
 //
 package prolog.constants;
 
-import prolog.execution.EnumTermStrategy;
+import prolog.enumerators.EnumTermStrategy;
 import prolog.execution.Environment;
 import prolog.expressions.Container;
 import prolog.expressions.Term;
