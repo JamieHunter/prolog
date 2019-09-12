@@ -25,7 +25,6 @@ import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
-import prolog.expressions.TermListImpl;
 import prolog.flags.AbsoluteFileNameOptions;
 import prolog.flags.CloseOptions;
 import prolog.flags.OpenOptions;
@@ -772,7 +771,7 @@ public final class Io {
 
         Path path = parsePathBasic(environment, fileSpec);
         // TODO: Interpret expansion meta-characters
-        TermList expanded = new TermListImpl(Arrays.asList(fileSpec), PrologEmptyList.EMPTY_LIST);
+        Term expanded = TermList.from(Arrays.asList(fileSpec));
         if (!Unifier.unify(environment.getLocalContext(), expansion, expanded)) {
             environment.backtrack();
         }

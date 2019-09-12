@@ -271,4 +271,13 @@ public interface TermList extends CompoundTerm {
         }
     }
 
+    /**
+     * Convenient way of describing an empty list
+     *
+     * @return Empty list
+     */
+    static Term empty() {
+        return PrologEmptyList.EMPTY_LIST;
+    }
+
 }

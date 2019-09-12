@@ -22,7 +22,6 @@ import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
-import prolog.expressions.TermListImpl;
 import prolog.flags.CloseOptions;
 import prolog.flags.ReadOptions;
 import prolog.flags.StreamProperties;
@@ -417,7 +416,7 @@ public class LogicalStream {
             mapOptionalPosElement(terms, Io.CHAR_POS, pos.getCharPos());
             mapOptionalPosElement(terms, Io.COLUMN_POS, pos.getColumnPos());
             mapOptionalPosElement(terms, Io.LINE_POS, pos.getLinePos());
-            return new TermListImpl(terms, PrologEmptyList.EMPTY_LIST);
+            return TermList.from(terms);
         } catch (IOException ioe) {
             // TODO: correct error?
             return PrologEmptyList.EMPTY_LIST;

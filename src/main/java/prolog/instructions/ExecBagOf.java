@@ -5,8 +5,8 @@ package prolog.instructions;
 
 import prolog.bootstrap.Interned;
 import prolog.constants.PrologEmptyList;
-import prolog.enumerators.VariableCollector;
 import prolog.enumerators.CopyTerm;
+import prolog.enumerators.VariableCollector;
 import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
@@ -14,7 +14,6 @@ import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
-import prolog.expressions.TermListImpl;
 import prolog.generators.DoRedo;
 import prolog.unification.Unifier;
 import prolog.unification.UnifyBuilder;
@@ -163,8 +162,7 @@ public class ExecBagOf extends ExecFindAll {
                     environment.trimBacktrackStackToDepth(depth);
                 }
             }
-            // entry will always contain at least one value, no need to handle an empty list.
-            TermList outTerm = new TermListImpl(collate(values), PrologEmptyList.EMPTY_LIST);
+            Term outTerm = TermList.from(collate(values));
             // Unify
             if (!listUnifier.unify(context, outTerm)) {
                 environment.backtrack();

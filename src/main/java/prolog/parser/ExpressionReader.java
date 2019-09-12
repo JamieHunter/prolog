@@ -12,14 +12,15 @@ import prolog.constants.PrologEOF;
 import prolog.constants.PrologEmptyList;
 import prolog.constants.PrologNumber;
 import prolog.constants.PrologQuotedAtom;
+import prolog.enumerators.SimplifyTerm;
 import prolog.exceptions.PrologSyntaxError;
 import prolog.execution.Environment;
 import prolog.execution.OperatorEntry;
-import prolog.enumerators.SimplifyTerm;
 import prolog.expressions.BracketedTerm;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
+import prolog.expressions.TermList;
 import prolog.expressions.TermListImpl;
 import prolog.flags.ReadOptions;
 import prolog.unification.Unifier;
@@ -100,11 +101,7 @@ public final class ExpressionReader {
     private Term collectVariables(Map<String, UnboundVariable> varMap) {
         List<Term> termList = new ArrayList<>();
         termList.addAll(varMap.values());
-        if (termList.isEmpty()) {
-            return PrologEmptyList.EMPTY_LIST;
-        } else {
-            return new TermListImpl(termList, PrologEmptyList.EMPTY_LIST);
-        }
+        return TermList.from(termList);
     }
 
     /**
@@ -118,11 +115,7 @@ public final class ExpressionReader {
                 v -> new CompoundTermImpl(Interned.EQUALS_FUNCTOR,
                         new PrologAtom(v.name()),
                         v)).collect(Collectors.toList());
-        if (termList.isEmpty()) {
-            return PrologEmptyList.EMPTY_LIST;
-        } else {
-            return new TermListImpl(termList, PrologEmptyList.EMPTY_LIST);
-        }
+        return TermList.from(termList);
     }
 
     /**

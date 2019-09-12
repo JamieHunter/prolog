@@ -4,17 +4,15 @@
 package prolog.debugging;
 
 import prolog.constants.PrologAtom;
-import prolog.constants.PrologEmptyList;
 import prolog.execution.Environment;
 import prolog.expressions.Term;
-import prolog.expressions.TermListImpl;
+import prolog.expressions.TermList;
 import prolog.predicates.Predication;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 
 /**
  * Track Spy Points, which exist if debugger is enabled or disabled.
@@ -58,6 +56,7 @@ public class SpyPoints {
 
     /**
      * Iterator of spy spec
+     *
      * @return specs
      */
     public Collection<SpySpec> enumerate() {
@@ -66,12 +65,13 @@ public class SpyPoints {
 
     /**
      * Current leash flags as a list.
-     * @return leash flags
+     *
      * @param environment Environment context
+     * @return leash flags
      */
     public Term getLeashFlags(Environment environment) {
         if (leashFlags == 0) {
-            return PrologEmptyList.EMPTY_LIST;
+            return TermList.empty();
         }
         ArrayList<Term> flags = new ArrayList<>();
         if ((leashFlags & ExecutionPort.CALL_FLAG) != 0) {
@@ -89,11 +89,12 @@ public class SpyPoints {
         if ((leashFlags & ExecutionPort.EXCEPTION_FLAG) != 0) {
             flags.add(new PrologAtom("exception"));
         }
-        return new TermListImpl(flags, PrologEmptyList.EMPTY_LIST);
+        return TermList.from(flags);
     }
 
     /**
      * Retrieve flags as a bitmap
+     *
      * @return flags
      */
     public int getLeashFlags() {
@@ -102,6 +103,7 @@ public class SpyPoints {
 
     /**
      * Set the leash flags
+     *
      * @param leashFlags New leash flags
      */
     public void setLeashFlags(int leashFlags) {
@@ -112,7 +114,7 @@ public class SpyPoints {
      * Parse the leash flag
      */
     public int parseLeashFlag(String flag) {
-        for(ExecutionPort port : ExecutionPort.values()) {
+        for (ExecutionPort port : ExecutionPort.values()) {
             if (port.atomName() != null && port.atomName().equals(flag)) {
                 return port.flag();
             }
