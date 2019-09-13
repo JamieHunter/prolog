@@ -11,7 +11,6 @@ import prolog.exceptions.PrologDomainError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologRepresentationError;
 import prolog.exceptions.PrologTypeError;
-import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
@@ -19,8 +18,9 @@ import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
 import prolog.expressions.TermList;
 import prolog.expressions.TermListImpl;
-import prolog.instructions.ExecMember;
+import prolog.generators.YieldSolutions;
 import prolog.unification.Unifier;
+import prolog.unification.UnifyBuilder;
 import prolog.variables.UnboundVariable;
 
 import java.util.ArrayList;
@@ -141,14 +141,21 @@ public final class Lists {
     /**
      * Determine if a term is a member of a list
      *
-     * @param compiling Compiling context
-     * @param source    Source term member(term,list)
+     * @param environment Execution environment
+     * @param element     Term to test for
+     * @param list        List to extract members of
      */
-    @Predicate(value = "member", arity = 2)
-    public static void member(CompileContext compiling, CompoundTerm source) {
-        Term element = source.get(0);
-        Term list = source.get(1);
-        compiling.add(source, new ExecMember(element, list));
+    @Predicate("member")
+    public static void member(Environment environment, Term element, Term list) {
+        LocalContext context = environment.getLocalContext();
+        List<Term> listElements = TermList.extractList(list);
+        Unifier memberUnifier = UnifyBuilder.from(element);
+        YieldSolutions.forAll(environment, listElements.stream(), thisElement -> {
+            if (thisElement.instantiate(element)) {
+                return true;
+            }
+            return memberUnifier.unify(context, thisElement);
+        });
     }
 
     // ====================================================================

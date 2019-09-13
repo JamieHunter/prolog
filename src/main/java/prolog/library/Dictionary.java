@@ -8,19 +8,17 @@ import prolog.bootstrap.Predicate;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologAtomLike;
 import prolog.constants.PrologInteger;
+import prolog.enumerators.CallifyTerm;
+import prolog.enumerators.CopyTerm;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
-import prolog.enumerators.CallifyTerm;
-import prolog.execution.CompileContext;
-import prolog.enumerators.CopyTerm;
 import prolog.execution.Environment;
+import prolog.execution.LocalContext;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
-import prolog.instructions.ExecCurrentPredicate;
-import prolog.instructions.ExecExhaust;
-import prolog.instructions.ExecFindClause;
-import prolog.instructions.ExecRetractClause;
+import prolog.generators.DoRedo;
+import prolog.generators.YieldSolutions;
 import prolog.predicates.BuiltInPredicate;
 import prolog.predicates.ClauseEntry;
 import prolog.predicates.ClauseSearchPredicate;
@@ -29,8 +27,15 @@ import prolog.predicates.Predication;
 import prolog.unification.Unifier;
 import prolog.unification.UnifyBuilder;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * File is referenced by {@link Library} to parse all annotations.
@@ -127,51 +132,247 @@ public final class Dictionary {
     }
 
     /**
-     * Recursively match clauses
+     * Match clauses, with backtracking
      *
-     * @param compiling Compilation context
-     * @param source    The predicate template to retract
+     * @param environment Execution environment
+     * @param clause      The clause to retract
      */
-    @Predicate(value = "retract", arity = 1)
-    public static void retract(CompileContext compiling, CompoundTerm source) {
-        Term clause = source.get(0);
-        compiling.add(source, new ExecRetractClause(clause));
+    @Predicate("retract")
+    public static void retract(Environment environment, Term clause) {
+        retractCommon(environment, clause, false);
     }
 
     /**
      * Recursively match and retract clauses.
      *
-     * @param compiling Compilation context
-     * @param source    The predicate template to retract
+     * @param environment Execution environment
+     * @param clause      The clause to retract
      */
-    @Predicate(value = "retractall", arity = 1)
-    public static void retractAll(CompileContext compiling, CompoundTerm source) {
-        compiling.add(source,
-                new ExecExhaust(
-                        compiling,
-                        c2 -> retract(c2, source)));
+    @Predicate("retractall")
+    public static void retractAll(Environment environment, Term clause) {
+        retractCommon(environment, clause, true);
+    }
+
+    /**
+     * Retract and retract-all common behavior
+     *
+     * @param environment Execution environment
+     * @param clause      The clause to retract
+     */
+    private static void retractCommon(Environment environment, Term clause, boolean all) {
+        Term head;
+        Term body;
+        if (CompoundTerm.termIsA(clause, Interned.CLAUSE_FUNCTOR, 2)) {
+            CompoundTerm compound = (CompoundTerm) clause;
+            head = compound.get(0);
+            body = compound.get(1);
+        } else {
+            head = clause;
+            body = Interned.TRUE_ATOM; // fact
+        }
+        CompoundTerm headMatcher;
+
+        //
+        // Head must be sufficiently instantiated to build a matcher
+        //
+        if (!head.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, head);
+        }
+        if (head.isAtom()) {
+            // Normalize matcher to a compound of arity 0
+            headMatcher = CompoundTerm.from((PrologAtomLike) head);
+        } else if (head instanceof CompoundTerm) {
+            headMatcher = (CompoundTerm) head;
+        } else {
+            throw PrologTypeError.callableExpected(environment, head);
+        }
+        Predication predication = headMatcher.toPredication();
+        // This may create a dynamic predicate in the process
+        PredicateDefinition defn = environment.autoCreateDictionaryEntry(predication);
+        if (!(defn instanceof ClauseSearchPredicate)) {
+            // TODO: There can be some ClauseSearchPredicate procedures that are also considered static
+            throw PrologPermissionError.error(environment,
+                    Interned.MODIFY_ACTION, Interned.STATIC_PROCEDURE_TYPE, predication.term(),
+                    String.format("Cannot retrieve clause for static procedure: %s", predication.toString()));
+        }
+        ClauseSearchPredicate clausePredicate = (ClauseSearchPredicate) defn;
+        List<ClauseEntry> clauses = Arrays.asList(clausePredicate.getClauses());
+        if (clauses.isEmpty() && all) {
+            // is this by spec?
+            clausePredicate.setDynamic(true);
+            return;
+        }
+        if (clauses.isEmpty()) {
+            environment.backtrack();
+            return;
+        }
+
+        Unifier bodyUnifier = UnifyBuilder.from(body); // already resolved to context
+
+        java.util.function.Predicate<ClauseEntry> clauseAction = entry -> {
+            // use an alternative context in case the variable id's overlap
+            LocalContext newContext = environment.newLocalContext(predication);
+
+            Term boundBody = entry.getBody().resolve(newContext);
+
+            // Attempt to unify
+            Unifier headUnifier = entry.getUnifier();
+            if (headUnifier.unify(newContext, headMatcher) &&
+                    bodyUnifier.unify(newContext, boundBody)) {
+                // Once unified, remove!
+                entry.getNode().remove();
+                return !all;
+            } else {
+                return false;
+            }
+        };
+        if (all) {
+            DoRedo.invoke(environment,
+                    () -> YieldSolutions.forAll(environment, clauses.stream(), clauseAction),
+                    () -> {
+                        // success
+                    }
+            );
+        } else {
+            // retract a single clause
+            YieldSolutions.forAll(environment, clauses.stream(), clauseAction);
+        }
     }
 
     /**
      * Recursively match clauses
      *
-     * @param compiling Compilation context
-     * @param source    The predicate to call
+     * @param environment Execution Environment
+     * @param head        Head to match
+     * @param body        Body to match
      */
-    @Predicate(value = "clause", arity = 2)
-    public static void clause(CompileContext compiling, CompoundTerm source) {
-        Term head = source.get(0);
-        Term body = source.get(1);
-        compiling.add(source, new ExecFindClause(head, body));
+    @Predicate("clause")
+    public static void clause(Environment environment, Term head, Term body) {
+        CompoundTerm headMatcher;
+
+        //
+        // Head must be sufficiently instantiated to build a matcher
+        //
+        if (!head.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, head);
+        }
+        if (head.isAtom()) {
+            // Normalize matcher to a compound of arity 0
+            headMatcher = CompoundTerm.from((PrologAtomLike) head);
+        } else if (head instanceof CompoundTerm) {
+            headMatcher = (CompoundTerm) head;
+        } else {
+            throw PrologTypeError.callableExpected(environment, head);
+        }
+
+        //
+        // Body, if instantiated, must be something that can be called
+        //
+        if (body.isInstantiated() && !(body.isAtom() || body instanceof CompoundTerm)) {
+            throw PrologTypeError.callableExpected(environment, body);
+        }
+        Predication predication = headMatcher.toPredication();
+        PredicateDefinition defn = environment.lookupPredicate(predication);
+        if (defn instanceof BuiltInPredicate) {
+            throw PrologPermissionError.error(environment,
+                    Interned.ACCESS_ACTION, Interned.PRIVATE_PROCEDURE_TYPE, predication.term(),
+                    String.format("Cannot retrieve clause for internal procedure: %s", predication.toString()));
+        }
+        if (!(defn instanceof ClauseSearchPredicate)) {
+            environment.backtrack();
+            return;
+        }
+        ClauseSearchPredicate clausePredicate = (ClauseSearchPredicate) defn;
+        List<ClauseEntry> clauses = Arrays.asList(clausePredicate.getClauses());
+        Unifier bodyUnifier = UnifyBuilder.from(body); // already resolved to context
+
+        java.util.function.Predicate<ClauseEntry> clauseAction = entry -> {
+            // use an alternative context in case the variable id's overlap
+            LocalContext newContext = environment.newLocalContext(predication);
+
+            Term boundBody = entry.getBody().resolve(newContext);
+
+            // Attempt to unify
+            Unifier headUnifier = entry.getUnifier();
+            if (headUnifier.unify(newContext, headMatcher) &&
+                    bodyUnifier.unify(newContext, boundBody)) {
+                return true;
+            } else {
+                return false;
+            }
+        };
+        YieldSolutions.forAll(environment, clauses.stream(), clauseAction);
     }
 
     /**
      * Recursively determine user-defined procedures.
+     *
+     * @param environment Execution environment
+     * @param indicator   Predicate indicator
      */
-    @Predicate(value = "current_predicate", arity = 1)
-    public static void currentPredicate(CompileContext compiling, CompoundTerm source) {
-        Term indicator = source.get(0);
-        compiling.add(source, new ExecCurrentPredicate(indicator));
+    @Predicate("current_predicate")
+    public static void currentPredicate(Environment environment, Term indicator) {
+        LocalContext context = environment.getLocalContext();
+        Term bound = indicator.resolve(context);
+        PrologAtomLike functorConstraint = null;
+        Integer arityConstraint = null;
+        if (bound.isInstantiated()) {
+            if (!CompoundTerm.termIsA(bound, Interned.SLASH_ATOM, 2)) {
+                throw PrologTypeError.predicateIndicatorExpected(environment, bound);
+            }
+            CompoundTerm compoundTerm = (CompoundTerm) bound;
+            Term functor = compoundTerm.get(0);
+            Term arity = compoundTerm.get(1);
+            if (functor.isInstantiated()) {
+                if (functor.isAtom()) {
+                    functorConstraint = PrologAtomInterned.from(environment, functor);
+                } else {
+                    throw PrologTypeError.predicateIndicatorExpected(environment, bound);
+                }
+            }
+            if (arity.isInstantiated()) {
+                if (arity.isInteger()) {
+                    arityConstraint = PrologInteger.from(arity).notLessThanZero().toInteger();
+                } else {
+                    throw PrologTypeError.predicateIndicatorExpected(environment, bound);
+                }
+            }
+        }
+
+        Set<Predication.Interned> predications = filterUserDefinedPredicates(environment, functorConstraint, arityConstraint)
+                .collect(Collectors.toCollection(TreeSet::new));
+        if (predications.isEmpty()) {
+            environment.backtrack();
+            return;
+        }
+        Unifier indicatorUnifier = UnifyBuilder.from(indicator);
+        YieldSolutions.forAll(environment, predications.stream(),
+                p -> indicatorUnifier.unify(environment.getLocalContext(), p.term()));
+    }
+
+    /**
+     * Return a filtered stream of user defined predicates
+     *
+     * @param environment Execution environment
+     * @param functor     Functor to filter, else null.
+     * @param arity       Arity to filter, else null
+     * @return stream of matching predications
+     */
+    private static Stream<Predication.Interned> filterUserDefinedPredicates(Environment environment, PrologAtomLike functor, Integer arity) {
+        if (functor != null && arity != null) {
+            Predication.Interned key = new Predication(functor, arity).intern(environment);
+            PredicateDefinition singleDefinition = environment.lookupPredicate(key);
+            if (singleDefinition == null || !singleDefinition.isCurrentPredicate()) {
+                return Stream.empty();
+            }
+            return Stream.of(key);
+        } else {
+            return environment.getShared().allPredicates().filter(e ->
+                    (functor == null || functor == e.getKey().functor()) &&
+                            (arity == null || arity == e.getKey().arity()) &&
+                            e.getValue().isCurrentPredicate())
+                    .map(Map.Entry::getKey);
+        }
     }
 
     /**
@@ -285,7 +486,7 @@ public final class Dictionary {
         if (isDynamic) {
             if (!dictionaryEntry.isDynamic()) {
                 if (dictionaryEntry.getClauses().length > 0) {
-                    throw PrologPermissionError.error(environment, "modify", "static_procedure",
+                    throw PrologPermissionError.error(environment, Interned.MODIFY_ACTION, Interned.STATIC_PROCEDURE_TYPE,
                             predication.term(),
                             "The predicate " + predication.toString() + " is a static procedure");
                 }
@@ -315,7 +516,7 @@ public final class Dictionary {
         // create library entry if needed
         PredicateDefinition entry = environment.autoCreateDictionaryEntry(predication);
         if (!(entry instanceof ClauseSearchPredicate)) {
-            throw PrologPermissionError.error(environment, "modify", "static_procedure", predication.term(),
+            throw PrologPermissionError.error(environment, Interned.MODIFY_ACTION, Interned.STATIC_PROCEDURE_TYPE, predication.term(),
                     "Cannot make procedure dynamic");
         }
         return (ClauseSearchPredicate) entry;

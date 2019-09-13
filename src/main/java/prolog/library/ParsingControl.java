@@ -5,6 +5,7 @@ package prolog.library;
 
 import prolog.bootstrap.Interned;
 import prolog.bootstrap.Predicate;
+import prolog.constants.Atomic;
 import prolog.constants.PrologAtomInterned;
 import prolog.constants.PrologCharacter;
 import prolog.constants.PrologInteger;
@@ -13,12 +14,19 @@ import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.execution.CompileContext;
 import prolog.execution.Environment;
+import prolog.execution.LocalContext;
 import prolog.execution.OperatorEntry;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
+import prolog.generators.YieldSolutions;
 import prolog.instructions.ExecFindCharConversion;
-import prolog.instructions.ExecFindOp;
+import prolog.unification.Unifier;
+import prolog.unification.UnifyBuilder;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * File is referenced by {@link Library} to parse all annotations.
@@ -85,16 +93,71 @@ public final class ParsingControl {
     /**
      * Query details of an operator/s
      *
-     * @param compiling Compiling environment
-     * @param source    Term containing parameters
+     * @param environment Execution environment
+     * @param precedence  Operator precedence
+     * @param type        Operator type
+     * @param name        Operator name
      */
-    @Predicate(value = "current_op", arity = 3)
-    public static void currentOp(CompileContext compiling, CompoundTerm source) {
-        // this is a search predicate, though rarely used to find more than one
-        Term precedence = source.get(0);
-        Term type = source.get(1);
-        Term name = source.get(2);
-        compiling.add(source, new ExecFindOp(precedence, type, name));
+    @Predicate("current_op")
+    public static void currentOp(Environment environment, Term precedence, Term type, Term name) {
+        LocalContext context = environment.getLocalContext();
+
+        PrologAtomInterned constrainedName = null;
+        OperatorEntry.Code constrainedType = null;
+        if (name.isInstantiated()) {
+            // most significant constraint
+            constrainedName = PrologAtomInterned.from(environment, name);
+        }
+        if (type.isInstantiated()) {
+            // at best, constrains between two search lists
+            constrainedType = OperatorEntry.parseCode(PrologAtomInterned.from(environment, type));
+        }
+        if (precedence.isInstantiated()) {
+            // type check, but not processed until iteration
+            PrologInteger.from(precedence).toInteger();
+        }
+        ArrayList<OperatorEntry> searchList = new ArrayList<>();
+        // Apply constraints to search list. Ideally this will be one entry
+        if (constrainedType != null) {
+            if (constrainedType.isPrefix()) {
+                addToOpList(searchList, constrainedName, environment.getPrefixOperators());
+            } else {
+                addToOpList(searchList, constrainedName, environment.getInfixPostfixOperators());
+            }
+        } else {
+            addToOpList(searchList, constrainedName, environment.getPrefixOperators());
+            addToOpList(searchList, constrainedName, environment.getInfixPostfixOperators());
+        }
+        Unifier precedenceUnifier = UnifyBuilder.from(precedence);
+        Unifier typeUnifier = UnifyBuilder.from(type);
+        Unifier nameUnifier = UnifyBuilder.from(name);
+        YieldSolutions.forAll(environment, searchList.stream(), entry -> {
+            PrologInteger entryPrecedence = new PrologInteger(entry.getPrecedence());
+            PrologAtomInterned entryType = entry.getCode().atom();
+            Atomic entryName = entry.getFunctor();
+
+            return nameUnifier.unify(context, entryName) &&
+                    typeUnifier.unify(context, entryType) &&
+                    precedenceUnifier.unify(context, entryPrecedence);
+        });
+    }
+
+    /**
+     * Builds up a list ready for iteration.
+     *
+     * @param operators Target iteration list
+     * @param name      Name of operator (filter)
+     * @param source    Source map of operators
+     */
+    private static void addToOpList(List<OperatorEntry> operators, PrologAtomInterned name, Map<Atomic, OperatorEntry> source) {
+        if (name != null) {
+            OperatorEntry select = source.get(name);
+            if (select != null) {
+                operators.add(select);
+            }
+        } else {
+            operators.addAll(source.values());
+        }
     }
 
     /**

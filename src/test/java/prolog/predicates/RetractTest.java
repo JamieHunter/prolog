@@ -45,9 +45,11 @@ public class RetractTest {
                 .assertSuccess()
                 .variable("X", isInteger(3))
                 .andWhen("?- retract(a(X)).")
+                .assertFailed()
+                .andWhen("?- retract(a(X) :- _).")
                 .assertSuccess()
                 .variable("X", isUninstantiated())
-                .andWhen("?- retract(a(X)).")
+                .andWhen("?- retract(a(X) :- _).")
                 .assertFailed()
                 .andWhen("?- clause(a(_),_).")
                 .assertFailed();
@@ -89,7 +91,9 @@ public class RetractTest {
                 .and("legs(A, 8) :- spider(A).")
                 .and("spider(itsy).")
                 .when("?- retract(legs(spider,6)).")
-                .assertSuccess(); // vanilla test claims this should fail, but why?
+                .assertFailed()
+                .andWhen("?- retract(legs(spider,6) :- _).")
+                .assertSuccess();
     }
 
     @Test
@@ -97,9 +101,11 @@ public class RetractTest {
         given()
                 .when("?- clause(a(_),_).")
                 .assertSuccess()
-                .andWhen("?- retractall(a(X)).")
+                .andWhen("?- retractall(a(X) :- _).")
                 .assertSuccess()
                 .andWhen("?- clause(a(_),_).")
-                .assertFailed();
+                .assertFailed()
+                .andWhen("?- retractall(a(X) :- _).")
+                .assertSuccess();
     }
 }

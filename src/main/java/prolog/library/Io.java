@@ -20,7 +20,6 @@ import prolog.exceptions.PrologExistenceError;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologPermissionError;
 import prolog.exceptions.PrologTypeError;
-import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.expressions.CompoundTerm;
 import prolog.expressions.Term;
@@ -30,6 +29,7 @@ import prolog.flags.CloseOptions;
 import prolog.flags.OpenOptions;
 import prolog.flags.StreamProperties;
 import prolog.flags.WriteOptions;
+import prolog.generators.YieldSolutions;
 import prolog.io.FileReadWriteStreams;
 import prolog.io.LogicalStream;
 import prolog.io.PrologInputStream;
@@ -49,7 +49,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
@@ -1111,38 +1110,14 @@ public final class Io {
         } else {
             List<LogicalStream> all = new ArrayList<>();
             all.addAll(environment.getOpenStreams());
-            new ForEachStream(environment, all.listIterator(), streamIdent, lambda).redo();
-        }
-    }
-
-    private static class ForEachStream extends DecisionPointImpl {
-        private final ListIterator<LogicalStream> iter;
-        private final Term streamIdent;
-        private final BiConsumer<Atomic, LogicalStream> lambda;
-
-        private ForEachStream(Environment environment, ListIterator<LogicalStream> iter, Term streamIdent, BiConsumer<Atomic, LogicalStream> lambda) {
-            super(environment);
-            this.iter = iter;
-            this.streamIdent = streamIdent;
-            this.lambda = lambda;
-        }
-
-        @Override
-        public void redo() {
-            if (!iter.hasNext()) {
-                environment.backtrack();
-                return;
-            }
-            LogicalStream stream = iter.next();
-            environment.forward();
-            if (iter.hasNext()) {
-                environment.pushDecisionPoint(this);
-            }
-            if (!Unifier.unify(environment.getLocalContext(), streamIdent, stream.getId())) {
-                environment.backtrack();
-                return;
-            }
-            lambda.accept(stream.getId(), stream);
+            YieldSolutions.forAll(environment, all.stream(), stream -> {
+                if (!Unifier.unify(environment.getLocalContext(), streamIdent, stream.getId())) {
+                    environment.backtrack();
+                    return false;
+                }
+                lambda.accept(stream.getId(), stream);
+                return true;
+            });
         }
     }
 
@@ -1188,34 +1163,8 @@ public final class Io {
             throw PrologDomainError.streamProperty(environment, property);
         } else {
             List<Term> allProps = new StreamProperties(environment, stream, streamIdent).getAll(stream);
-            new ForEachStreamProperty(environment, allProps.iterator(), property).redo();
-        }
-    }
-
-    private static class ForEachStreamProperty extends DecisionPointImpl {
-        private final Iterator<Term> iter;
-        private final Term property;
-
-        private ForEachStreamProperty(Environment environment, Iterator<Term> iter, Term property) {
-            super(environment);
-            this.iter = iter;
-            this.property = property;
-        }
-
-        @Override
-        public void redo() {
-            if (!iter.hasNext()) {
-                environment.backtrack();
-                return;
-            }
-            Term term = iter.next();
-            environment.forward();
-            if (iter.hasNext()) {
-                environment.pushDecisionPoint(this);
-            }
-            if (!Unifier.unify(environment.getLocalContext(), property, term)) {
-                environment.backtrack();
-            }
+            YieldSolutions.forAll(environment, allProps.stream(),
+                    term -> Unifier.unify(environment.getLocalContext(), property, term));
         }
     }
 }

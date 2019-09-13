@@ -7,15 +7,14 @@ import prolog.bootstrap.Predicate;
 import prolog.constants.Atomic;
 import prolog.exceptions.PrologInstantiationError;
 import prolog.exceptions.PrologTypeError;
-import prolog.execution.DecisionPointImpl;
 import prolog.execution.Environment;
 import prolog.execution.LocalContext;
 import prolog.expressions.Term;
 import prolog.flags.CreateFlagOptions;
 import prolog.flags.PrologFlags;
+import prolog.generators.YieldSolutions;
 import prolog.unification.Unifier;
 
-import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -34,8 +33,11 @@ public class Flags {
                 environment.backtrack();
             }
         } else {
+            LocalContext context = environment.getLocalContext();
             Map<Atomic, Term> allFlags = environment.getFlags().getAll(environment);
-            new ForEachFlag(environment, allFlags.entrySet().iterator(), key, value).redo();
+            YieldSolutions.forAll(environment, allFlags.entrySet().stream(), entry ->
+                    Unifier.unify(context, key, entry.getKey()) &&
+                            Unifier.unify(context, value, entry.getValue()));
         }
     }
 
@@ -68,36 +70,5 @@ public class Flags {
         PrologFlags flags = environment.getFlags();
         CreateFlagOptions options = new CreateFlagOptions(environment, optionsTerm);
         flags.create((Atomic) key, value, options);
-    }
-
-    private static class ForEachFlag extends DecisionPointImpl {
-        private final Iterator<Map.Entry<Atomic, Term>> iter;
-        private final Term key;
-        private final Term value;
-
-        private ForEachFlag(Environment environment, Iterator<Map.Entry<Atomic, Term>> iter, Term key, Term value) {
-            super(environment);
-            this.iter = iter;
-            this.key = key;
-            this.value = value;
-        }
-
-        @Override
-        public void redo() {
-            if (!iter.hasNext()) {
-                environment.backtrack();
-                return;
-            }
-            Map.Entry<Atomic, Term> entry = iter.next();
-            environment.forward();
-            if (iter.hasNext()) {
-                environment.pushDecisionPoint(this);
-            }
-            LocalContext context = environment.getLocalContext();
-            if (!(Unifier.unify(context, key, entry.getKey()) &&
-                    Unifier.unify(context, value, entry.getValue()))) {
-                environment.backtrack();
-            }
-        }
     }
 }

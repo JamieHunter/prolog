@@ -9,11 +9,10 @@ import prolog.execution.CompileContext;
 import prolog.execution.Environment;
 import prolog.execution.Instruction;
 import prolog.expressions.CompoundTerm;
-import prolog.expressions.CompoundTermImpl;
 import prolog.expressions.Term;
+import prolog.generators.RepeatForever;
 import prolog.instructions.ComposedCallInstruction;
 import prolog.instructions.CurriedCallInstruction;
-import prolog.instructions.DeferredCallInstruction;
 import prolog.instructions.ExecBagOf;
 import prolog.instructions.ExecBlock;
 import prolog.instructions.ExecCall;
@@ -22,7 +21,6 @@ import prolog.instructions.ExecFindAll;
 import prolog.instructions.ExecIfThenElse;
 import prolog.instructions.ExecIgnore;
 import prolog.instructions.ExecOnce;
-import prolog.instructions.ExecRepeat;
 import prolog.instructions.ExecSetOf;
 
 import java.util.ArrayList;
@@ -58,12 +56,6 @@ public final class Control {
     public static final Instruction FALSE = Environment::backtrack;
 
     /**
-     * Repeat is a singleton instruction with decision point
-     */
-    @Predicate("repeat")
-    public static final Instruction REPEAT = ExecRepeat.REPEAT;
-
-    /**
      * When cut is executed, it trims all decision points within the current cut cutScope,
      * and sets mode to indicate this is now deterministic
      */
@@ -71,10 +63,18 @@ public final class Control {
     public static final Instruction CUT = Environment::cutDecisionPoints;
 
     /**
+     * Keep repeating, infinite decision points.
+     */
+    @Predicate("repeat")
+    public static final void repeat(Environment environment) {
+        RepeatForever.run(environment);
+    }
+
+    /**
      * Parse a ',' tree into a single conjunction (block) entry.
      *
      * @param compiling Compilation context
-     * @param source      Initial ',' term
+     * @param source    Initial ',' term
      */
     @Predicate(value = ",", arity = 2, notrace = true)
     public static void conjunction(CompileContext compiling, CompoundTerm source) {
@@ -93,7 +93,7 @@ public final class Control {
      * IF-THEN Construct.
      *
      * @param compiling Compiling context
-     * @param source      Initial '-&gt;' term.
+     * @param source    Initial '-&gt;' term.
      */
     @Predicate(value = "->", arity = 2, notrace = true)
     public static void ifThen(CompileContext compiling, CompoundTerm source) {
@@ -109,7 +109,7 @@ public final class Control {
      * Nested ';' are parsed into a single disjunction entry.
      *
      * @param compiling Compilation context
-     * @param source      Initial ';' term
+     * @param source    Initial ';' term
      */
     @Predicate(value = ";", arity = 2, notrace = true)
     public static void disjunction(CompileContext compiling, CompoundTerm source) {
@@ -146,7 +146,7 @@ public final class Control {
      * Call is a scoped execution block.
      *
      * @param compiling Compiling context
-     * @param source      Call term.
+     * @param source    Call term.
      */
     @Predicate(value = "call", arity = 1)
     public static void call(CompileContext compiling, CompoundTerm source) {
@@ -162,7 +162,7 @@ public final class Control {
      * Apply is similar to call, but appends a list of arguments to the goal
      *
      * @param compiling Compiling context
-     * @param source      Call term.
+     * @param source    Call term.
      */
     @Predicate(value = "apply", arity = 2)
     public static void apply(CompileContext compiling, CompoundTerm source) {
@@ -177,14 +177,14 @@ public final class Control {
      * Cross between call and apply
      *
      * @param compiling Compiling context
-     * @param source      Call term.
+     * @param source    Call term.
      */
     @Predicate(value = "call", arity = 2, vararg = true)
     public static void call2(CompileContext compiling, CompoundTerm source) {
         Term callTerm = source.get(0);
-        Term[] members = new Term[source.arity()-1];
+        Term[] members = new Term[source.arity() - 1];
         for (int i = 1; i < source.arity(); i++) {
-            members[i-1] = source.get(i);
+            members[i - 1] = source.get(i);
         }
         compiling.add(source, new ExecCall(new ComposedCallInstruction(callTerm, members)));
     }
@@ -193,7 +193,7 @@ public final class Control {
      * Not provable.
      *
      * @param compiling Compilation context
-     * @param source      The predicate to call
+     * @param source    The predicate to call
      */
     @Predicate(value = {"\\+", "not"}, arity = 1, notrace = true)
     public static void notProvable(CompileContext compiling, CompoundTerm source) {
@@ -210,7 +210,7 @@ public final class Control {
      * Variation of call with an implied cut immediately after a successful call
      *
      * @param compiling Compilation context
-     * @param source      The predicate to call
+     * @param source    The predicate to call
      */
     @Predicate(value = "once", arity = 1)
     public static void once(CompileContext compiling, CompoundTerm source) {
@@ -222,7 +222,7 @@ public final class Control {
      * Variation of call but always succeeds
      *
      * @param compiling Compilation context
-     * @param source      The predicate to call
+     * @param source    The predicate to call
      */
     @Predicate(value = "ignore", arity = 1)
     public static void ignore(CompileContext compiling, CompoundTerm source) {
@@ -238,7 +238,7 @@ public final class Control {
      * the list is unified with List.
      *
      * @param compiling Compiling context
-     * @param source      Contains the arguments
+     * @param source    Contains the arguments
      */
     @Predicate(value = "findall", arity = 3)
     public static void findall(CompileContext compiling, CompoundTerm source) {
@@ -256,7 +256,7 @@ public final class Control {
      * there are no free variables, bagof degenerates to be almost the same as findall.
      *
      * @param compiling Compiling context
-     * @param source      Contains the arguments
+     * @param source    Contains the arguments
      */
     @Predicate(value = "bagof", arity = 3)
     public static void bagof(CompileContext compiling, CompoundTerm source) {
@@ -271,7 +271,7 @@ public final class Control {
      * Given setof(Term, Goal, List), Each List produced is further collated - sorted and deduplicated.
      *
      * @param compiling Compiling context
-     * @param source      Contains the arguments
+     * @param source    Contains the arguments
      */
     @Predicate(value = "setof", arity = 3)
     public static void setof(CompileContext compiling, CompoundTerm source) {
