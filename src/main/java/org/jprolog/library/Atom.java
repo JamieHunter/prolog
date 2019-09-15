@@ -239,7 +239,6 @@ public final class Atom {
                 }
             }
             if (afterTerm.isInstantiated()) {
-                // TODO: bug, integer needs to be bounded
                 afterConstraint = PrologInteger.from(afterTerm).notLessThanZero().toInteger();
                 if (afterConstraint > atomLen) {
                     return; // not solvable

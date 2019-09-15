@@ -3,16 +3,16 @@
 //
 package org.jprolog.library;
 
+import org.jprolog.bootstrap.Interned;
+import org.jprolog.bootstrap.Predicate;
+import org.jprolog.constants.PrologInteger;
 import org.jprolog.enumerators.VariableCollector;
+import org.jprolog.execution.Environment;
 import org.jprolog.expressions.CompoundTermImpl;
 import org.jprolog.expressions.Term;
 import org.jprolog.expressions.TermList;
 import org.jprolog.unification.Unifier;
 import org.jprolog.variables.Variable;
-import org.jprolog.bootstrap.Interned;
-import org.jprolog.bootstrap.Predicate;
-import org.jprolog.constants.PrologInteger;
-import org.jprolog.execution.Environment;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -53,7 +53,7 @@ public class Variables {
     @Predicate("term_variables")
     public static void termVariables(Environment environment, Term term, Term varList) {
         // Extract all the variables out of term as a list
-        List<Term> collected = collectVariables(environment, term);
+        List<? extends Variable> collected = collectVariables(environment, term);
         if (!Unifier.unify(environment.getLocalContext(), varList, TermList.from(collected))) {
             environment.backtrack();
         }
@@ -70,10 +70,10 @@ public class Variables {
     @Predicate("term_variables")
     public static void termVariables(Environment environment, Term term, Term headList, Term tailList) {
         HashSet<Long> vars = new HashSet<>();
-        vars.addAll(TermList.extractList(headList).stream().map(t -> t instanceof Variable ? ((Variable)t).id() : -1L)
+        vars.addAll(TermList.extractList(headList).stream().map(t -> t instanceof Variable ? ((Variable) t).id() : -1L)
                 .collect(Collectors.toList()));
-        List<Term> collected = collectVariables(environment, term);
-        List<Term> remaining = collected.stream().filter(t -> !vars.contains(((Variable)t).id())).collect(Collectors.toList());
+        List<? extends Variable> collected = collectVariables(environment, term);
+        List<Variable> remaining = collected.stream().filter(t -> !vars.contains(t.id())).collect(Collectors.toList());
         if (!Unifier.unify(environment.getLocalContext(), tailList, TermList.from(remaining))) {
             environment.backtrack();
         }
@@ -90,8 +90,8 @@ public class Variables {
     @Predicate("numbervars")
     public static void numberVariables(Environment environment, Term term, Term startTerm, Term endTerm) {
         long index = PrologInteger.from(startTerm).toLong();
-        List<Term> collected = collectVariables(environment, term);
-        for (Term t : collected) {
+        List<? extends Variable> collected = collectVariables(environment, term);
+        for (Variable t : collected) {
             Term vt = new CompoundTermImpl(Interned.DOLLAR_VAR, PrologInteger.from(index));
             if (t.instantiate(vt)) {
                 index++;
@@ -115,8 +115,8 @@ public class Variables {
         if (term.isGrounded()) {
             environment.backtrack();
         }
-        Stream<Term> stream = collectVariables(environment, term).stream();
-        if(!stream.filter(t -> t.compareTo(var) == 0).findFirst().isPresent()) {
+        Stream<? extends Variable> stream = collectVariables(environment, term).stream();
+        if (!stream.filter(t -> t.compareTo(var) == 0).findFirst().isPresent()) {
             environment.backtrack();
         }
     }
@@ -128,8 +128,8 @@ public class Variables {
      * @param sourceTerm  Term to extract variables out of
      * @return list of variable terms
      */
-    private static List<Term> collectVariables(Environment environment, Term sourceTerm) {
-        List<Term> collected;
+    private static List<? extends Variable> collectVariables(Environment environment, Term sourceTerm) {
+        List<? extends Variable> collected;
         if (sourceTerm.isGrounded()) {
             collected = Collections.emptyList();
         } else {

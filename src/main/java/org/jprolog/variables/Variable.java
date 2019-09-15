@@ -49,4 +49,14 @@ public interface Variable extends Container {
         // id is therefore considered to be the significant id in the chain
         return Long.compare(corefId(), ((Variable) o).corefId());
     }
+
+    /**
+     * @return True if this is an Active variable, False if copy is required.
+     */
+    boolean isActive();
+
+    /**
+     * @return label for this variable. LabeledVariable must be activated (copied) before use.
+     */
+    LabeledVariable label();
 }

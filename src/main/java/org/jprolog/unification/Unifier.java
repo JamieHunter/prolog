@@ -12,7 +12,7 @@ import org.jprolog.expressions.Term;
 public interface Unifier {
 
     /**
-     * Unify two terms. Terms are assumed to be pre-bound and simplified.
+     * Unify two terms. Terms are assumed to be sufficiently resolved.
      *
      * @param context Binding localContext for any contained variables
      * @param left    term

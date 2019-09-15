@@ -3,14 +3,15 @@
 //
 package org.jprolog.instructions;
 
-import org.jprolog.execution.CutPoint;
+import org.jprolog.cuts.ClauseCutBarrier;
+import org.jprolog.cuts.CutPoint;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
 import org.jprolog.execution.InstructionPointer;
 import org.jprolog.execution.LocalContext;
 
 /**
- * Perform a call with new local scope
+ * Perform a call with new local scope, used when there is expected to be a read term with labeled variables.
  */
 public class ExecCallLocal implements Instruction {
     protected final Environment environment;
@@ -23,10 +24,13 @@ public class ExecCallLocal implements Instruction {
 
     @Override
     public void invoke(Environment environment) {
+        long watermark = environment.variableWatermark();
+        ClauseCutBarrier barrier = new ClauseCutBarrier(environment, environment.getCutPoint(), watermark);
         LocalContext newContext = environment.newLocalContext();
+        EndLocalScope callScope = new EndLocalScope(environment);
         environment.setLocalContext(newContext);
-        environment.setCutPoint(newContext);
-        environment.callIP(new EndLocalScope(environment));
+        environment.setCutPoint(barrier);
+        environment.callIP(callScope);
         instruction.invoke(environment);
     }
 

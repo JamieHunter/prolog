@@ -15,7 +15,7 @@ import org.jprolog.expressions.CompoundTerm;
 import org.jprolog.expressions.CompoundTermImpl;
 import org.jprolog.expressions.Term;
 import org.jprolog.unification.Unifier;
-import org.jprolog.variables.UnboundVariable;
+import org.jprolog.variables.LabeledVariable;
 
 /**
  * File is referenced by {@link Library} to parse all annotations.
@@ -189,8 +189,8 @@ public class Terms {
      */
     @Predicate("functor")
     public static void functor(Environment environment, Term term, Term name, Term arity) {
-        // struct is expected to be sufficiently bound to instantiate functor and args
-        // however if not bound, functor and arity must be bound
+        // struct is expected to be sufficiently grounded to instantiate functor and args
+        // however if not instantiated, functor and arity must be instantiated
         LocalContext context = environment.getLocalContext();
         if (!term.isInstantiated()) {
             if (!name.isInstantiated()) {
@@ -213,7 +213,7 @@ public class Terms {
                 // Build a struct from these terms
                 Term[] members = new Term[arityInt];
                 for (int i = 0; i < arityInt; i++) {
-                    members[i] = new UnboundVariable("_", environment.nextVariableId()).resolve(context);
+                    members[i] = new LabeledVariable("_", environment.nextVariableId()).resolve(context);
                 }
                 newStruct = new CompoundTermImpl((Atomic) name, members);
             }
@@ -242,10 +242,8 @@ public class Terms {
      */
     @Predicate("copy_term")
     public static void copyTerm(Environment environment, Term source, Term target) {
-        CopyTerm context = new CopyTerm(environment);
-        Term copy = source.enumTerm(context);
-        Term bound = copy.resolve(environment.getLocalContext());
-        if (!Unifier.unify(environment.getLocalContext(), target, bound)) {
+        Term copy = source.enumTerm(new CopyTerm(environment));
+        if (!Unifier.unify(environment.getLocalContext(), target, copy)) {
             environment.backtrack();
         }
     }

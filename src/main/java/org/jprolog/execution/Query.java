@@ -3,6 +3,7 @@
 //
 package org.jprolog.execution;
 
+import org.jprolog.cuts.CutPoint;
 import org.jprolog.expressions.Term;
 import org.jprolog.instructions.DeferredCallInstruction;
 import org.jprolog.instructions.ExecDefer;
@@ -16,6 +17,7 @@ import org.jprolog.library.Control;
 public class Query {
     protected final Environment environment;
     protected final LocalContext context;
+    protected final CutPoint initialCutPoint;
     private Instruction instruction = Control.TRUE;
 
     /**
@@ -25,9 +27,9 @@ public class Query {
      */
     public Query(Environment environment) {
         this.environment = environment;
+        this.initialCutPoint = environment.getCutPoint();
         this.context = new LocalContext(environment,
-                new Predication(Interned.QUERY_FUNCTOR, 1),
-                CutPoint.TERMINAL
+                new Predication(Interned.QUERY_FUNCTOR, 1)
         );
     }
 
@@ -48,7 +50,7 @@ public class Query {
     public void compile(Term term) {
         environment.reset();
         environment.setLocalContext(context); // establish for purpose of compiling and exceptions
-        environment.setCutPoint(context); // related cut point
+        environment.setCutPoint(initialCutPoint); // related cut point
         instruction = new ExecDefer(new DeferredCallInstruction(term));
     }
 
@@ -70,7 +72,7 @@ public class Query {
     public void reset() {
         environment.reset();
         environment.setLocalContext(context);
-        environment.setCutPoint(context);
+        environment.setCutPoint(initialCutPoint);
         instruction.invoke(environment);
     }
 

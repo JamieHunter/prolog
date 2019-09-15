@@ -47,7 +47,7 @@ public class TermListImpl implements TermList {
      * @param terms Terms of the list
      * @param tail  Final tail, e.g. Tail of [A,B|Tail], or [] if no tail.
      */
-    public TermListImpl(List<Term> terms, Term tail) {
+    public TermListImpl(List<? extends Term> terms, Term tail) {
         this(terms.toArray(new Term[terms.size()]), tail);
     }
 
@@ -67,7 +67,7 @@ public class TermListImpl implements TermList {
     /**
      * Attempt to make list into a grounded list
      *
-     * @param context local contact (used e.g. to create a bound variable)
+     * @param context local contact (used e.g. to activate labeled variables)
      * @return resolved list
      */
     @Override

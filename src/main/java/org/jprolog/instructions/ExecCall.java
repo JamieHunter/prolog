@@ -3,7 +3,7 @@
 //
 package org.jprolog.instructions;
 
-import org.jprolog.execution.BasicCutPoint;
+import org.jprolog.cuts.CallCutBarrier;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
 import org.jprolog.execution.InstructionPointer;
@@ -64,15 +64,10 @@ public class ExecCall implements Instruction {
     /**
      * This class acts as a localized cut-point, and an IP that restores the original cut point
      */
-    protected static class ConstrainedCutPoint extends BasicCutPoint implements InstructionPointer {
+    protected static class ConstrainedCutPoint extends CallCutBarrier implements InstructionPointer {
         ConstrainedCutPoint(Environment environment) {
             super(environment, environment.getCutPoint());
             environment.setCutPoint(this);
-        }
-
-        @Override
-        public boolean isDeterministic() {
-            return super.isDeterministic() && parent.isDeterministic();
         }
 
         @Override

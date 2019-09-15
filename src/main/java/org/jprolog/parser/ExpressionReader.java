@@ -23,7 +23,7 @@ import org.jprolog.expressions.Term;
 import org.jprolog.expressions.TermList;
 import org.jprolog.expressions.TermListImpl;
 import org.jprolog.unification.Unifier;
-import org.jprolog.variables.UnboundVariable;
+import org.jprolog.variables.LabeledVariable;
 import org.jprolog.flags.ReadOptions;
 
 import java.util.ArrayList;
@@ -76,6 +76,8 @@ public final class ExpressionReader {
         boolean assumedAtEof = options.fullStop == ReadOptions.FullStop.ATOM_optional;
         Term t = read(Interned.DOT, () -> !tokenizer.isNext('('), tokenizer.nextToken(), assumedAtEof);
         tokenizer.skipEOLN();
+        // simplify the term. There should be no active variables, but applies enumeration at least once which
+        // resolves containers.
         Term reduced = t.enumTerm(new SimplifyTerm(environment));
         if (options.variables.isPresent()) {
             Term variables = collectVariables(tokenizer.getVariableMap());
@@ -98,7 +100,7 @@ public final class ExpressionReader {
      * @param varMap Map of variables
      * @return List
      */
-    private Term collectVariables(Map<String, UnboundVariable> varMap) {
+    private Term collectVariables(Map<String, LabeledVariable> varMap) {
         List<Term> termList = new ArrayList<>();
         termList.addAll(varMap.values());
         return TermList.from(termList);
@@ -110,7 +112,7 @@ public final class ExpressionReader {
      * @param varMap Map of variables
      * @return List
      */
-    private Term collectVariableNames(Map<String, UnboundVariable> varMap) {
+    private Term collectVariableNames(Map<String, LabeledVariable> varMap) {
         List<Term> termList = varMap.values().stream().map(
                 v -> new CompoundTermImpl(Interned.EQUALS_FUNCTOR,
                         new PrologAtom(v.name()),
@@ -209,10 +211,10 @@ public final class ExpressionReader {
         ArrayList<Term> list = new ArrayList<>();
         while (CompoundTerm.termIsA(term, Interned.COMMA_FUNCTOR, 2) && !(term instanceof BracketedTerm)) {
             CompoundTerm commaTerm = (CompoundTerm) term;
-            list.add(commaTerm.get(0).value(environment));
+            list.add(commaTerm.get(0).value());
             term = commaTerm.get(1);
         }
-        list.add(term.value(environment)); // last term
+        list.add(term.value()); // last term
         return new BracketedTerm(list);
     }
 
@@ -227,7 +229,7 @@ public final class ExpressionReader {
         Term tailTerm = PrologEmptyList.EMPTY_LIST;
         if (CompoundTerm.termIsA(term, Interned.BAR_FUNCTOR, 2)) {
             CompoundTerm barTerm = (CompoundTerm) term;
-            tailTerm = barTerm.get(1).value(environment);
+            tailTerm = barTerm.get(1).value();
             term = barTerm.get(0);
         }
         BracketedTerm bracketedTerm = rewriteBracketedCommas(term);

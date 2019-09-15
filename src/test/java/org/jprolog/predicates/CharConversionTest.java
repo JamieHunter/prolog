@@ -15,7 +15,7 @@ public class CharConversionTest {
                 ;
     }
 
-    @Disabled("conversion not yet implemented")
+    @Disabled("conversion test not yet implemented")
     @Test
     public void testParserConversion() {
         // TODO (currently tested via Prolog Vanilla test)

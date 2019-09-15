@@ -4,20 +4,21 @@
 package org.jprolog.variables;
 
 import org.jprolog.enumerators.EnumTermStrategy;
-import org.jprolog.expressions.Term;
-import org.jprolog.instructions.DeferredCallInstruction;
-import org.jprolog.instructions.ExecCall;
 import org.jprolog.execution.CompileContext;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.LocalContext;
+import org.jprolog.expressions.Term;
+import org.jprolog.instructions.DeferredCallInstruction;
+import org.jprolog.instructions.ExecCall;
 import org.jprolog.io.WriteContext;
 
 import java.io.IOException;
 
 /**
- * Variable that exists, but has not been bound to a local context.
+ * Variable that exists, but has not been activated. This effectively allows a lazy-copy while executing a
+ * clause by keeping a context that maps LabeledVariables to newly numbered ActiveVariables.
  */
-public class UnboundVariable implements Variable {
+public class LabeledVariable implements Variable {
 
     private final String name;
     private final long id;
@@ -28,7 +29,7 @@ public class UnboundVariable implements Variable {
      * @param name Name of variable as specified in text
      * @param id   Unique ID to disambiguate variables of same name
      */
-    public UnboundVariable(String name, long id) {
+    public LabeledVariable(String name, long id) {
         this.name = name;
         this.id = id;
     }
@@ -59,15 +60,31 @@ public class UnboundVariable implements Variable {
      * {@inheritDoc}
      */
     @Override
-    public boolean instantiate(Term other) {
-        throw new InternalError("Unexpected instantiation of unbound variable");
+    public boolean isActive() {
+        return false;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Term value(Environment environment) {
+    public LabeledVariable label() {
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean instantiate(Term other) {
+        throw new InternalError("Unexpected instantiation of inactive variable");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Term value() {
         return this;
     }
 
@@ -79,7 +96,7 @@ public class UnboundVariable implements Variable {
      */
     @Override
     public Term resolve(LocalContext context) {
-        return context.bind(this).resolve(context);
+        return context.copy(this).resolve(context);
     }
 
     /**
@@ -112,14 +129,6 @@ public class UnboundVariable implements Variable {
     @Override
     public Term enumTerm(EnumTermStrategy strategy) {
         return strategy.visitVariable(this);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Term extract() {
-        return this;
     }
 
     /**

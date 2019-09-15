@@ -812,7 +812,7 @@ public final class Io {
             // and working_directory(CWD,CWD) must do the right thing.
             throw PrologInstantiationError.error(environment, newDirTerm);
         }
-        if (newDirTerm.value(environment).equals(oldDirTerm.value(environment))) {
+        if (newDirTerm.value().equals(oldDirTerm.value())) {
             return; // no-op
         }
         Path newPath = parsePathBasic(environment, newDirTerm);
@@ -956,9 +956,9 @@ public final class Io {
     private static Path parsePathBasic(Environment environment, Term fileName) {
         String pathName;
         if (fileName.isAtom()) {
-            pathName = ((PrologAtomLike) (fileName.value(environment))).name();
+            pathName = ((PrologAtomLike) (fileName.value())).name();
         } else if (fileName.isString()) {
-            pathName = ((PrologString) (fileName.value(environment))).get();
+            pathName = ((PrologString) (fileName.value())).get();
         } else {
             throw PrologDomainError.sourceSink(environment, fileName);
         }
@@ -1127,7 +1127,7 @@ public final class Io {
      * @param environment Execution environment
      * @param streamIdent Stream identifier (Atomic)
      * @param stream      Logical stream
-     * @param property    Stream property to be bound
+     * @param property    Stream property to be instantiated
      */
     private static void forEachStreamProperty(Environment environment, Atomic streamIdent, LogicalStream stream, Term property) {
         if (property.isInstantiated()) {

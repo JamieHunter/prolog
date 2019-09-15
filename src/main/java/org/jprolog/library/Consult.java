@@ -210,16 +210,16 @@ public final class Consult {
     private static String convertId(Environment environment, Term id) {
         String pathName;
         if (id.isAtom()) {
-            return ((PrologAtomLike) (id.value(environment))).name();
+            return ((PrologAtomLike) (id.value())).name();
         } else if (id.isString()) {
-            return ((PrologString) (id.value(environment))).get();
+            return ((PrologString) (id.value())).get();
         } else {
             throw PrologTypeError.atomExpected(environment, id);
         }
     }
 
     /**
-     * Verify and retrieve time. If time is unbound, current time is used
+     * Verify and retrieve time. If time is uninstantiated, current time is used
      *
      * @param time Time parameter
      * @return validated time

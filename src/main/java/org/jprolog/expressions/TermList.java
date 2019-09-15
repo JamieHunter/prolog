@@ -263,7 +263,7 @@ public interface TermList extends CompoundTerm {
      * @param list Java list
      * @return Prolog list
      */
-    static Term from(List<Term> list) {
+    static Term from(List<? extends Term> list) {
         if (list.isEmpty()) {
             return PrologEmptyList.EMPTY_LIST;
         } else {

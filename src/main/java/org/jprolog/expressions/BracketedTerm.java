@@ -5,9 +5,8 @@ package org.jprolog.expressions;
 
 import org.jprolog.bootstrap.Interned;
 import org.jprolog.enumerators.EnumTermStrategy;
-import org.jprolog.execution.Environment;
-import org.jprolog.execution.LocalContext;
 import org.jprolog.enumerators.SimplifyTerm;
+import org.jprolog.execution.LocalContext;
 import org.jprolog.io.WriteContext;
 
 import java.io.IOException;
@@ -47,7 +46,7 @@ public final class BracketedTerm implements Term, Container {
      * @return Tree or single term
      */
     @Override
-    public Term extract() {
+    public Term value() {
         if (terms.length == 1) {
             // single term
             return terms[0];
@@ -62,17 +61,6 @@ public final class BracketedTerm implements Term, Container {
     }
 
     /**
-     * When converted to a value, decompose into a real comma list.
-     *
-     * @param environment Environment for any environment-specific conversions
-     * @return single term or comma tree
-     */
-    @Override
-    public Term value(Environment environment) {
-        return extract().value(environment);
-    }
-
-    /**
      * When resolving, decompose into a real comma list.
      *
      * @param context Local context for variable parsing
@@ -80,7 +68,7 @@ public final class BracketedTerm implements Term, Container {
      */
     @Override
     public Term resolve(LocalContext context) {
-        return extract().resolve(context);
+        return value().resolve(context);
     }
 
     /**

@@ -3,12 +3,12 @@
 //
 package org.jprolog.enumerators;
 
-import org.jprolog.expressions.Term;
 import org.jprolog.execution.Environment;
+import org.jprolog.expressions.Term;
 import org.jprolog.variables.Variable;
 
 /**
- * Context for simplifying and unbinding a tree of terms
+ * Context for simplifying a tree of terms, in particular, replacing variables with labels.
  */
 public class SimplifyTerm extends EnumTermStrategy {
 
@@ -17,14 +17,14 @@ public class SimplifyTerm extends EnumTermStrategy {
     }
 
     /**
-     * Variables are replaced with an unbound version, performed with caching.
+     * Variables are replaced with an inactive labeled version, performed with caching.
      *
      * @param variable Variable reference
-     * @return unbound variable.
+     * @return inactive variable.
      */
     @Override
     public Term visitVariable(Variable variable) {
-        return this.computeUncachedTerm(variable, t -> unbindVariable(variable));
+        return this.computeUncachedTerm(variable, t -> variable.label());
     }
 
 }

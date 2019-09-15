@@ -183,7 +183,7 @@ public class UnifyTest {
                 .variable("X", Matchers.isAtom("a"))
                 .variable("Q", Matchers.isList(Matchers.isAtom("a")));
         // This *should* be the same as (X=a, [X]=Q)
-        // Test caught a bug where [X] was not resolved at time it was bound to Q
+        // Test caught a bug where [X] was not resolved at time it was instantiated to Q
         PrologTest.given()
                 .when("f(X, [X]).")
                 .andWhen("?- f(a, Q).")

@@ -33,15 +33,12 @@ public abstract class AtomicBase implements Atomic {
      * {@inheritDoc}
      */
     @Override
-    public Term value(Environment environment) {
+    public Term value() {
         return this;
     }
 
     /**
-     * Constants don't need to be bound as they are already bound.
-     *
-     * @param context not used
-     * @return self.
+     * {@inheritDoc}
      */
     @Override
     public Term resolve(LocalContext context) {

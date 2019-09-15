@@ -3,6 +3,8 @@
 //
 package org.jprolog.execution;
 
+import org.jprolog.cuts.CutPoint;
+
 import java.util.ListIterator;
 
 /**

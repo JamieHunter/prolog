@@ -34,14 +34,11 @@ public class PrologThrowable extends RuntimeException implements Container {
     }
 
     /**
-     * Extract term out of container.
-     *
-     * @param environment Environment for any environment-specific conversions
-     * @return Actual term
+     * {@inheritDoc}
      */
     @Override
-    public Term value(Environment environment) {
-        return thrown.value(environment);
+    public Term value() {
+        return thrown.value();
     }
 
     /**
@@ -53,17 +50,9 @@ public class PrologThrowable extends RuntimeException implements Container {
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Term extract() {
-        return thrown;
-    }
-
-    /**
      * Extract and resolve term.
      *
-     * @param context binding context (used e.g. to create a bound variable)
+     * @param context binding context (used e.g. to create an active variable)
      * @return Resolved term.
      */
     @Override

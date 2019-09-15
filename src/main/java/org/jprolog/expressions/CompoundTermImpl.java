@@ -3,17 +3,17 @@
 //
 package org.jprolog.expressions;
 
-import org.jprolog.unification.SimpleUnifyIterator;
-import org.jprolog.unification.UnifyIterator;
 import org.jprolog.constants.Atomic;
-import org.jprolog.execution.CompileContext;
 import org.jprolog.enumerators.EnumTermStrategy;
+import org.jprolog.execution.CompileContext;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.LocalContext;
 import org.jprolog.io.StructureWriter;
 import org.jprolog.io.WriteContext;
 import org.jprolog.predicates.PredicateDefinition;
 import org.jprolog.predicates.Predication;
+import org.jprolog.unification.SimpleUnifyIterator;
+import org.jprolog.unification.UnifyIterator;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -33,7 +33,7 @@ public class CompoundTermImpl implements CompoundTerm {
      * @param functor   Functor. Strictly an Atom. Loosely Atomic.
      * @param arguments List of arguments. This is assumed to be at least one argument, but allows special case of none.
      */
-    public CompoundTermImpl(Atomic functor, List<Term> arguments) {
+    public CompoundTermImpl(Atomic functor, List<? extends Term> arguments) {
         members = new Term[arguments.size() + 1];
         members[0] = functor;
         int i = 0;

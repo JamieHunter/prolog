@@ -8,11 +8,11 @@ import org.jprolog.enumerators.EnumTermStrategy;
 import org.jprolog.execution.LocalContext;
 
 /**
- * Version of CompoundTerm after resolving to a grounded compound term.
+ * Version of CompoundTerm that is known to be a grounded compound term.
  */
 /*package*/ class GroundedCompoundTerm extends CompoundTermImpl implements Grounded {
     /**
-     * Construct a bound compound term. First member is the functor,
+     * Construct a grounded compound term. First member is the functor,
      * remaining members are the arguments.
      * @param members Functor and Arguments
      */

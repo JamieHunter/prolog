@@ -9,7 +9,7 @@ import org.jprolog.constants.PrologInteger;
 import org.jprolog.exceptions.PrologError;
 import org.jprolog.execution.Environment;
 import org.jprolog.expressions.Term;
-import org.jprolog.variables.UnboundVariable;
+import org.jprolog.variables.LabeledVariable;
 import org.jprolog.flags.ReadOptions;
 import org.jprolog.io.Position;
 import org.jprolog.io.PrologInputStream;
@@ -34,7 +34,7 @@ public final class Tokenizer extends TokenRegex {
     private final Environment environment;
     private final ReadOptions options;
     private final PrologInputStream inputStream;
-    private final Map<String, UnboundVariable> variableMap = new LinkedHashMap<>(); // order preserved
+    private final Map<String, LabeledVariable> variableMap = new LinkedHashMap<>(); // order preserved
     private final Position startOfLine = new Position();
     private final Position nextLine = new Position();
     private final Position tokenMark = new Position();
@@ -343,17 +343,17 @@ public final class Tokenizer extends TokenRegex {
      * Access all variables collected.
      * @return Collection of variables.
      */
-    public Map<String, UnboundVariable> getVariableMap() {
+    public Map<String, LabeledVariable> getVariableMap() {
         return Collections.unmodifiableMap(variableMap);
     }
 
     Term parseVariable(String text) {
         return variableMap.computeIfAbsent(text,
-                n -> new UnboundVariable(n, environment.nextVariableId()));
+                n -> new LabeledVariable(n, environment.nextVariableId()));
     }
 
     Term parseAnonymousVariable(String text) {
-        return new UnboundVariable("_", environment.nextVariableId());
+        return new LabeledVariable("_", environment.nextVariableId());
     }
 
     PrologInteger decodeInteger(int base, CharSequence chars) {

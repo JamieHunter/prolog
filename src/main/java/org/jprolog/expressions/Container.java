@@ -10,12 +10,6 @@ package org.jprolog.expressions;
 public interface Container extends Term {
 
     /**
-     * Extract contained term
-     * @return extracted term, may be computed
-     */
-    Term extract();
-
-    /**
      * Each Term type is given a rank per Prolog standard,
      * not expected to be called on container terms.
      *

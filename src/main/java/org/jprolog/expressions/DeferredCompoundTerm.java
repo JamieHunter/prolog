@@ -3,11 +3,11 @@
 //
 package org.jprolog.expressions;
 
-import org.jprolog.unification.UnifyIterator;
 import org.jprolog.constants.PrologAtomLike;
 import org.jprolog.enumerators.EnumTermStrategy;
 import org.jprolog.execution.LocalContext;
 import org.jprolog.io.WriteContext;
+import org.jprolog.unification.UnifyIterator;
 
 import java.io.IOException;
 import java.util.function.Supplier;
@@ -41,7 +41,7 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
      * @return Actual compound term
      */
     @Override
-    public CompoundTerm extract() {
+    public CompoundTerm value() {
         if (cache != null) {
             return cache;
         }
@@ -55,12 +55,12 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
     /**
      * Resolve compound term. Term is made to exist prior to call.
      *
-     * @param context binding context (used e.g. to create a bound variable)
+     * @param context binding context (used to create active variables)
      * @return Compound term instantiated and resolved
      */
     @Override
     public CompoundTerm resolve(LocalContext context) {
-        return extract().resolve(context);
+        return value().resolve(context);
     }
 
     /**
@@ -92,7 +92,7 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
      */
     @Override
     public void write(WriteContext context) throws IOException {
-        extract().write(context);
+        value().write(context);
     }
 
     /**
@@ -116,7 +116,7 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
      */
     @Override
     public Term get(int i) {
-        return extract().get(i);
+        return value().get(i);
     }
 
     /**
@@ -124,7 +124,7 @@ public class DeferredCompoundTerm implements CompoundTerm, Container {
      */
     @Override
     public UnifyIterator getUnifyIterator() {
-        return extract().getUnifyIterator();
+        return value().getUnifyIterator();
     }
 
     /**

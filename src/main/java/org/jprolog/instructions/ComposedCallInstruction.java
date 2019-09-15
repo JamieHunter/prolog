@@ -10,7 +10,7 @@ import org.jprolog.expressions.Term;
 import java.util.ArrayList;
 
 /**
- * Performs a curry-apply, where the args is a bounded list.
+ * Performs a curry-apply.
  */
 public class ComposedCallInstruction extends AbstractComposedCallInstruction {
     private final Term[] args;

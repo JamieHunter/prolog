@@ -13,11 +13,11 @@ import org.jprolog.constants.PrologEmptyList;
 import org.jprolog.constants.PrologFloat;
 import org.jprolog.constants.PrologInteger;
 import org.jprolog.constants.PrologString;
-import org.jprolog.execution.Environment;
 import org.jprolog.expressions.CompoundTerm;
 import org.jprolog.expressions.Term;
 import org.jprolog.test.internal.ThenScope;
-import org.jprolog.variables.UnboundVariable;
+import org.jprolog.variables.ActiveVariable;
+import org.jprolog.variables.LabeledVariable;
 import org.jprolog.variables.Variable;
 
 import java.math.BigInteger;
@@ -248,11 +248,11 @@ public final class Matchers {
         }
     }
 
-    private static class IsUnboundVariable<T> extends IsVariable<T> {
+    private static class IsInactiveVariable<T> extends IsVariable<T> {
 
         private final String name;
 
-        public IsUnboundVariable(String name) {
+        public IsInactiveVariable(String name) {
             this.name = name;
         }
 
@@ -262,7 +262,7 @@ public final class Matchers {
 
         @Override
         public void describeTo(Description description) {
-            description.appendText("unbound variable '" + name + "'");
+            description.appendText("inactive variable '" + name + "'");
         }
 
         @Override
@@ -270,11 +270,15 @@ public final class Matchers {
             if (!super.matches(o, mismatch)) {
                 return false;
             }
-            if (!(o instanceof UnboundVariable)) {
-                mismatch.appendText("not unbound");
+            if (o instanceof ActiveVariable) {
+                mismatch.appendText("variable is active");
                 return false;
             }
-            UnboundVariable value = (UnboundVariable) o;
+            if (!(o instanceof LabeledVariable)) {
+                mismatch.appendText("not LabeledVariable");
+                return false;
+            }
+            LabeledVariable value = (LabeledVariable) o;
             if (!name.equals(value.name())) {
                 mismatch.appendText("name '" + value.name() + "'");
                 return false;
@@ -305,7 +309,7 @@ public final class Matchers {
             }
             Term t = (Term) o;
             if (t.isInstantiated()) {
-                mismatch.appendText("was instantiated to: " + t.value(new Environment()).toString());
+                mismatch.appendText("was instantiated to: " + t.value().toString());
                 return false;
             }
             return true;
@@ -511,7 +515,7 @@ public final class Matchers {
     }
 
     public static <T extends Term> Matcher<T> isUnboundVariable(String name) {
-        return new IsUnboundVariable<>(name);
+        return new IsInactiveVariable<>(name);
     }
 
     public static <T extends Term> Matcher<T> isCompoundTerm(String functor, Matcher<? super Term>... components) {

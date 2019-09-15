@@ -4,8 +4,8 @@
 package org.jprolog.execution;
 
 import org.jprolog.predicates.Predication;
-import org.jprolog.variables.BoundVariable;
-import org.jprolog.variables.UnboundVariable;
+import org.jprolog.variables.ActiveVariable;
+import org.jprolog.variables.LabeledVariable;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,11 +14,12 @@ import java.util.TreeMap;
 
 /**
  * Local context for a specific instantiation of a specific clause. Note that this context will exist in Java memory
- * for as long as any bound variables or backtrack entries reference this state.
+ * for as long as there is potential of any inactive labeled variables, specifically backtrack entries referencing this state.
  */
-public final class LocalContext extends BasicCutPoint {
+public final class LocalContext {
 
-    private final Map<Long, BoundVariable> variables = new HashMap<>();
+    private final Environment environment;
+    private final Map<Long, ActiveVariable> variables = new HashMap<>();
     private final Predication predication;
 
     /**
@@ -27,8 +28,8 @@ public final class LocalContext extends BasicCutPoint {
      * @param environment Execution environment
      * @param predication Predication to report on error (effectively stack entry)
      */
-    LocalContext(Environment environment, Predication predication, CutPoint parentCutPoint) {
-        super(environment, parentCutPoint);
+    LocalContext(Environment environment, Predication predication) {
+        this.environment = environment;
         this.predication = predication;
     }
 
@@ -47,28 +48,15 @@ public final class LocalContext extends BasicCutPoint {
     }
 
     /**
-     * Return a bound variable for an unbound variable. Note that it is permissible for two variables to exist with
+     * Return an active variable for an inactive labeled variable. Note that it is permissible for two variables to exist with
      * the same name as long as they have different unique id's that were assigned at the time the term was read.
-     * The bound variable however is unique to this context.
+     * The Prolog spec describes that a term is "copied" on execution. This implementation defers that copy.
      *
-     * @param var Unbound variable.
-     * @return associated bound variable.
+     * @param var Labeled inactive variable.
+     * @return associated activate variable.
      */
-    public BoundVariable bind(UnboundVariable var) {
-        return bind(var.name(), var.id());
-    }
-
-    /**
-     * Return a bound variable. Note that it is permissible for two variables to exist with
-     * the same name as long as they have different unique id's that were assigned at the time the term was read.
-     * The bound variable however is unique to this context.
-     *
-     * @param name Name of variable
-     * @param id Id of variable
-     * @return associated bound variable.
-     */
-    public BoundVariable bind(String name, long id) {
-        return variables.computeIfAbsent(id, i -> new BoundVariable(this, name, id));
+    public ActiveVariable copy(LabeledVariable var) {
+        return variables.computeIfAbsent(var.id(), i -> new ActiveVariable(environment, var.name(), environment.nextVariableId()));
     }
 
     /**
@@ -76,13 +64,13 @@ public final class LocalContext extends BasicCutPoint {
      *
      * @return Map of named variables
      */
-    public Map<String, BoundVariable> retrieveVariableMap() {
-        TreeMap<String, BoundVariable> sortedVars = new TreeMap<>();
-        for (BoundVariable var : variables.values()) {
+    public Map<String, ActiveVariable> retrieveVariableMap() {
+        TreeMap<String, ActiveVariable> sortedVars = new TreeMap<>();
+        for (ActiveVariable var : variables.values()) {
             String n = var.name();
             long id = var.id();
             if (n.equals("_") || sortedVars.containsKey(n)) {
-                n = n + String.valueOf(id);
+                n = n + id;
             }
             sortedVars.put(n, var);
         }

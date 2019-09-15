@@ -17,7 +17,7 @@ import org.jprolog.expressions.TermList;
 import org.jprolog.generators.DoRedo;
 import org.jprolog.unification.Unifier;
 import org.jprolog.unification.UnifyBuilder;
-import org.jprolog.variables.UnboundVariable;
+import org.jprolog.variables.ActiveVariable;
 import org.jprolog.variables.Variable;
 
 import java.util.ArrayList;
@@ -190,14 +190,12 @@ public class ExecBagOf extends ExecFindAll {
          * @param source Source variable
          * @return Renamed variable (deduped)
          */
-        protected Variable renameVariable(Variable source) {
-            return varMap.computeIfAbsent(source.id(), id -> {
-                if (freeVariableIds.contains(id)) {
-                    return source;
-                } else {
-                    return new UnboundVariable(source.name(), environment().nextVariableId());
-                }
-            });
+        protected ActiveVariable renameVariable(ActiveVariable source) {
+            if (freeVariableIds.contains(source.id())) {
+                return source;
+            } else {
+                return super.renameVariable(source);
+            }
         }
 
     }

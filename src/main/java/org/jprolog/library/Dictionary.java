@@ -9,7 +9,7 @@ import org.jprolog.constants.PrologAtomInterned;
 import org.jprolog.constants.PrologAtomLike;
 import org.jprolog.constants.PrologInteger;
 import org.jprolog.enumerators.CallifyTerm;
-import org.jprolog.enumerators.CopyTerm;
+import org.jprolog.enumerators.CopySimpleTerm;
 import org.jprolog.exceptions.PrologInstantiationError;
 import org.jprolog.exceptions.PrologPermissionError;
 import org.jprolog.exceptions.PrologTypeError;
@@ -438,7 +438,7 @@ public final class Dictionary {
                                   BiConsumer<ClauseSearchPredicate, ClauseEntry> add,
                                   boolean isDynamic) {
         // Copy done here, as the variables left and right of :- must relate to each other
-        Term copy = term.enumTerm(new CopyTerm(environment));
+        Term copy = term.enumTerm(new CopySimpleTerm(environment)); // removes ActiveVariable's
         if (CompoundTerm.termIsA(copy, Interned.CLAUSE_FUNCTOR, 2)) {
             // Rule
             CompoundTerm clause = (CompoundTerm) copy;
@@ -463,8 +463,8 @@ public final class Dictionary {
     private static void addClauseRule(Environment environment, Term head, Term body,
                                       BiConsumer<ClauseSearchPredicate, ClauseEntry> add,
                                       boolean isDynamic) {
-        head = head.value(environment);
-        body = body.value(environment);
+        head = head.value();
+        body = body.value();
         if (!head.isInstantiated()) {
             throw PrologInstantiationError.error(environment, head);
         }

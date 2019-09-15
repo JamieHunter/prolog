@@ -9,7 +9,7 @@ import org.jprolog.execution.Environment;
 import org.jprolog.execution.ExecutionState;
 import org.jprolog.execution.Query;
 import org.jprolog.flags.WriteOptions;
-import org.jprolog.variables.BoundVariable;
+import org.jprolog.variables.ActiveVariable;
 import org.jprolog.io.LogicalStream;
 import org.jprolog.io.Prompt;
 
@@ -35,14 +35,14 @@ public class InteractiveQuery extends Query {
     @Override
     protected ExecutionState onSuccess() {
         try {
-            Map<String, BoundVariable> sortedVars = context.retrieveVariableMap();
+            Map<String, ActiveVariable> sortedVars = context.retrieveVariableMap();
             if (sortedVars.isEmpty()) {
                 OUT.write(environment, null, "yes.\n");
                 OUT.flush();
                 return ExecutionState.SUCCESS;
             }
             boolean nl = false;
-            for (Map.Entry<String, BoundVariable> e : sortedVars.entrySet()) {
+            for (Map.Entry<String, ActiveVariable> e : sortedVars.entrySet()) {
                 if (nl) {
                     OUT.write(environment, null, "\n");
                 }
@@ -83,12 +83,12 @@ public class InteractiveQuery extends Query {
      * @param value Value of variable
      * @throws IOException IO Exception if any
      */
-    private void reportVar(String name, BoundVariable value) throws IOException {
+    private void reportVar(String name, ActiveVariable value) throws IOException {
         OUT.write(environment, null, " " + name + " <- ");
         WriteOptions options = new WriteOptions(environment, null);
         options.quoted = true;
         options.numbervars = true;
-        OUT.write(environment, null, value.value(environment), options);
+        OUT.write(environment, null, value.value(), options);
     }
 
     /**

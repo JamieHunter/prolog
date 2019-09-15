@@ -21,7 +21,7 @@ import org.jprolog.expressions.TermListImpl;
 import org.jprolog.generators.YieldSolutions;
 import org.jprolog.unification.Unifier;
 import org.jprolog.unification.UnifyBuilder;
-import org.jprolog.variables.UnboundVariable;
+import org.jprolog.variables.LabeledVariable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -117,7 +117,7 @@ public final class Lists {
             Term[] members = new Term[specifiedLength];
             LocalContext context = environment.getLocalContext();
             for (int i = 0; i < members.length; i++) {
-                members[i] = new UnboundVariable("_", environment.nextVariableId()).
+                members[i] = new LabeledVariable("_", environment.nextVariableId()).
                         resolve(context);
             }
             TermList genList = new TermListImpl(members, PrologEmptyList.EMPTY_LIST);

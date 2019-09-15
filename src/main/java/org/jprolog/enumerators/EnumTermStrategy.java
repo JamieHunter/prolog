@@ -3,18 +3,16 @@
 //
 package org.jprolog.enumerators;
 
-import org.jprolog.expressions.CompoundTerm;
-import org.jprolog.expressions.Container;
-import org.jprolog.expressions.Term;
-import org.jprolog.expressions.TermList;
 import org.jprolog.constants.AtomicBase;
 import org.jprolog.constants.PrologAtomLike;
 import org.jprolog.constants.PrologStringAsList;
 import org.jprolog.execution.Environment;
-import org.jprolog.variables.UnboundVariable;
+import org.jprolog.expressions.CompoundTerm;
+import org.jprolog.expressions.Container;
+import org.jprolog.expressions.Term;
+import org.jprolog.expressions.TermList;
 import org.jprolog.variables.Variable;
 
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -26,7 +24,6 @@ import java.util.function.Function;
 public abstract class EnumTermStrategy {
     private final Environment environment;
     private final Map<Term, Term> refMap = new IdentityHashMap<>();
-    protected final Map<Long, Variable> varMap = new HashMap<>();
 
     public EnumTermStrategy(Environment environment) {
         this.environment = environment;
@@ -95,66 +92,17 @@ public abstract class EnumTermStrategy {
 
     /**
      * Visit a container term. Safest option is to evaluate contained item.
+     *
      * @param container Prolog container term
      * @return replacement term
      */
     public Term visitContainer(Container container) {
-        Term contained = container.extract();
+        Term contained = container.value();
         if (contained != container) {
             return contained.enumTerm(this);
         } else {
             return contained;
         }
-    }
-
-    /**
-     * Utility - call to rename a variable, cached in variable map.
-     *
-     * @param source Source variable
-     * @return Renamed variable (deduped)
-     */
-    protected Variable renameVariable(Variable source) {
-        return varMap.computeIfAbsent(source.id(), id -> new UnboundVariable(source.name(), environment.nextVariableId()));
-    }
-
-    /**
-     * Utility - call to unbind a variable, cached in variable map.
-     *
-     * @param source Source variable
-     * @return Unbound variable (deduped)
-     */
-    protected Variable unbindVariable(Variable source) {
-        return varMap.computeIfAbsent(source.id(), id -> new UnboundVariable(source.name(), id));
-    }
-
-    /**
-     * Utility - call to bind a variable, cached in variable map.
-     *
-     * @param source Source variable
-     * @return Bound variable (deduped)
-     */
-    protected Variable bindVariable(Variable source) {
-        return varMap.computeIfAbsent(source.id(), id -> environment.getLocalContext().bind(source.name(), id));
-    }
-
-    /**
-     * Utility - simply add the variable
-     *
-     * @param source Source variable
-     * @return variable
-     */
-    protected Variable addVariable(Variable source) {
-        return varMap.computeIfAbsent(source.id(), id -> source);
-    }
-
-    /**
-     * Utility - true if variable has already been seen
-     *
-     * @param source Source variable
-     * @return true if already seen
-     */
-    protected boolean hasVariable(Variable source) {
-        return varMap.containsKey(source.id());
     }
 
     /**

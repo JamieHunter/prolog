@@ -50,7 +50,7 @@ public class CallTest {
         // not just the single term. This also catches an edge case that was failing.
         PrologTypeError err = assertThrows(PrologTypeError.class,
                 () -> given().when("?- call((1;true))."));
-        MatcherAssert.assertThat(err.extract(), Matchers.isCompoundTerm("error",
+        MatcherAssert.assertThat(err.value(), Matchers.isCompoundTerm("error",
                 Matchers.isCompoundTerm("type_error",
                     Matchers.isAtom("callable"),
                     Matchers.isCompoundTerm(";",

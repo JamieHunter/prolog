@@ -79,6 +79,7 @@ public final class UnifyBuilder {
      * @param term Term to unify
      */
     private void unify(Term term) {
+        term = term.value();
         if (term instanceof CompoundTerm) {
             add(new UnifyCompound((CompoundTerm) term));
         } else if (!term.isInstantiated()) {

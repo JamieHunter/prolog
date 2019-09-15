@@ -4,7 +4,7 @@
 package org.jprolog.instructions;
 
 import org.jprolog.execution.CatchPoint;
-import org.jprolog.execution.CutPoint;
+import org.jprolog.cuts.CutPoint;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
 import org.jprolog.execution.InstructionPointer;
@@ -107,7 +107,7 @@ public class ExecCatch extends ExecCall {
         @Override
         public boolean tryCatch(Term thrown) {
             Environment environment = catchContext.environment();
-            thrown = thrown.value(environment);
+            thrown = thrown.value();
             environment.setCatchPoint(parent); // next catch point
             // forced backtrack to here - has to be done prior to unify
             environment.trimBacktrackStackToDepth(backtrackDepth);

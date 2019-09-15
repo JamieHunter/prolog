@@ -132,7 +132,7 @@ public class BagOfTest {
     @Test
     public void testBagOfOverOr() {
         given()
-                // from sec810.pl, resulted in unbound variable casting error
+                // from sec810.pl, resulted in a variable casting error
                 .when("?- bagof(X, (X=Y;X=Z), S).")
                 .assertSuccess()
                 .variable("S", Matchers.isList(Matchers.isUninstantiated(), Matchers.isUninstantiated()))
@@ -150,7 +150,7 @@ public class BagOfTest {
                 .assertFailed();
         given()
                 // from sec810.pl, edge case fails
-                .when("?- setof(X, member(X, [V, U, f(U), f(V)]), [a, b, f(a), f(b)]).")
+                .when("?- setof(X, member(X, [V, U, f(U), f(V)]), [a, b, f(b), f(a)]).")
                 .assertSuccess()
                 .anotherSolution()
                 .assertFailed();

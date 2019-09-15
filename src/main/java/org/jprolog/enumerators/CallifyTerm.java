@@ -3,15 +3,15 @@
 //
 package org.jprolog.enumerators;
 
-import org.jprolog.expressions.CompoundTerm;
-import org.jprolog.expressions.CompoundTermImpl;
-import org.jprolog.expressions.Term;
 import org.jprolog.bootstrap.Interned;
 import org.jprolog.constants.AtomicBase;
 import org.jprolog.constants.PrologAtomInterned;
 import org.jprolog.constants.PrologAtomLike;
 import org.jprolog.exceptions.PrologTypeError;
 import org.jprolog.execution.Environment;
+import org.jprolog.expressions.CompoundTerm;
+import org.jprolog.expressions.CompoundTermImpl;
+import org.jprolog.expressions.Term;
 import org.jprolog.variables.Variable;
 
 import java.util.Optional;
@@ -97,7 +97,7 @@ public class CallifyTerm extends EnumTermStrategy {
         if (trimmed) {
             return variable;
         } else {
-            return new CompoundTermImpl(Interned.CALL_FUNCTOR, unbindVariable(variable));
+            return new CompoundTermImpl(Interned.CALL_FUNCTOR, variable);
         }
     }
 

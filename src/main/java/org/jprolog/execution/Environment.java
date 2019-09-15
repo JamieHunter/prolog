@@ -3,6 +3,8 @@
 //
 package org.jprolog.execution;
 
+import org.jprolog.cuts.CutPoint;
+import org.jprolog.cuts.CutThroughDecision;
 import org.jprolog.exceptions.PrologError;
 import org.jprolog.exceptions.PrologHalt;
 import org.jprolog.exceptions.PrologPermissionError;
@@ -231,9 +233,9 @@ public class Environment {
     };
     private InstructionPointer ip = terminalIP;
     // local localContext used for variable binding
-    private LocalContext localContext = new LocalContext(this, Predication.UNDEFINED, CutPoint.TERMINAL);
+    private LocalContext localContext = new LocalContext(this, Predication.UNDEFINED);
     // how to handle a cut
-    private CutPoint cutPoint = localContext;
+    private CutPoint cutPoint = CutPoint.TERMINAL;
     // current load group
     private LoadGroup loadGroup;
     // break level
@@ -305,7 +307,7 @@ public class Environment {
      * @return new local context
      */
     public LocalContext newLocalContext(Predication predication) {
-        return new LocalContext(this, predication, cutPoint);
+        return new LocalContext(this, predication);
     }
 
     /**
@@ -453,6 +455,14 @@ public class Environment {
     }
 
     /**
+     * Retrieve the watermark of variables introduced for the purpose of cuts.
+     * @return watermark (variables below this were introduced before this point).
+     */
+    public long variableWatermark() {
+        return shared.nextVariableId;
+    }
+
+    /**
      * On (e.g.) exception handling, backtrack stack is reduced to a known point, undoing any operations along the way.
      *
      * @param depth Desired depth (from prior call to {@link #getBacktrackDepth()}).
@@ -573,15 +583,18 @@ public class Environment {
      */
     public void pushDecisionPoint(DecisionPoint decisionPoint) {
         if(debugging) decisionPoint = debuggerHook.acceptDecisionPoint(decisionPoint);
-        cutPoint.markDecisionPoint(backtrackStack.size());
+        if (!cutPoint.handlesDecisionPoint()) {
+            // add a cut handler for first decision point
+            cutPoint = new CutThroughDecision(this, cutPoint, backtrackStack.size());
+        }
         pushBacktrack(decisionPoint);
     }
 
     /**
      * Conditionally add a backtrack
      */
-    public void pushBacktrackIfNotDeterministic(Backtrack backtrack) {
-        if (!cutPoint.isDeterministic()) {
+    public void pushBacktrackIfNotDeterministic(long id, Backtrack backtrack) {
+        if (!cutPoint.isDeterministic(id)) {
             pushBacktrack(backtrack);
         }
     }

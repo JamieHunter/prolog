@@ -3,27 +3,32 @@
 //
 package org.jprolog.enumerators;
 
-import org.jprolog.expressions.Term;
 import org.jprolog.execution.Environment;
+import org.jprolog.execution.LocalContext;
+import org.jprolog.expressions.Term;
+import org.jprolog.variables.ActiveVariable;
+import org.jprolog.variables.LabeledVariable;
 import org.jprolog.variables.Variable;
+
+import java.util.HashMap;
 
 /**
  * Context for copying a tree of terms
  */
-public class CopyTerm extends EnumTermStrategy {
+public class CopyTerm extends CopySimpleTerm {
 
     public CopyTerm(Environment environment) {
         super(environment);
     }
 
     /**
-     * Any variable is replaced with a relabled variable.
+     * Creates an active variable that is unique, but also reused across the term.
      *
-     * @param variable Variable reference
-     * @return relabeld variable.
+     * @param source ActiveVariable to possibly rename
+     * @return Renamed variable (active and referenced in current context)
      */
     @Override
-    public Term visitVariable(Variable variable) {
-        return computeUncachedTerm(variable, t -> renameVariable(variable));
+    protected ActiveVariable renameVariable(ActiveVariable source) {
+        return context.copy((LabeledVariable)super.renameVariable(source));
     }
 }

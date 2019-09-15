@@ -4,7 +4,6 @@
 package org.jprolog.constants;
 
 import org.jprolog.enumerators.EnumTermStrategy;
-import org.jprolog.execution.Environment;
 import org.jprolog.expressions.Container;
 import org.jprolog.expressions.Term;
 import org.jprolog.io.WriteContext;
@@ -30,7 +29,7 @@ public class PrologEOF extends AtomicBase implements Container {
      */
     @Override
     public PrologAtomInterned get() {
-        return extract();
+        return value();
     }
 
     /**
@@ -38,17 +37,7 @@ public class PrologEOF extends AtomicBase implements Container {
      */
     @Override
     public String toString() {
-        return extract().name();
-    }
-
-    /**
-     * Retrieve the underlying atom
-     *
-     * @return atom
-     */
-    @Override
-    public Term value(Environment environment) {
-        return extract();
+        return value().name();
     }
 
     /**
@@ -56,7 +45,7 @@ public class PrologEOF extends AtomicBase implements Container {
      */
     @Override
     public void write(WriteContext context) throws IOException {
-        value(context.environment()).write(context);
+        value().write(context);
     }
 
     /**
@@ -71,7 +60,7 @@ public class PrologEOF extends AtomicBase implements Container {
      * {@inheritDoc}
      */
     @Override
-    public PrologAtomInterned extract() {
+    public PrologAtomInterned value() {
         return Io.END_OF_FILE;
     }
 }

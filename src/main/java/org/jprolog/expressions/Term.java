@@ -69,7 +69,7 @@ public interface Term extends Comparable<Term> {
     }
 
     /**
-     * Returns true if all variables have been bound and instantiated.
+     * Returns true if all variables have been instantiated.
      *
      * @return true if grounded
      */
@@ -102,10 +102,9 @@ public interface Term extends Comparable<Term> {
      * Convert this term into a value suitable for unification or instantiation. Container terms require value to
      * be called to decontainerize the value.
      *
-     * @param environment Environment for any environment-specific conversions
      * @return unifiable term
      */
-    default Term value(Environment environment) {
+    default Term value() {
         return this;
     }
 
@@ -119,10 +118,11 @@ public interface Term extends Comparable<Term> {
     }
 
     /**
-     * No-op if grounded and not a container. In other cases, attempts to convert the term into a grounded value.
+     * No-op if grounded and not a container. In other cases, it will (a) remove containers, (b) activate labeled
+     * variables, (c) replace terms with grounded versions if possible.
      *
-     * @param context binding context (used e.g. to create a bound variable)
-     * @return resolved term, after replacing all instantiated variables and values.
+     * @param context binding context (used to replace labeled variables with active variables)
+     * @return resolved term.
      */
     Term resolve(LocalContext context);
 

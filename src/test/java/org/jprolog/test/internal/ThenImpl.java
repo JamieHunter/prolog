@@ -16,7 +16,7 @@ import org.jprolog.io.LogicalStream;
 import org.jprolog.library.Dictionary;
 import org.jprolog.test.StreamUtils;
 import org.jprolog.test.Then;
-import org.jprolog.variables.BoundVariable;
+import org.jprolog.variables.ActiveVariable;
 
 import java.util.Collections;
 import java.util.Map;
@@ -33,16 +33,16 @@ public class ThenImpl implements Then {
     private final StateImpl state;
     private Query query;
     private ExecutionState lastExec = null;
-    private Map<String, BoundVariable> vars = Collections.emptyMap();
+    private Map<String, ActiveVariable> vars = Collections.emptyMap();
 
     @Override
     public Term getVariableValue(String name) {
-        BoundVariable var = vars.get(name);
+        ActiveVariable var = vars.get(name);
         LocalContext throwAway = state.environment().newLocalContext();
         if (var == null) {
-            var = new BoundVariable(throwAway, name, 0);
+            var = new ActiveVariable(state.environment(), name, state.environment().nextVariableId());
         }
-        return var.resolve(throwAway).value(state.environment()); // make sure all recursive variables are resolved.
+        return var.resolve(throwAway).value(); // make sure all recursive variables are resolved.
     }
 
     ThenImpl(StateImpl state) {

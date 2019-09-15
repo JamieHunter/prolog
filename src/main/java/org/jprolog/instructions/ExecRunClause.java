@@ -5,8 +5,8 @@ package org.jprolog.instructions;
 
 import org.jprolog.bootstrap.Interned;
 import org.jprolog.constants.PrologAtomLike;
+import org.jprolog.cuts.ClauseCutBarrier;
 import org.jprolog.exceptions.PrologExistenceError;
-import org.jprolog.execution.CutPoint;
 import org.jprolog.execution.DecisionPointImpl;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
@@ -101,35 +101,6 @@ public class ExecRunClause implements Instruction {
         }
     }
 
-    private static class CutProxy implements CutPoint {
-        Environment environment;
-        CutPoint parent;
-        int cutDepth;
-
-        private CutProxy(Environment environment, CutPoint parent, int cutDepth) {
-            this.environment = environment;
-            this.parent = parent;
-            this.cutDepth = cutDepth;
-        }
-
-        @Override
-        public void cut() {
-            parent.cut(); // cut parent first
-            environment.cutBacktrackStack(cutDepth); // remove this decision point
-            environment.setCutPoint(parent); // future cut only needs to work on context
-        }
-
-        @Override
-        public void markDecisionPoint(int depth) {
-            parent.markDecisionPoint(depth);
-        }
-
-        @Override
-        public boolean isDeterministic() {
-            return parent.isDeterministic();
-        }
-    }
-
     /**
      * Main clause iterator with state. This is kept on the backtracking stack.
      */
@@ -139,6 +110,7 @@ public class ExecRunClause implements Instruction {
         final Predication key;
         final CompoundTerm source;
         final ClauseEntry[] clauses;
+        final long variableWatermark;
         int index = 0;
 
         private ClauseIterator(Environment environment, CompoundTerm source, Predication key, ClauseEntry[] clauses, Term boundTerm) {
@@ -147,6 +119,7 @@ public class ExecRunClause implements Instruction {
             this.key = key;
             this.term = boundTerm; // save the bound version of this structure
             this.clauses = clauses; // already a copy, no need to clone
+            this.variableWatermark = environment.variableWatermark();
         }
 
         /**
@@ -173,12 +146,10 @@ public class ExecRunClause implements Instruction {
             // Local context to use for execution of this clause
             LocalContext newContext = environment.newLocalContext(key); // chains cut-point from newContext to active
             environment.setLocalContext(newContext);
+            environment.setCutPoint(new ClauseCutBarrier(environment, environment.getCutPoint(), variableWatermark));
             if (index != clauses.length) {
-                CutProxy cutProxy = new CutProxy(environment, newContext, environment.getBacktrackDepth());
+                // not deterministic (this will introduce a new CutPoint entry)
                 environment.pushDecisionPoint(this); // updates parent cut scope as needed
-                environment.setCutPoint(cutProxy); // this object will handle cut for newContext
-            } else {
-                environment.setCutPoint(newContext); // tail-call style cut handling
             }
             // Tail-call detection
             if (environment.getIP() instanceof RestoresLocalContext) {

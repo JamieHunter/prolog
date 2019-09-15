@@ -79,7 +79,7 @@ public interface CompoundTerm extends Term {
      * {@inheritDoc}
      */
     @Override
-    default CompoundTerm value(Environment environment) {
+    default CompoundTerm value() {
         return this;
     }
 

@@ -27,28 +27,30 @@ public class TailCallRecursionTest {
     @Test
     public void testTailCall() {
         // Straight forward tail-call. Eliminates most of call and backtrack stacks
-        givenTailCall().when("?- !(5,X).")
-                .variable("X", Matchers.isInteger(120))
-                // call(1) = clause-end for !(5,X)
+        givenTailCall().when("?- !(10,X).")
+                .variable("X", Matchers.isInteger(3628800))
+                // call(1) = clause-end for !(10,X)
                 // call(0) = terminal
                 .callDepth(equalTo(3))
+                // backtrack(3) = coreference variable binding
                 // backtrack(2) = X binding for !(1,X,X)
                 // backtrack(1) = !(1,X,X) which also matches !(P,Q,R)
                 // backtrack(0) = terminal
-                .backtrackDepth(equalTo(3));
+                .backtrackDepth(equalTo(4));
     }
 
     @Test
     public void testTailCallCall() {
         // If the tail is wrapped in a call. Call adds no additional overhead to backtrack stacks.
-        givenTailCallCall().when("?- !(5,X).")
-                .variable("X", Matchers.isInteger(120))
-                // call(1) = clause-end for !(5,X)
+        givenTailCallCall().when("?- !(10,X).")
+                .variable("X", Matchers.isInteger(3628800))
+                // call(1) = clause-end for !(10,X)
                 // call(0) = terminal
                 .callDepth(equalTo(3))
+                // backtrack(3) = coreference variable binding
                 // backtrack(2) = X binding for !(1,X,X)
                 // backtrack(1) = !(1,X,X) which also matches !(P,Q,R)
                 // backtrack(0) = terminal
-                .backtrackDepth(equalTo(3));
+                .backtrackDepth(equalTo(4));
     }
 }

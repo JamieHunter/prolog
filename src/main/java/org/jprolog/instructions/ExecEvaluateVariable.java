@@ -13,7 +13,7 @@ import org.jprolog.functions.CompileMathExpression;
 import org.jprolog.variables.Variable;
 
 /**
- * Put a value that needs to be bound and resolved during runtime onto the stack. Value is required to be a number.
+ * Put a value that needs to be resolved during runtime onto the stack. Value is required to be a number.
  */
 public class ExecEvaluateVariable implements Instruction {
 
