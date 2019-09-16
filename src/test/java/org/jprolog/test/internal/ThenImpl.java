@@ -161,6 +161,21 @@ public class ThenImpl implements Then {
     }
 
     @Override
+    public Then solutions(Consumer<Then> ... solutions) {
+        if (solutions.length == 0) {
+            // alias for assert Failed
+            return assertFailed();
+        }
+        for(int soln = 0; soln < solutions.length; soln ++) {
+            assertSuccess();
+            solutions[soln].accept(this);
+            anotherSolution();
+        }
+        assertFailed();
+        return this;
+    }
+
+    @Override
     public OutputMonitor getTextLog(String alias) {
         return state.getTextLog(alias);
     }

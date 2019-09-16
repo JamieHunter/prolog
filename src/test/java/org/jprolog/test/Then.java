@@ -90,6 +90,12 @@ public interface Then {
     Then anotherSolution();
 
     /**
+     * Iterate all solutions.
+     * @return self
+     */
+    Then solutions(Consumer<Then>... solutions);
+
+    /**
      * Retrieve a '##text_log' textual monitor
      * @param alias Alias as when text_log was created
      * @return monitor
