@@ -3,6 +3,7 @@
 //
 package org.jprolog.execution;
 
+import org.jprolog.callstack.ResumableExecutionPoint;
 import org.jprolog.cuts.CutPoint;
 
 import java.util.ListIterator;
@@ -13,15 +14,15 @@ import java.util.ListIterator;
  */
 public abstract class DecisionPointImpl implements DecisionPoint {
 
-    private final InstructionPointer[] stack;
     protected final Environment environment;
     protected final LocalContext decisionContext;
     protected final CatchPoint catchPoint;
     protected final CutPoint cutPoint;
+    protected final ResumableExecutionPoint executionPoint;
 
     /**
      * Create a new decision point associated with the environment. At time decision point is created, the local context,
-     * the catch point, the cut depth and the call stack are all snapshot and reused on each iteration of the decision
+     * the catch point, the cut depth and execution are all snapshot and reused on each iteration of the decision
      * point.
      *
      * @param environment Execution environment
@@ -31,7 +32,7 @@ public abstract class DecisionPointImpl implements DecisionPoint {
         this.decisionContext = environment.getLocalContext();
         this.catchPoint = environment.getCatchPoint();
         this.cutPoint = environment.getCutPoint();
-        this.stack = environment.constructStack();
+        this.executionPoint = environment.getExecution().freeze();
     }
 
     /**
@@ -41,7 +42,7 @@ public abstract class DecisionPointImpl implements DecisionPoint {
         environment.setCutPoint(cutPoint);
         environment.setCatchPoint(catchPoint);
         environment.setLocalContext(decisionContext);
-        environment.restoreStack(stack);
+        environment.setExecution(executionPoint);
     }
 
     /**

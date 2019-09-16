@@ -3,10 +3,11 @@
 //
 package org.jprolog.instructions;
 
+import org.jprolog.callstack.ActiveExecutionPoint;
+import org.jprolog.callstack.ResumableExecutionPoint;
 import org.jprolog.execution.CompileContext;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
-import org.jprolog.execution.InstructionIterator;
 import org.jprolog.expressions.Term;
 import org.jprolog.library.Control;
 
@@ -38,6 +39,15 @@ public final class ExecBlock implements Instruction {
             Instruction tail = instructions.remove(instructions.size() - 1);
             return new ExecBlock(instructions, tail);
         }
+    }
+
+    /**
+     * Retrieve a version without tail-call elimination
+     * @param instructions Block of instructions
+     * @return Complete block
+     */
+    public static ExecBlock debuggable(ArrayList<Instruction> instructions) {
+        return new ExecBlock(instructions, Control.TRUE);
     }
 
     /**
@@ -90,36 +100,91 @@ public final class ExecBlock implements Instruction {
      * @param environment Execution environment
      */
     public void invoke(Environment environment) {
-        environment.callIP(new BlockIterator(environment));
+        environment.setExecution(new Instance(environment, block, tail).start());
     }
 
     /**
-     * Simple block iterator. Note that this iterator will pop the stack immediately BEFORE executing the last
-     * (tail) instruction.
+     * Instance defines this instance of a block (in response to an invoke). freeze/active will return two
+     * sub-objects depending on state.
      */
-    private class BlockIterator extends InstructionIterator {
-        int iter = 0;
+    private static class Instance {
+        final Environment environment;
+        final Instruction [] block;
+        final Instruction tail;
+        final ResumableExecutionPoint previous;
 
-        BlockIterator(Environment environment) {
-            super(environment);
+        Instance(Environment environment, Instruction [] block, Instruction tail) {
+            this.environment = environment;
+            this.block = block;
+            this.tail = tail;
+            this.previous = environment.getExecution().freeze();
         }
 
-        /**
-         * Progress forward through the block.
-         */
-        @Override
-        public void next() {
-            if (iter == block.length) {
-                // we are at end of block except for tail
-                // restore previous IP, no need to keep this
-                // and continue execution at tail
-                // This is a critical part of tail-call elimination, and assumes
-                // recursion will typically occur at the tail.
-                environment.restoreIP();
-                tail.invoke(environment);
-            } else {
-                // iterating block
-                block[iter++].invoke(environment);
+        ActiveExecutionPoint start() {
+            return new Active(0);
+        }
+
+        public class Frozen implements ResumableExecutionPoint {
+
+            final int iter;
+
+            Frozen(int iter) {
+                this.iter = iter;
+            }
+
+            @Override
+            public Object id() {
+                return Instance.this;
+            }
+
+            @Override
+            public ActiveExecutionPoint activate() {
+                return new Active(iter);
+            }
+
+            @Override
+            public ResumableExecutionPoint previousExecution() {
+                return previous;
+            }
+        }
+
+        public class Active implements ActiveExecutionPoint {
+
+            int iter;
+
+            Active(int iter) {
+                this.iter = iter;
+            }
+
+            @Override
+            public Object id() {
+                return Instance.this;
+            }
+
+            @Override
+            public ResumableExecutionPoint freeze() {
+                return new Frozen(iter);
+            }
+
+            @Override
+            public ResumableExecutionPoint previousExecution() {
+                return previous;
+            }
+
+            @Override
+            public void invokeNext() {
+                if (iter == block.length) {
+                    // we are at end of block except for tail
+                    // restore previous execution, no need to keep this
+                    // and continue execution at tail
+                    // This is a critical part of tail-call elimination, and assumes
+                    // recursion will typically occur at the tail.
+                    environment.setExecution(previous);
+                    tail.invoke(environment);
+                } else {
+                    // iterating block
+                    block[iter++].invoke(environment);
+                }
             }
         }
     }

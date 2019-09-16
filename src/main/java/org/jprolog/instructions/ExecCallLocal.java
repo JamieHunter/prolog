@@ -3,11 +3,12 @@
 //
 package org.jprolog.instructions;
 
+import org.jprolog.callstack.ImmutableExecutionPoint;
+import org.jprolog.callstack.ResumableExecutionPoint;
 import org.jprolog.cuts.ClauseCutBarrier;
 import org.jprolog.cuts.CutPoint;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
-import org.jprolog.execution.InstructionPointer;
 import org.jprolog.execution.LocalContext;
 
 /**
@@ -30,27 +31,39 @@ public class ExecCallLocal implements Instruction {
         EndLocalScope callScope = new EndLocalScope(environment);
         environment.setLocalContext(newContext);
         environment.setCutPoint(barrier);
-        environment.callIP(callScope);
+        environment.setExecution(callScope);
         instruction.invoke(environment);
     }
 
-    private static class EndLocalScope implements InstructionPointer {
+    private static class EndLocalScope implements ImmutableExecutionPoint {
 
         private final Environment environment;
+        private final ResumableExecutionPoint previous;
         private final LocalContext savedContext;
         private final CutPoint savedCut;
 
         EndLocalScope(Environment environment) {
             this.environment = environment;
+            this.previous = environment.getExecution().freeze();
             this.savedContext = environment.getLocalContext();
             this.savedCut = environment.getCutPoint();
         }
 
         @Override
-        public void next() {
+        public void invokeNext() {
             environment.setCutPoint(savedCut);
             environment.setLocalContext(savedContext);
-            environment.restoreIP();
+            environment.setExecution(previous);
+        }
+
+        @Override
+        public Object id() {
+            return this;
+        }
+
+        @Override
+        public ResumableExecutionPoint previousExecution() {
+            return previous;
         }
     }
 

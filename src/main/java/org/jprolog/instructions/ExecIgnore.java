@@ -25,7 +25,7 @@ public class ExecIgnore extends ExecCall {
     protected void preCall(Environment environment) {
         // protective cut-scope for the expression being called
         LocalContext context = environment.getLocalContext();
-        environment.callIP(new EndIgnoreScope(environment));
+        environment.setExecution(new EndIgnoreScope(environment));
         // A decision point before the "cut" will handle backtracking to effect an ignore
         environment.pushDecisionPoint(new OnBacktrack(environment));
     }
@@ -41,9 +41,9 @@ public class ExecIgnore extends ExecCall {
         }
 
         @Override
-        public void next() {
+        public void invokeNext() {
             cut();
-            super.next();
+            super.invokeNext();
         }
     }
 
@@ -60,7 +60,7 @@ public class ExecIgnore extends ExecCall {
         public void redo() {
             // stack is just prior to this decision point being pushed
             // remove the OnForward() entry point
-            environment.restoreIP();
+            environment.setExecution(environment.getExecution().previousExecution());
             environment.forward();
         }
     }

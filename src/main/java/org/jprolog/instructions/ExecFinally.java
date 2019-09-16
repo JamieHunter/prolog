@@ -46,11 +46,11 @@ public class ExecFinally extends ExecCall {
         CatchHandler catchHandler = new CatchHandler(environment);
         environment.setCatchPoint(catchHandler);
         // A return IP will handle forward progress for the then case
-        environment.callIP(new OnForward(environment, catchHandler));
+        environment.setExecution(new OnForward(environment, catchHandler));
         // A decision point before the "cut" will handle backtracking for the else case
         environment.pushDecisionPoint(new OnBacktrack(environment));
         // protective cut-scope for the condition expression being called
-        environment.callIP(new ConstrainedCutPoint(environment));
+        environment.setExecution(new ConstrainedCutPoint(environment));
         if (onBefore != null) {
             onBefore.invoke(environment);
         }
@@ -69,12 +69,12 @@ public class ExecFinally extends ExecCall {
         }
 
         @Override
-        public void next() {
+        public void invokeNext() {
             // remove the decision point
             // Effectively "once", but also prevents the inversion of fail to success
             cut();
             catchHandler.restore();
-            super.next();
+            super.invokeNext();
             onFinally.invoke(environment);
         }
     }

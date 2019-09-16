@@ -4,13 +4,13 @@
 package org.jprolog.instructions;
 
 import org.jprolog.bootstrap.Interned;
+import org.jprolog.callstack.ResumableExecutionPoint;
 import org.jprolog.constants.PrologAtomLike;
 import org.jprolog.cuts.ClauseCutBarrier;
 import org.jprolog.exceptions.PrologExistenceError;
 import org.jprolog.execution.DecisionPointImpl;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
-import org.jprolog.execution.InstructionPointer;
 import org.jprolog.execution.LocalContext;
 import org.jprolog.execution.RestoresLocalContext;
 import org.jprolog.expressions.CompoundTerm;
@@ -44,7 +44,7 @@ public class ExecRunClause implements Instruction {
     /**
      * {@inheritDoc}
      */
-    public CompoundTerm reflect() {
+    private CompoundTerm reflect() {
         return term;
     }
 
@@ -83,21 +83,31 @@ public class ExecRunClause implements Instruction {
      */
     private static class ClauseEnd implements RestoresLocalContext {
 
+        final Environment environment;
+        final ResumableExecutionPoint previous;
         final ClauseIterator iter;
 
-        private ClauseEnd(ClauseIterator iter) {
+        private ClauseEnd(Environment environment, ClauseIterator iter) {
+            this.environment = environment;
+            this.previous = environment.getExecution().freeze();
             this.iter = iter;
         }
 
         @Override
-        public void next() {
+        public void invokeNext() {
             // set up for resuming clause
+            environment.setExecution(previous);
             iter.handleEndOfClause();
         }
 
         @Override
-        public InstructionPointer copy() {
+        public Object id() {
             return this;
+        }
+
+        @Override
+        public ResumableExecutionPoint previousExecution() {
+            return previous;
         }
     }
 
@@ -129,7 +139,6 @@ public class ExecRunClause implements Instruction {
             environment.setLocalContext(decisionContext);
             environment.setCatchPoint(catchPoint);
             environment.setCutPoint(cutPoint);
-            environment.restoreIP();
         }
 
         /**
@@ -152,12 +161,9 @@ public class ExecRunClause implements Instruction {
                 environment.pushDecisionPoint(this); // updates parent cut scope as needed
             }
             // Tail-call detection
-            if (environment.getIP() instanceof RestoresLocalContext) {
-                // Eliminate below call. We know context and scope will be restored
-                // in an outer context, so no need to restore it here
-            } else {
+            if (!(environment.getExecution() instanceof RestoresLocalContext)) {
                 // on return, restore the context (can be eliminated)
-                environment.callIP(new ClauseEnd(this));
+                environment.setExecution(new ClauseEnd(environment, this));
             }
 
             // First attempt to unify

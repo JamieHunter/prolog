@@ -3,9 +3,11 @@
 //
 package org.jprolog.execution;
 
+import org.jprolog.callstack.ImmutableExecutionPoint;
+
 /**
- * This is an IP that we can assume restores LocalContext and Scope. This allows
+ * This is an immutable execution point that we can assume restores LocalContext and Scope. This allows
  * tail-call elimination.
  */
-public interface RestoresLocalContext extends InstructionPointer {
+public interface RestoresLocalContext extends ImmutableExecutionPoint {
 }

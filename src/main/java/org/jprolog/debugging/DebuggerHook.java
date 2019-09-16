@@ -3,11 +3,11 @@
 //
 package org.jprolog.debugging;
 
+import org.jprolog.callstack.ExecutionPoint;
 import org.jprolog.execution.CompileContext;
 import org.jprolog.execution.DecisionPoint;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
-import org.jprolog.execution.InstructionPointer;
 
 /**
  * Interface that allows a debugger to hook into debugger execution
@@ -21,9 +21,7 @@ public interface DebuggerHook {
 
     DecisionPoint acceptDecisionPoint(DecisionPoint decisionPoint);
 
-    void acceptIP(InstructionPointer ip);
-
-    void leaveIP(InstructionPointer ip);
+    void setExecution(ExecutionPoint ip);
 
     CompileContext newCompileContext(Environment.Shared shared);
 }

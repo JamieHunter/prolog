@@ -42,7 +42,7 @@ public class StateImpl {
         TestEnvironment() {
             // The ##call_depth predicate captures call stack depth
             setBuiltinPredicate(internAtom("##call_depth"), 0,
-                    new BuiltinPredicateArity0(e -> callDepth = e.getCallStackDepth()));
+                    new BuiltinPredicateArity0(e -> callDepth = (int)e.getCallStack().count()));
             // The ##backtrack_depth predicate captures backtrack stack depth
             setBuiltinPredicate(internAtom("##backtrack_depth"), 0,
                     new BuiltinPredicateArity0(e -> backtrackDepth = e.getBacktrackDepth()));

@@ -9,6 +9,7 @@ import org.jprolog.execution.Instruction;
 import org.jprolog.expressions.CompoundTerm;
 import org.jprolog.expressions.CompoundTermImpl;
 import org.jprolog.expressions.Term;
+import org.jprolog.instructions.ExecBlock;
 import org.jprolog.instructions.ExecCall;
 import org.jprolog.predicates.ClauseEntry;
 import org.jprolog.predicates.Predication;
@@ -64,8 +65,8 @@ public class DebuggingCompileContext extends CompileContext {
      * @return block instruction
      */
     @Override
-    public ExecDebugClauseBlock toInstruction(ClauseEntry entry) {
-        return ExecDebugClauseBlock.from(entry, instructions);
+    public ExecBlock toInstruction(ClauseEntry entry) {
+        return ExecBlock.debuggable(instructions);
     }
 
     private Predication.Interned predication(CompoundTerm source) {

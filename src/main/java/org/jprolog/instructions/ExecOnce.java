@@ -22,7 +22,7 @@ public class ExecOnce extends ExecCall {
     @Override
     protected void preCall(Environment environment) {
         // protective cut-scope for the expression being called
-        environment.callIP(new EndOnceScope(environment));
+        environment.setExecution(new EndOnceScope(environment));
     }
 
     /**
@@ -37,9 +37,9 @@ public class ExecOnce extends ExecCall {
         }
 
         @Override
-        public void next() {
+        public void invokeNext() {
             cut();
-            super.next();
+            super.invokeNext();
         }
     }
 

@@ -3,11 +3,11 @@
 //
 package org.jprolog.debugging;
 
+import org.jprolog.callstack.ExecutionPoint;
 import org.jprolog.execution.CompileContext;
 import org.jprolog.execution.DecisionPoint;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
-import org.jprolog.execution.InstructionPointer;
 
 /**
  * Stub that is used when debugger is inactive
@@ -41,11 +41,7 @@ public class NoDebugger implements DebuggerHook {
     }
 
     @Override
-    public void acceptIP(InstructionPointer ip) {
-    }
-
-    @Override
-    public void leaveIP(InstructionPointer ip) {
+    public void setExecution(ExecutionPoint ip) {
     }
 
     @Override

@@ -3,13 +3,33 @@
 //
 package org.jprolog.execution;
 
+import org.jprolog.bootstrap.Builtins;
+import org.jprolog.bootstrap.DefaultIoBinding;
+import org.jprolog.bootstrap.Interned;
+import org.jprolog.bootstrap.Operators;
+import org.jprolog.callstack.ActiveExecutionPoint;
+import org.jprolog.callstack.ExecutionPoint;
+import org.jprolog.callstack.ExecutionSpliterator;
+import org.jprolog.callstack.ExecutionTerminal;
+import org.jprolog.callstack.ResumableExecutionPoint;
+import org.jprolog.constants.Atomic;
+import org.jprolog.constants.PrologAtomInterned;
+import org.jprolog.constants.PrologInteger;
 import org.jprolog.cuts.CutPoint;
 import org.jprolog.cuts.CutThroughDecision;
+import org.jprolog.debugging.ActiveDebugger;
+import org.jprolog.debugging.DebuggerHook;
+import org.jprolog.debugging.NoDebugger;
+import org.jprolog.debugging.SpyPoints;
 import org.jprolog.exceptions.PrologError;
 import org.jprolog.exceptions.PrologHalt;
 import org.jprolog.exceptions.PrologPermissionError;
 import org.jprolog.expressions.Term;
+import org.jprolog.flags.CloseOptions;
+import org.jprolog.flags.PrologFlags;
 import org.jprolog.functions.StackFunction;
+import org.jprolog.io.LogicalStream;
+import org.jprolog.parser.CharConverter;
 import org.jprolog.predicates.BuiltInPredicate;
 import org.jprolog.predicates.ClauseSearchPredicate;
 import org.jprolog.predicates.DemandLoadPredicate;
@@ -18,21 +38,6 @@ import org.jprolog.predicates.MissingPredicate;
 import org.jprolog.predicates.PredicateDefinition;
 import org.jprolog.predicates.Predication;
 import org.jprolog.predicates.VarArgDefinition;
-import org.jprolog.bootstrap.Builtins;
-import org.jprolog.bootstrap.DefaultIoBinding;
-import org.jprolog.bootstrap.Interned;
-import org.jprolog.bootstrap.Operators;
-import org.jprolog.constants.Atomic;
-import org.jprolog.constants.PrologAtomInterned;
-import org.jprolog.constants.PrologInteger;
-import org.jprolog.debugging.ActiveDebugger;
-import org.jprolog.debugging.DebuggerHook;
-import org.jprolog.debugging.NoDebugger;
-import org.jprolog.debugging.SpyPoints;
-import org.jprolog.flags.CloseOptions;
-import org.jprolog.flags.PrologFlags;
-import org.jprolog.io.LogicalStream;
-import org.jprolog.parser.CharConverter;
 import org.jprolog.utility.TrackableList;
 
 import java.io.IOException;
@@ -45,8 +50,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Spliterator;
 import java.util.TreeMap;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Runtime environment of Prolog. Note that in the current version, Environments are not thread safe. That is, only
@@ -175,6 +182,7 @@ public class Environment {
 
         /**
          * Enumerate all known predicates as a stream.
+         *
          * @return All predicates as a stream.
          */
         public Stream<Map.Entry<Predication.Interned, PredicateDefinition>> allPredicates() {
@@ -183,7 +191,7 @@ public class Environment {
 
         private void abortReset(Environment environment) {
             CloseOptions options = new CloseOptions(environment, null);
-            for(LogicalStream stream : streamById.values()) {
+            for (LogicalStream stream : streamById.values()) {
                 if (stream.getCloseOnAbort()) {
                     try {
                         stream.close(environment, options);
@@ -198,7 +206,6 @@ public class Environment {
     // shared state between related environments
     private final Shared shared;
     // stacks
-    private final LinkedList<InstructionPointer> callStack = new LinkedList<>();
     private final LinkedList<Backtrack> backtrackStack = new LinkedList<>();
     private final LinkedList<Term> dataStack = new LinkedList<>();
     // active streams
@@ -219,7 +226,7 @@ public class Environment {
     // state
     private ExecutionState executionState = ExecutionState.FORWARD;
     // terminals
-    private final InstructionPointer terminalIP = () -> executionState = ExecutionState.SUCCESS;
+    private final ExecutionTerminal terminalIP = new ExecutionTerminal(() -> executionState = ExecutionState.SUCCESS);
     private final Backtrack backtrackTerminal = new Backtrack() {
         @Override
         public String toString() {
@@ -231,7 +238,7 @@ public class Environment {
             executionState = ExecutionState.FAILED;
         }
     };
-    private InstructionPointer ip = terminalIP;
+    private ActiveExecutionPoint execution = terminalIP;
     // local localContext used for variable binding
     private LocalContext localContext = new LocalContext(this, Predication.UNDEFINED);
     // how to handle a cut
@@ -283,7 +290,7 @@ public class Environment {
     }
 
     /**
-     *  Abort-time behavior
+     * Abort-time behavior
      */
     public void abortReset() {
         this.inputStream = this.defaultInputStream;
@@ -361,29 +368,21 @@ public class Environment {
     }
 
     /**
-     * Restore IP from stack (return).
-     */
-    public void restoreIP() {
-        if (debugging) debuggerHook.leaveIP(ip);
-        ip = callStack.pop();
-    }
-
-    /**
-     * Push IP and Change IP (Call).
+     * Change execution
      *
-     * @param ip New IP
+     * @param ep New Execution Point
      */
-    public void callIP(InstructionPointer ip) {
-        if (debugging) debuggerHook.acceptIP(ip);
-        callStack.push(this.ip);
-        this.ip = ip;
+    public void setExecution(ExecutionPoint ep) {
+        ActiveExecutionPoint aep = ep.activate();
+        if (debugging) debuggerHook.setExecution(aep);
+        this.execution = aep;
     }
 
     /**
-     * @return current IP
+     * @return current execution context
      */
-    public InstructionPointer getIP() {
-        return this.ip;
+    public ActiveExecutionPoint getExecution() {
+        return this.execution;
     }
 
     /**
@@ -405,19 +404,11 @@ public class Environment {
     }
 
     /**
-     * Depth of IP stack.
-     *
-     * @return depth
-     */
-    public int getCallStackDepth() {
-        return callStack.size();
-    }
-
-    /**
+     * @param inclusive Include current executing (as if it was pushed).
      * @return Iterable list of call stack
      */
-    public List<InstructionPointer> getCallStack() {
-        return Collections.unmodifiableList(callStack);
+    public Stream<ResumableExecutionPoint> getCallStack() {
+        return StreamSupport.stream(new ExecutionSpliterator(execution), false);
     }
 
     /**
@@ -456,6 +447,7 @@ public class Environment {
 
     /**
      * Retrieve the watermark of variables introduced for the purpose of cuts.
+     *
      * @return watermark (variables below this were introduced before this point).
      */
     public long variableWatermark() {
@@ -480,45 +472,6 @@ public class Environment {
         while (dataStack.size() > depth) {
             dataStack.pop();
         }
-    }
-
-    /**
-     * Capture return stack at decision point.
-     *
-     * @return snapshot of stack for future call to {@link #restoreStack(InstructionPointer[])}.
-     */
-    public InstructionPointer[] constructStack() {
-        // TODO: potential point of optimization.
-        InstructionPointer[] stack = new InstructionPointer[callStack.size() + 1];
-        stack[0] = ip.copy();
-        int i = 1;
-        // copy stack
-        // Copy is required here for 2nd and subsequent backtrack visits to behave
-        // correctly. That is, the copied state is independent of the current stack
-        // state.
-        // Where possible, copy is a NO-OP.
-        ListIterator<InstructionPointer> iter = callStack.listIterator(0);
-        while (i < stack.length) {
-            stack[i++] = iter.next().copy();
-        }
-        return stack;
-    }
-
-    /**
-     * Restore stack at decision point.
-     *
-     * @param stack Captured snapshot from prior call to {@link #constructStack()}.
-     */
-    public void restoreStack(InstructionPointer[] stack) {
-        // Current implementations restores stack completely.
-        callStack.clear();
-        // Copy is required here for 3rd and subsequent backtrack visits to behave
-        // correctly. That is, the restored state is independent of the saved state.
-        // Where possible, copy is a NO-OP.
-        for (int i = stack.length - 1; i > 0; i--) {
-            callStack.push(stack[i].copy());
-        }
-        ip = stack[0].copy();
     }
 
     /**
@@ -582,7 +535,7 @@ public class Environment {
      * @param decisionPoint New decision point
      */
     public void pushDecisionPoint(DecisionPoint decisionPoint) {
-        if(debugging) decisionPoint = debuggerHook.acceptDecisionPoint(decisionPoint);
+        if (debugging) decisionPoint = debuggerHook.acceptDecisionPoint(decisionPoint);
         if (!cutPoint.handlesDecisionPoint()) {
             // add a cut handler for first decision point
             cutPoint = new CutThroughDecision(this, cutPoint, backtrackStack.size());
@@ -649,10 +602,9 @@ public class Environment {
      */
     public void reset() {
         forward();
-        callStack.clear();
         backtrackStack.clear();
         dataStack.clear();
-        ip = terminalIP;
+        execution = terminalIP;
         backtrackStack.push(backtrackTerminal);
         catchPoint = CatchPoint.TERMINAL;
     }
@@ -667,7 +619,7 @@ public class Environment {
         for (; ; ) {
             try {
                 while (executionState == ExecutionState.FORWARD) {
-                    ip.next();
+                    execution.invokeNext();
                 }
                 while (executionState == ExecutionState.BACKTRACK) {
                     backtrackStack.poll().backtrack();

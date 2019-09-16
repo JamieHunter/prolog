@@ -5,6 +5,8 @@ package org.jprolog.debugging;
 
 import org.jprolog.bootstrap.DefaultIoBinding;
 import org.jprolog.bootstrap.Interned;
+import org.jprolog.callstack.ExecutionPoint;
+import org.jprolog.callstack.ResumableExecutionPoint;
 import org.jprolog.cli.Run;
 import org.jprolog.constants.PrologAtomInterned;
 import org.jprolog.constants.PrologEOF;
@@ -14,7 +16,6 @@ import org.jprolog.execution.CompileContext;
 import org.jprolog.execution.DecisionPoint;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
-import org.jprolog.execution.InstructionPointer;
 import org.jprolog.execution.Query;
 import org.jprolog.expressions.CompoundTerm;
 import org.jprolog.expressions.CompoundTermImpl;
@@ -153,35 +154,33 @@ public class ActiveDebugger implements DebuggerHook {
     }
 
     /**
-     * Called when new IP has been pushed. This implicitly means that the scope has been deferred until the IP is
-     * resumed.
+     * Called when transferring to a new execution point
      *
-     * @param ip New instruction pointer
-     * @return decorated instruction pointer
+     * @param ip New execution point
      */
     @Override
-    public void acceptIP(InstructionPointer ip) {
+    public void setExecution(ExecutionPoint ip) {
         if (prologThis.instructionContext() != InstructionContext.NULL && port != ExecutionPort.DEFERRED) {
             // consider ip to be either (a) the execution block for the current instruction, or
             // (b) special return context. In either case, leaving ip (see restore) amounts to an exit
-            exitMap.put(ip.ref(), prologThis);
+            exitMap.put(ip.id(), prologThis);
             port = ExecutionPort.DEFERRED;
         }
     }
-
-    /**
-     * Called when IP leaves execution scope, that is, we return back to the caller that had previously
-     * pushed IP
-     *
-     * @param ip IP being exited
-     */
-    @Override
-    public void leaveIP(InstructionPointer ip) {
-        Scoped scope = exitMap.get(ip.ref());
-        if (scope != null) {
-            invoke(scope, ExecutionPort.RETURN, null);
-        }
-    }
+//
+//    /**
+//     * Called when IP leaves execution scope, that is, we return back to the caller that had previously
+//     * pushed IP
+//     *
+//     * @param ip IP being exited
+//     */
+//    @Override
+//    public void leaveIP(InstructionPointer ip) {
+//        Scoped scope = exitMap.get(ip.ref());
+//        if (scope != null) {
+//            invoke(scope, ExecutionPort.RETURN, null);
+//        }
+//    }
 
     /**
      * Create a debugging aware compile context.
@@ -310,19 +309,19 @@ public class ActiveDebugger implements DebuggerHook {
             limit = Integer.MAX_VALUE;
         }
         ArrayList<Scoped> stack = new ArrayList<>();
-        Scoped top = exitMap.get(environment.getIP().ref());
-        if (top != null && top != prologThis) {
-            stack.add(top);
-            limit--;
-        }
-        ListIterator<InstructionPointer> it = environment.getCallStack().listIterator(environment.getCallStackDepth());
-        while (it.hasPrevious() && limit > 0) {
-            InstructionPointer ip = it.previous();
-            Scoped scoped = exitMap.get(ip);
-            if (scoped != null) {
-                stack.add(scoped);
-            }
-        }
+//        Scoped top = exitMap.get(environment.getEx().ref());
+//        if (top != null && top != prologThis) {
+//            stack.add(top);
+//            limit--;
+//        }
+//        ListIterator<ResumableExecutionPoint> it = environment.getCallStack().listIterator(environment.getCallStackDepth());
+//        while (it.hasPrevious() && limit > 0) {
+//            InstructionPointer ip = it.previous();
+//            Scoped scoped = exitMap.get(ip);
+//            if (scoped != null) {
+//                stack.add(scoped);
+//            }
+//        }
         return stack;
     }
 

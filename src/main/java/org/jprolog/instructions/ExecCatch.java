@@ -3,11 +3,11 @@
 //
 package org.jprolog.instructions;
 
+import org.jprolog.callstack.ResumableExecutionPoint;
 import org.jprolog.execution.CatchPoint;
 import org.jprolog.cuts.CutPoint;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
-import org.jprolog.execution.InstructionPointer;
 import org.jprolog.execution.LocalContext;
 import org.jprolog.expressions.Term;
 import org.jprolog.unification.Unifier;
@@ -62,9 +62,9 @@ public class ExecCatch extends ExecCall {
         }
 
         @Override
-        public void next() {
+        public void invokeNext() {
             handler.endCall();
-            super.next();
+            super.invokeNext();
         }
     }
 
@@ -73,7 +73,7 @@ public class ExecCatch extends ExecCall {
      */
     private class CatchHandler extends CatchPoint {
 
-        private final InstructionPointer[] stack;
+        private final ResumableExecutionPoint executionPoint;
         final LocalContext catchContext;
         final CutPoint cut;
         final CatchPoint parent;
@@ -88,7 +88,7 @@ public class ExecCatch extends ExecCall {
             this.backtrackDepth = environment.getBacktrackDepth();
             // if Java exception occurred, data stack may be invalid
             this.dataStackDepth = environment.getDataStackDepth();
-            this.stack = environment.constructStack();
+            this.executionPoint = environment.getExecution().freeze();
         }
 
         /**
@@ -120,7 +120,7 @@ public class ExecCatch extends ExecCall {
             // unify succeeded. This catch will handle the throw
             // Complete restoration of state.
             environment.trimDataStack(dataStackDepth); // if system error
-            environment.restoreStack(stack); // call stack
+            environment.setExecution(executionPoint); // resume execution
             environment.forward();
             // Now resume via the recover block
             recover.invoke(environment);

@@ -3,10 +3,11 @@
 //
 package org.jprolog.instructions;
 
+import org.jprolog.callstack.ImmutableExecutionPoint;
+import org.jprolog.callstack.ResumableExecutionPoint;
 import org.jprolog.cuts.CallCutBarrier;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
-import org.jprolog.execution.InstructionPointer;
 import org.jprolog.execution.RestoresLocalContext;
 
 /**
@@ -43,11 +44,8 @@ public class ExecCall implements Instruction {
      */
     protected void preCall(Environment environment) {
         ConstrainedCutPoint ip = prepareCall(environment); // with side-effects
-        if (environment.getIP() instanceof RestoresLocalContext) {
-            // Tail-call elimination: Eliminate the "callIP" below, side effects still hold
-        } else {
-            // On return from precompiled, restore cut-scope we're about to set up
-            environment.callIP(ip);
+        if (!(environment.getExecution() instanceof RestoresLocalContext)) {
+            environment.setExecution(ip);
         }
     }
 
@@ -64,21 +62,30 @@ public class ExecCall implements Instruction {
     /**
      * This class acts as a localized cut-point, and an IP that restores the original cut point
      */
-    protected static class ConstrainedCutPoint extends CallCutBarrier implements InstructionPointer {
+    protected static class ConstrainedCutPoint extends CallCutBarrier implements ImmutableExecutionPoint {
+
+        private final ResumableExecutionPoint previous;
+
         ConstrainedCutPoint(Environment environment) {
             super(environment, environment.getCutPoint());
+            previous = environment.getExecution().freeze();
             environment.setCutPoint(this);
         }
 
         @Override
-        public void next() {
+        public void invokeNext() {
             environment.setCutPoint(parent);
-            environment.restoreIP();
+            environment.setExecution(previous);
         }
 
         @Override
-        public InstructionPointer copy() {
+        public Object id() {
             return this;
+        }
+
+        @Override
+        public ResumableExecutionPoint previousExecution() {
+            return previous;
         }
     }
 }
