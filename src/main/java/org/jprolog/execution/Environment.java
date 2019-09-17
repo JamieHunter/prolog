@@ -41,6 +41,7 @@ import org.jprolog.predicates.VarArgDefinition;
 import org.jprolog.utility.TrackableList;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -50,8 +51,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Spliterator;
 import java.util.TreeMap;
+import java.util.WeakHashMap;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -66,7 +67,7 @@ public class Environment {
         // character translation table
         private final CharConverter charConverter = new CharConverter();
         // table of atoms for this instance
-        private final HashMap<String, PrologAtomInterned> atomTable = new HashMap<>();
+        private final WeakHashMap<PrologAtomInterned.Holder, WeakReference<PrologAtomInterned.Holder>> atomTable = new WeakHashMap<>();
         // table of predicates for this instance
         private final HashMap<Predication.Interned, PredicateDefinition> dictionary = new HashMap<>();
         // table of variable argument predicates for this instance
@@ -108,7 +109,7 @@ public class Environment {
          * @return Interned Atom
          */
         public PrologAtomInterned internAtom(String name) {
-            return atomTable.computeIfAbsent(name, PrologAtomInterned::internalNew);
+            return PrologAtomInterned.get(name, atomTable);
         }
 
         /**
@@ -404,7 +405,6 @@ public class Environment {
     }
 
     /**
-     * @param inclusive Include current executing (as if it was pushed).
      * @return Iterable list of call stack
      */
     public Stream<ResumableExecutionPoint> getCallStack() {

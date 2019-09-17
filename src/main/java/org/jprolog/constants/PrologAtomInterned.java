@@ -5,33 +5,22 @@ package org.jprolog.constants;
 
 import org.jprolog.execution.Environment;
 import org.jprolog.expressions.Term;
-import org.jprolog.bootstrap.Interned;
+
+import java.lang.ref.WeakReference;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * A self describing self referencing entity. In other languages, it would be considered a symbol or an enum value.
  * Equality is determined almost entirely by reference.
  */
-public class PrologAtomInterned extends PrologAtomLike {
+public final class PrologAtomInterned extends PrologAtomLike {
     private final String name;
+    protected final Holder holder;
 
-    /**
-     * Do not call this, use {@link Environment#internAtom(String)} instead.
-     *
-     * @param name Name of atom
-     * @return New atom with given name
-     */
-    public static PrologAtomInterned internalNew(String name) {
-        return new PrologAtomInterned(name);
-    }
-
-    /**
-     * Made private as construction should be done indirectly either via {@link Interned#internAtom(String)} or via
-     * {@link Environment#internAtom(String)}.
-     *
-     * @param name Name of Atom
-     */
-    private PrologAtomInterned(String name) {
-        this.name = name;
+    private PrologAtomInterned(Holder holder) {
+        this.name = holder.name;
+        this.holder = holder; // maintain a reference - holder exists for as long as the interned atom exists
     }
 
     /**
@@ -54,8 +43,9 @@ public class PrologAtomInterned extends PrologAtomLike {
 
     /**
      * Intern an atom, error if not an atom
+     *
      * @param environment Execution environment
-     * @param term Term to convert
+     * @param term        Term to convert
      * @return Interned atom
      */
     public static PrologAtomInterned from(Environment environment, Term term) {
@@ -64,11 +54,89 @@ public class PrologAtomInterned extends PrologAtomLike {
 
     /**
      * Intern an atom, error if not an atom
+     *
      * @param environmentShared Shared execution environment
-     * @param term Term to convert
+     * @param term              Term to convert
      * @return Interned atom
      */
     public static PrologAtomInterned from(Environment.Shared environmentShared, Term term) {
         return PrologAtomLike.from(term).intern(environmentShared);
+    }
+
+    /**
+     * Retrieve interned atom via intern cache
+     *
+     * @param name  Name of atom to retrieve
+     * @param cache Interned cache
+     * @return Interned atom
+     */
+    public static PrologAtomInterned get(String name, Map<Holder, WeakReference<Holder>> cache) {
+        // The hoops are to utilize cache as a weak set, but ensuring we resolve to the same holder
+        synchronized (cache) {
+            Holder key = new Holder(name);
+            WeakReference<Holder> weakHolder = cache.get(key);
+            if (weakHolder != null) {
+                Holder ref = weakHolder.get();
+                if (ref != null) {
+                    // happy path
+                    return ref.get();
+                }
+            }
+            // Create or Refresh interned atom
+            cache.put(key, new WeakReference<>(key));
+            return key.get();
+        }
+    }
+
+    /**
+     * This is to permit weak hash map, synchronized in Environment
+     */
+    public static class Holder {
+        private final String name;
+        private WeakReference<PrologAtomInterned> interned;
+
+        private Holder(PrologAtomInterned interned) {
+            this.name = interned.name;
+            this.interned = new WeakReference<>(interned);
+        }
+
+        public Holder(String name) {
+            this.name = name;
+            this.interned = null;
+        }
+
+        @Override
+        public int hashCode() {
+            return name.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) {
+                return true;
+            }
+            if (this == null || obj == null) {
+                return false;
+            }
+            if (obj.getClass() != this.getClass()) {
+                return false;
+            }
+            Holder other = (Holder)obj;
+            return name.equals(other.name);
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+
+        public PrologAtomInterned get() {
+            PrologAtomInterned i = interned != null ? interned.get() : null;
+            if (i == null) {
+                i = new PrologAtomInterned(this);
+                interned = new WeakReference<>(i);
+            }
+            return i;
+        }
     }
 }

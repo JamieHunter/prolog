@@ -16,7 +16,7 @@ public class OperatorEntry implements Comparable<OperatorEntry> {
     public static final OperatorEntry ARGUMENT = new OperatorEntry(0);
     public static final OperatorEntry TERMINAL = new OperatorEntry(Integer.MAX_VALUE);
 
-    private static final PrologAtomInterned NULL_ATOM = PrologAtomInterned.internalNew("");
+    private static final PrologAtomInterned NULL_ATOM = Interned.NULL_ATOM;
     public static final int COMMA = 1000; // this is a special inflection point
 
     private final Atomic functor;

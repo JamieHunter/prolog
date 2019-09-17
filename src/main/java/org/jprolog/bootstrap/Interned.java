@@ -5,9 +5,11 @@ package org.jprolog.bootstrap;
 
 import org.jprolog.constants.PrologAtomInterned;
 
+import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * These are interned atoms, that is, they are valid always across all environments. Other interned atoms exist within
@@ -21,10 +23,12 @@ public final class Interned {
         // Utility
     }
 
-    // must be first!
-    private static final HashMap<String, PrologAtomInterned> internedAtoms = new HashMap<>();
+    // must be first! Note, while this is a weak hash map (per caching intern contract) each added atom will actually
+    // maintain references to interned atoms
+    private static final Map<PrologAtomInterned.Holder, WeakReference<PrologAtomInterned.Holder>> internedAtoms = new HashMap<>();
 
     // list of interned atoms
+    public static final PrologAtomInterned NULL_ATOM = internAtom("");
     public static final PrologAtomInterned CLAUSE_FUNCTOR = internAtom(":-");
     public static final PrologAtomInterned QUERY_FUNCTOR = internAtom("?-");
     public static final PrologAtomInterned TRUE_ATOM = internAtom("true");
@@ -129,7 +133,7 @@ public final class Interned {
             // or after interned atoms copied.
             throw new InternalError("Called after interned table used");
         }
-        return internedAtoms.computeIfAbsent(name, PrologAtomInterned::internalNew);
+        return PrologAtomInterned.get(name, internedAtoms);
     }
 
     /**
@@ -137,7 +141,7 @@ public final class Interned {
      *
      * @return Map of atoms.
      */
-    public static Map<String, PrologAtomInterned> getInterned() {
+    public static Map<PrologAtomInterned.Holder, WeakReference<PrologAtomInterned.Holder>> getInterned() {
         used = true;
         return Collections.unmodifiableMap(internedAtoms);
     }
