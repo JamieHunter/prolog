@@ -3,6 +3,7 @@
 //
 package org.jprolog.instructions;
 
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
 
@@ -22,7 +23,7 @@ public class ExecOnce extends ExecCall {
     @Override
     protected void preCall(Environment environment) {
         // protective cut-scope for the expression being called
-        environment.setExecution(new EndOnceScope(environment));
+        environment.setExecution(new EndOnceScope(environment), TransferHint.CONTROL);
     }
 
     /**

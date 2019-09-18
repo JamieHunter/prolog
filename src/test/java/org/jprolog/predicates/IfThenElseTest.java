@@ -45,6 +45,16 @@ public class IfThenElseTest {
     }
 
     @Test
+    public void ifThenElseWithOrInPredicate() {
+        PrologTest.given("t(A) :- true->(A=1;A=2);true.")
+                .when("?- t(A).")
+                .solutions(
+                        then -> then.variable("A", isInteger(1)),
+                        then -> then.variable("A", isInteger(2))
+                );
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     public void ifThenElse() {
         PrologTest.given("a(1) :- '##expectLog'(1).")

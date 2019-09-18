@@ -5,6 +5,7 @@ package org.jprolog.instructions;
 
 import org.jprolog.callstack.ActiveExecutionPoint;
 import org.jprolog.callstack.ResumableExecutionPoint;
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.execution.CompileContext;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
@@ -100,7 +101,7 @@ public final class ExecBlock implements Instruction {
      * @param environment Execution environment
      */
     public void invoke(Environment environment) {
-        environment.setExecution(new Instance(environment, block, tail).start());
+        environment.setExecution(new Instance(environment, block, tail).start(), TransferHint.ENTER);
     }
 
     /**
@@ -179,7 +180,7 @@ public final class ExecBlock implements Instruction {
                     // and continue execution at tail
                     // This is a critical part of tail-call elimination, and assumes
                     // recursion will typically occur at the tail.
-                    environment.setExecution(previous);
+                    environment.setExecution(previous, TransferHint.LEAVE);
                     tail.invoke(environment);
                 } else {
                     // iterating block

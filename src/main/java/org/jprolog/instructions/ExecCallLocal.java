@@ -5,6 +5,7 @@ package org.jprolog.instructions;
 
 import org.jprolog.callstack.ImmutableExecutionPoint;
 import org.jprolog.callstack.ResumableExecutionPoint;
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.cuts.ClauseCutBarrier;
 import org.jprolog.cuts.CutPoint;
 import org.jprolog.execution.Environment;
@@ -31,7 +32,7 @@ public class ExecCallLocal implements Instruction {
         EndLocalScope callScope = new EndLocalScope(environment);
         environment.setLocalContext(newContext);
         environment.setCutPoint(barrier);
-        environment.setExecution(callScope);
+        environment.setExecution(callScope, TransferHint.CONTROL);
         instruction.invoke(environment);
     }
 
@@ -53,7 +54,7 @@ public class ExecCallLocal implements Instruction {
         public void invokeNext() {
             environment.setCutPoint(savedCut);
             environment.setLocalContext(savedContext);
-            environment.setExecution(previous);
+            environment.setExecution(previous, TransferHint.LEAVE);
         }
 
         @Override

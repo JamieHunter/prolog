@@ -4,6 +4,7 @@
 package org.jprolog.debugging;
 
 import org.jprolog.callstack.ExecutionPoint;
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.execution.CompileContext;
 import org.jprolog.execution.DecisionPoint;
 import org.jprolog.execution.Environment;
@@ -21,7 +22,7 @@ public interface DebuggerHook {
 
     DecisionPoint acceptDecisionPoint(DecisionPoint decisionPoint);
 
-    void setExecution(ExecutionPoint ip);
+    void setExecution(ExecutionPoint ep, TransferHint hint);
 
     CompileContext newCompileContext(Environment.Shared shared);
 }

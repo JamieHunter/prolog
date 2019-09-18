@@ -4,6 +4,7 @@
 package org.jprolog.instructions;
 
 import org.jprolog.callstack.ResumableExecutionPoint;
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.execution.CatchPoint;
 import org.jprolog.cuts.CutPoint;
 import org.jprolog.execution.Environment;
@@ -120,7 +121,7 @@ public class ExecCatch extends ExecCall {
             // unify succeeded. This catch will handle the throw
             // Complete restoration of state.
             environment.trimDataStack(dataStackDepth); // if system error
-            environment.setExecution(executionPoint); // resume execution
+            environment.setExecution(executionPoint, TransferHint.CATCH); // resume execution
             environment.forward();
             // Now resume via the recover block
             recover.invoke(environment);

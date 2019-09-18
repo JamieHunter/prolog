@@ -6,7 +6,7 @@ package org.jprolog.debugging;
 import org.jprolog.bootstrap.DefaultIoBinding;
 import org.jprolog.bootstrap.Interned;
 import org.jprolog.callstack.ExecutionPoint;
-import org.jprolog.callstack.ResumableExecutionPoint;
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.cli.Run;
 import org.jprolog.constants.PrologAtomInterned;
 import org.jprolog.constants.PrologEOF;
@@ -42,6 +42,7 @@ import java.util.Optional;
 import java.util.WeakHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Class that implements an active debugger hook.
@@ -154,33 +155,29 @@ public class ActiveDebugger implements DebuggerHook {
     }
 
     /**
-     * Called when transferring to a new execution point
+     * Called when transferring to a new execution point. The hint indicates why the transfer happened. Call-like
+     * hints cause the current execution port to be deferred. Return-like hints cause invokation of the return
+     * execution port if relevant.
      *
-     * @param ip New execution point
+     * @param ep   New execution point
+     * @param hint Indicates why transfer occurred
      */
     @Override
-    public void setExecution(ExecutionPoint ip) {
-        if (prologThis.instructionContext() != InstructionContext.NULL && port != ExecutionPort.DEFERRED) {
-            // consider ip to be either (a) the execution block for the current instruction, or
-            // (b) special return context. In either case, leaving ip (see restore) amounts to an exit
-            exitMap.put(ip.id(), prologThis);
-            port = ExecutionPort.DEFERRED;
+    public void setExecution(ExecutionPoint ep, TransferHint hint) {
+        if (hint.isCall()) {
+            if (prologThis.instructionContext() != InstructionContext.NULL && port != ExecutionPort.DEFERRED) {
+                // consider ip to be either (a) the execution block for the current instruction, or
+                // (b) special return context.
+                exitMap.put(ep.id(), prologThis);
+                port = ExecutionPort.DEFERRED;
+            }
+        } else if (hint.isReturn()) {
+            Scoped scope = exitMap.get(ep.id());
+            if (scope != null) {
+                invoke(scope, ExecutionPort.RETURN, null);
+            }
         }
     }
-//
-//    /**
-//     * Called when IP leaves execution scope, that is, we return back to the caller that had previously
-//     * pushed IP
-//     *
-//     * @param ip IP being exited
-//     */
-//    @Override
-//    public void leaveIP(InstructionPointer ip) {
-//        Scoped scope = exitMap.get(ip.ref());
-//        if (scope != null) {
-//            invoke(scope, ExecutionPort.RETURN, null);
-//        }
-//    }
 
     /**
      * Create a debugging aware compile context.
@@ -300,28 +297,21 @@ public class ActiveDebugger implements DebuggerHook {
     /**
      * Retrieve call stack using scoping contextual information. Ignore extra nested stacks.
      *
-     * @param limit Max list size. -1 indicates any. 0 indicates test IP only (special case).
+     * @param limit Max list size. -1 indicates any.
      *              >0 indicates a max list of size limit.
      * @return Filtered call stack
      */
     private List<Scoped> getCallStack(int limit) {
         if (limit < 0) {
             limit = Integer.MAX_VALUE;
+        } else if (limit == 0) {
+            limit = 1;
         }
-        ArrayList<Scoped> stack = new ArrayList<>();
-//        Scoped top = exitMap.get(environment.getEx().ref());
-//        if (top != null && top != prologThis) {
-//            stack.add(top);
-//            limit--;
-//        }
-//        ListIterator<ResumableExecutionPoint> it = environment.getCallStack().listIterator(environment.getCallStackDepth());
-//        while (it.hasPrevious() && limit > 0) {
-//            InstructionPointer ip = it.previous();
-//            Scoped scoped = exitMap.get(ip);
-//            if (scoped != null) {
-//                stack.add(scoped);
-//            }
-//        }
+        List<Scoped> stack = environment.getCallStack()
+                .map(ep -> exitMap.get(ep.id()))
+                .filter(scoped -> scoped != null)
+                .limit(limit)
+                .collect(Collectors.toList());
         return stack;
     }
 
@@ -331,10 +321,12 @@ public class ActiveDebugger implements DebuggerHook {
     private List<Scoped> getDecisionStack() {
         ArrayList<Scoped> stack = new ArrayList<>();
         ListIterator<Backtrack> it = environment.getBacktrackStack().listIterator(environment.getBacktrackDepth());
-        Backtrack bt = it.previous();
-        if (bt instanceof DebugDecisionPoint) {
-            Scoped scoped = ((DebugDecisionPoint) bt).getScope();
-            stack.add(scoped);
+        while (it.hasPrevious()) {
+            Backtrack bt = it.previous();
+            if (bt instanceof DebugDecisionPoint) {
+                Scoped scoped = ((DebugDecisionPoint) bt).getScope();
+                stack.add(scoped);
+            }
         }
         return stack;
     }
@@ -589,6 +581,7 @@ public class ActiveDebugger implements DebuggerHook {
         }
         int pos = stack.size() - max;
         for (Scoped scoped : stack) {
+            traceText("(goal) ");
             traceContext(scoped, pos, null);
             traceNL();
             if (++pos > max) {
@@ -607,6 +600,7 @@ public class ActiveDebugger implements DebuggerHook {
         }
         int pos = stack.size() - max;
         for (Scoped scoped : stack) {
+            traceText("(back) ");
             traceContext(scoped, pos, null);
             traceNL();
             if (++pos > max) {

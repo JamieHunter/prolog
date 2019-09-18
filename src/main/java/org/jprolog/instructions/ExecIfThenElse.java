@@ -3,6 +3,7 @@
 //
 package org.jprolog.instructions;
 
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.execution.DecisionPointImpl;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
@@ -45,11 +46,11 @@ public class ExecIfThenElse extends ExecCall {
         //
         LocalContext context = environment.getLocalContext();
         // A return IP will handle forward progress for the then case
-        environment.setExecution(new OnForward(environment));
+        environment.setExecution(new OnForward(environment), TransferHint.CONTROL);
         // A decision point before the "cut" will handle backtracking for the else case
         environment.pushDecisionPoint(new OnBacktrack(environment));
         // protective cut-scope for the condition expression being called
-        environment.setExecution(new ConstrainedCutPoint(environment));
+        environment.setExecution(new ConstrainedCutPoint(environment), TransferHint.CONTROL);
     }
 
     /**
@@ -84,7 +85,7 @@ public class ExecIfThenElse extends ExecCall {
         public void redo() {
             // stack is just prior to this decision point being pushed
             // remove the OnForward() entry point
-            environment.setExecution(environment.getExecution().previousExecution());
+            environment.setExecution(environment.getExecution().previousExecution(), TransferHint.LEAVE);
             environment.forward();
             onFailed.invoke(environment);
         }

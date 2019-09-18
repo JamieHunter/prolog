@@ -3,6 +3,7 @@
 //
 package org.jprolog.instructions;
 
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.execution.DecisionPointImpl;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
@@ -25,7 +26,7 @@ public class ExecIgnore extends ExecCall {
     protected void preCall(Environment environment) {
         // protective cut-scope for the expression being called
         LocalContext context = environment.getLocalContext();
-        environment.setExecution(new EndIgnoreScope(environment));
+        environment.setExecution(new EndIgnoreScope(environment), TransferHint.CONTROL);
         // A decision point before the "cut" will handle backtracking to effect an ignore
         environment.pushDecisionPoint(new OnBacktrack(environment));
     }
@@ -60,7 +61,7 @@ public class ExecIgnore extends ExecCall {
         public void redo() {
             // stack is just prior to this decision point being pushed
             // remove the OnForward() entry point
-            environment.setExecution(environment.getExecution().previousExecution());
+            environment.setExecution(environment.getExecution().previousExecution(), TransferHint.REDO);
             environment.forward();
         }
     }

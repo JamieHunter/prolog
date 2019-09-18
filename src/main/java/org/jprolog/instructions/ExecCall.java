@@ -5,6 +5,7 @@ package org.jprolog.instructions;
 
 import org.jprolog.callstack.ImmutableExecutionPoint;
 import org.jprolog.callstack.ResumableExecutionPoint;
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.cuts.CallCutBarrier;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
@@ -45,7 +46,7 @@ public class ExecCall implements Instruction {
     protected void preCall(Environment environment) {
         ConstrainedCutPoint ip = prepareCall(environment); // with side-effects
         if (!(environment.getExecution() instanceof RestoresLocalContext)) {
-            environment.setExecution(ip);
+            environment.setExecution(ip, TransferHint.CONTROL);
         }
     }
 
@@ -75,7 +76,7 @@ public class ExecCall implements Instruction {
         @Override
         public void invokeNext() {
             environment.setCutPoint(parent);
-            environment.setExecution(previous);
+            environment.setExecution(previous, TransferHint.LEAVE);
         }
 
         @Override

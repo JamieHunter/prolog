@@ -4,6 +4,7 @@
 package org.jprolog.debugging;
 
 import org.jprolog.callstack.ExecutionPoint;
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.execution.CompileContext;
 import org.jprolog.execution.DecisionPoint;
 import org.jprolog.execution.Environment;
@@ -41,7 +42,7 @@ public class NoDebugger implements DebuggerHook {
     }
 
     @Override
-    public void setExecution(ExecutionPoint ip) {
+    public void setExecution(ExecutionPoint ep, TransferHint hint) {
     }
 
     @Override

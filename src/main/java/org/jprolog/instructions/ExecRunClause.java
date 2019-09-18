@@ -5,6 +5,7 @@ package org.jprolog.instructions;
 
 import org.jprolog.bootstrap.Interned;
 import org.jprolog.callstack.ResumableExecutionPoint;
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.constants.PrologAtomLike;
 import org.jprolog.cuts.ClauseCutBarrier;
 import org.jprolog.exceptions.PrologExistenceError;
@@ -96,7 +97,7 @@ public class ExecRunClause implements Instruction {
         @Override
         public void invokeNext() {
             // set up for resuming clause
-            environment.setExecution(previous);
+            environment.setExecution(previous, TransferHint.LEAVE);
             iter.handleEndOfClause();
         }
 
@@ -162,8 +163,8 @@ public class ExecRunClause implements Instruction {
             }
             // Tail-call detection
             if (!(environment.getExecution() instanceof RestoresLocalContext)) {
-                // on return, restore the context (can be eliminated)
-                environment.setExecution(new ClauseEnd(environment, this));
+                // on return, restore the context (can be eliminated if previous entry is RestoresLocalContext)
+                environment.setExecution(new ClauseEnd(environment, this), TransferHint.CONTROL);
             }
 
             // First attempt to unify

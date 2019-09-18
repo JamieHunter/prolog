@@ -4,6 +4,7 @@
 package org.jprolog.execution;
 
 import org.jprolog.callstack.ResumableExecutionPoint;
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.cuts.CutPoint;
 
 import java.util.ListIterator;
@@ -42,7 +43,7 @@ public abstract class DecisionPointImpl implements DecisionPoint {
         environment.setCutPoint(cutPoint);
         environment.setCatchPoint(catchPoint);
         environment.setLocalContext(decisionContext);
-        environment.setExecution(executionPoint);
+        environment.setExecution(executionPoint, TransferHint.REDO);
     }
 
     /**

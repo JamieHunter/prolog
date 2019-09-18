@@ -3,6 +3,7 @@
 //
 package org.jprolog.instructions;
 
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.execution.CatchPoint;
 import org.jprolog.execution.DecisionPointImpl;
 import org.jprolog.execution.Environment;
@@ -46,11 +47,11 @@ public class ExecFinally extends ExecCall {
         CatchHandler catchHandler = new CatchHandler(environment);
         environment.setCatchPoint(catchHandler);
         // A return IP will handle forward progress for the then case
-        environment.setExecution(new OnForward(environment, catchHandler));
+        environment.setExecution(new OnForward(environment, catchHandler), TransferHint.CONTROL);
         // A decision point before the "cut" will handle backtracking for the else case
         environment.pushDecisionPoint(new OnBacktrack(environment));
         // protective cut-scope for the condition expression being called
-        environment.setExecution(new ConstrainedCutPoint(environment));
+        environment.setExecution(new ConstrainedCutPoint(environment), TransferHint.CONTROL);
         if (onBefore != null) {
             onBefore.invoke(environment);
         }

@@ -5,6 +5,7 @@ package org.jprolog.instructions;
 
 import org.jprolog.callstack.ImmutableExecutionPoint;
 import org.jprolog.callstack.ResumableExecutionPoint;
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
 
@@ -35,7 +36,7 @@ public class ExecDefer implements Instruction {
      * @param inst        Instruction to defer
      */
     public static void defer(Environment environment, Instruction inst) {
-        environment.setExecution(new ExecDefer.Defer(environment, inst));
+        environment.setExecution(new ExecDefer.Defer(environment, inst), TransferHint.CONTROL);
     }
 
     private static class Defer implements ImmutableExecutionPoint {
@@ -51,7 +52,7 @@ public class ExecDefer implements Instruction {
 
         @Override
         public void invokeNext() {
-            environment.setExecution(previous);
+            environment.setExecution(previous, TransferHint.LEAVE);
             deferred.invoke(environment);
         }
 

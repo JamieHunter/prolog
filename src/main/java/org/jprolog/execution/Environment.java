@@ -12,6 +12,7 @@ import org.jprolog.callstack.ExecutionPoint;
 import org.jprolog.callstack.ExecutionSpliterator;
 import org.jprolog.callstack.ExecutionTerminal;
 import org.jprolog.callstack.ResumableExecutionPoint;
+import org.jprolog.callstack.TransferHint;
 import org.jprolog.constants.Atomic;
 import org.jprolog.constants.PrologAtomInterned;
 import org.jprolog.constants.PrologInteger;
@@ -373,9 +374,9 @@ public class Environment {
      *
      * @param ep New Execution Point
      */
-    public void setExecution(ExecutionPoint ep) {
+    public void setExecution(ExecutionPoint ep, TransferHint hint) {
         ActiveExecutionPoint aep = ep.activate();
-        if (debugging) debuggerHook.setExecution(aep);
+        if (debugging) debuggerHook.setExecution(aep, hint);
         this.execution = aep;
     }
 
