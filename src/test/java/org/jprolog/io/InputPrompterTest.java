@@ -75,11 +75,11 @@ public class InputPrompterTest {
         demand.addLast("Data3");
         lineStream.setPrompt(Prompt.QUERY);
         assertThat(checkInput(), equalTo("Data1\n")); // this is the input we expected
-        assertThat(checkOutput(), equalTo("?- Data1\n")); // display sequence - prompt then input
+        assertThat(checkOutput(), equalTo("| ?- Data1\n")); // display sequence - prompt then input
         assertThat(checkInput(), equalTo("Data2\n"));
-        assertThat(checkOutput(), equalTo("... Data2\n")); // continued input
+        assertThat(checkOutput(), equalTo("| Data2\n")); // continued input
         assertThat(checkInput(), equalTo("Data3\n"));
-        assertThat(checkOutput(), equalTo("... Data3\n")); // continued input
+        assertThat(checkOutput(), equalTo("| Data3\n")); // continued input
     }
 
     @Test
@@ -88,9 +88,9 @@ public class InputPrompterTest {
         demand.addLast("Data2");
         lineStream.setPrompt(Prompt.QUERY);
         assertThat(checkInput(), equalTo("Data1\n")); // this is the input we expected
-        assertThat(checkOutput(), equalTo("?- \n")); // display sequence - prompt then input
+        assertThat(checkOutput(), equalTo("| ?- \n")); // display sequence - prompt then input
         assertThat(checkInput(), equalTo("Data2\n"));
-        assertThat(checkOutput(), equalTo("... Data2\n")); // continued input
+        assertThat(checkOutput(), equalTo("| Data2\n")); // continued input
     }
 
     @Test

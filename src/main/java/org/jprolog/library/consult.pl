@@ -115,11 +115,15 @@ load_files(X) :- load_files(X, []).
     stream_property(Stream, tty(true)) ->
         nl, writeln(user_error, 'Consulting from user. Type "." by itself to end.'),
         '$set_prompt_consult'(Stream)
+        ;
+        true
         .
 '$consult_prompt_end'(Stream) :-
     stream_property(Stream, tty(true)) ->
         '$set_prompt_none'(Stream),
         nl, writeln(user_error, 'Finished Consulting.')
+        ;
+        true
         .
 
 % internal - handle end-of-file (success)
