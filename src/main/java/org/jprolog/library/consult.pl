@@ -105,11 +105,22 @@ load_files(X) :- load_files(X, []).
 
 % wrap read with prompts
 '$consult_read'(Stream, T) :-
-    '$set_prompt_consult'(Stream),
+    '$consult_prompt'(Stream),
     catch(read(Stream, T), Error, (
-        '$set_prompt_none'(Stream),
+        '$consult_prompt_end'(Stream),
         throw(Error)
         )).
+
+'$consult_prompt'(Stream) :-
+    stream_property(Stream, tty(true)) ->
+        nl, writeln(user_error, 'Consulting from user. Type "." by itself to end.'),
+        '$set_prompt_consult'(Stream)
+        .
+'$consult_prompt_end'(Stream) :-
+    stream_property(Stream, tty(true)) ->
+        '$set_prompt_none'(Stream),
+        nl, writeln(user_error, 'Finished Consulting.')
+        .
 
 % internal - handle end-of-file (success)
 '$consult_sentence'(Op, end_of_file, end_of_file).

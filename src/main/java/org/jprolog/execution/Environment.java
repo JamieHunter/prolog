@@ -431,6 +431,14 @@ public class Environment {
     }
 
     /**
+     * Effectively is backtracking not empty. But the stack includes the terminal
+     * @return true if there are more solutions available
+     */
+    public boolean hasMoreSolitions() {
+        return !(backtrackStack.isEmpty() || backtrackStack.peek() == backtrackTerminal);
+    }
+
+    /**
      * @return Iterable list of backtrack stack
      */
     public List<Backtrack> getBacktrackStack() {

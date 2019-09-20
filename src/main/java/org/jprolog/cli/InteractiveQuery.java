@@ -36,23 +36,20 @@ public class InteractiveQuery extends Query {
     protected ExecutionState onSuccess() {
         try {
             Map<String, ActiveVariable> sortedVars = context.retrieveVariableMap();
-            if (sortedVars.isEmpty()) {
-                OUT.write(environment, null, "yes.\n");
+            boolean moreSolutions = environment.hasMoreSolitions();
+            for (Map.Entry<String, ActiveVariable> e : sortedVars.entrySet()) {
+                OUT.write(environment, null, "\n");
+                reportVar(e.getKey(), e.getValue());
+            }
+            if (!moreSolutions) {
+                OUT.write(environment, null, "\nyes.\n");
                 OUT.flush();
                 return ExecutionState.SUCCESS;
             }
-            boolean nl = false;
-            for (Map.Entry<String, ActiveVariable> e : sortedVars.entrySet()) {
-                if (nl) {
-                    OUT.write(environment, null, "\n");
-                }
-                reportVar(e.getKey(), e.getValue());
-                nl = true;
-            }
-            OUT.write(environment, null, " ");
+            OUT.write(environment, null, " ? ");
             OUT.flush();
             String text = readLine();
-            if (text.equals(";")) {
+            if (";".equals(text)) {
                 OUT.flush();
                 return ExecutionState.BACKTRACK;
             } else {

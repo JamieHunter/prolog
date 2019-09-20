@@ -13,7 +13,7 @@ public enum Prompt {
     QUERY {
         @Override
         public String text() {
-            return "?- ";
+            return "| ?- ";
         }
 
         @Override
@@ -27,7 +27,7 @@ public enum Prompt {
     CONTINUE {
         @Override
         public String text() {
-            return "... ";
+            return "| ";
         }
     },
     /**
