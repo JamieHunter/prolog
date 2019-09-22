@@ -39,10 +39,6 @@ public interface CutPoint {
             return -1;
         }
 
-        @Override
-        public boolean handlesDecisionPoint() {
-            return false;
-        }
     };
 
     /**
@@ -50,9 +46,4 @@ public interface CutPoint {
      * @return watermark
      */
     long getWatermark();
-
-    /**
-     * @return true if additional cut through decisions can be optimized
-     */
-    boolean handlesDecisionPoint();
 }

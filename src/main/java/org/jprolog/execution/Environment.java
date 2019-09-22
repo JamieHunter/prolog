@@ -17,7 +17,6 @@ import org.jprolog.constants.Atomic;
 import org.jprolog.constants.PrologAtomInterned;
 import org.jprolog.constants.PrologInteger;
 import org.jprolog.cuts.CutPoint;
-import org.jprolog.cuts.CutThroughDecision;
 import org.jprolog.debugging.ActiveDebugger;
 import org.jprolog.debugging.DebuggerHook;
 import org.jprolog.debugging.NoDebugger;
@@ -545,10 +544,6 @@ public class Environment {
      */
     public void pushDecisionPoint(DecisionPoint decisionPoint) {
         if (debugging) decisionPoint = debuggerHook.acceptDecisionPoint(decisionPoint);
-        if (!cutPoint.handlesDecisionPoint()) {
-            // add a cut handler for first decision point
-            cutPoint = new CutThroughDecision(this, cutPoint, backtrackStack.size());
-        }
         pushBacktrack(decisionPoint);
     }
 

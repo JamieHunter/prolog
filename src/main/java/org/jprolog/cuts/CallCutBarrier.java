@@ -45,11 +45,4 @@ public class CallCutBarrier implements CutPoint {
         return parent.getWatermark();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean handlesDecisionPoint() {
-        return false; // a new cut-through-decision should be added
-    }
 }

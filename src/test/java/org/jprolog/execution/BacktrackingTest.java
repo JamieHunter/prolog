@@ -4,13 +4,15 @@ import org.jprolog.test.Matchers;
 import org.jprolog.test.PrologTest;
 import org.junit.jupiter.api.Test;
 
+import static org.jprolog.test.Matchers.isInteger;
+
 public class BacktrackingTest {
     @Test
     public void testSimpleChoicePoint() {
         PrologTest.given().when("?- X=1, false; Y=1; Z=1.")
                 .assertSuccess()
                 .variable("X", Matchers.isUninstantiated())
-                .variable("Y", Matchers.isInteger(1))
+                .variable("Y", isInteger(1))
                 .variable("Z", Matchers.isUninstantiated());
     }
 
@@ -21,7 +23,7 @@ public class BacktrackingTest {
                 .and("a(3) :- false.")
                 .when("?- a(X).")
                 .assertSuccess()
-                .variable("X", Matchers.isInteger(2));
+                .variable("X", isInteger(2));
     }
 
     @Test
@@ -32,7 +34,7 @@ public class BacktrackingTest {
                 .and("b(N) :- a(N), N >= 2.")
                 .when("?- b(X).")
                 .assertSuccess()
-                .variable("X", Matchers.isInteger(2));
+                .variable("X", isInteger(2));
     }
 
     @Test
@@ -44,8 +46,10 @@ public class BacktrackingTest {
                 .and("b(N) :- a(N), N >= 2.")
                 .and("c(M) :- b(M), M >= 3.")
                 .when("?- c(X).")
-                .assertSuccess()
-                .variable("X", Matchers.isInteger(3));
+                .solutions(
+                        soln -> soln.variable("X", isInteger(3)),
+                        soln -> soln.variable("X", isInteger(4))
+                        );
     }
 
     @Test
@@ -59,4 +63,30 @@ public class BacktrackingTest {
                 .assertSuccess();
     }
 
+    @Test
+    public void testAssignAtTailTopLevel() {
+        PrologTest.given("a(1).").and("a(2).").and("a(3).")
+                .when("?- a(N), N=P.") // N=P is in tail, and a simple instruction
+                .solutions(soln -> soln.variable("P", isInteger(1)),
+                        soln -> soln.variable("P", isInteger(2)),
+                        soln -> soln.variable("P", isInteger(3)));
+    }
+
+    @Test
+    public void testAssignAtTailNestedLevel() {
+        PrologTest.given("a(1).").and("a(2).").and("a(3).").and("b(P) :- a(N), N=P.")
+                .when("?- b(Q).") // N=P is in tail, and a simple instruction
+                .solutions(soln -> soln.variable("Q", isInteger(1)),
+                        soln -> soln.variable("Q", isInteger(2)),
+                        soln -> soln.variable("Q", isInteger(3)));
+    }
+
+    @Test
+    public void testAssignAtTailDoubleNestedLevel() {
+        PrologTest.given("a(1).").and("a(2).").and("a(3).").and("b(P) :- a(N), N=P.").and("c(Q) :- b(Q).")
+                .when("?- c(R).") // N=P is in tail, and a simple instruction
+                .solutions(soln -> soln.variable("R", isInteger(1)),
+                        soln -> soln.variable("R", isInteger(2)),
+                        soln -> soln.variable("R", isInteger(3)));
+    }
 }

@@ -156,6 +156,8 @@ public class ExecRunClause implements Instruction {
             // Local context to use for execution of this clause
             LocalContext newContext = environment.newLocalContext(key); // chains cut-point from newContext to active
             environment.setLocalContext(newContext);
+            // cut point must be before decision point and captures backtrack mark before the decision point
+            // making everything afterwards non-deterministic
             environment.setCutPoint(new ClauseCutBarrier(environment, environment.getCutPoint(), variableWatermark));
             if (index != clauses.length) {
                 // not deterministic (this will introduce a new CutPoint entry)

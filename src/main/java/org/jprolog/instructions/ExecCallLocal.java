@@ -26,8 +26,7 @@ public class ExecCallLocal implements Instruction {
 
     @Override
     public void invoke(Environment environment) {
-        long watermark = environment.variableWatermark();
-        ClauseCutBarrier barrier = new ClauseCutBarrier(environment, environment.getCutPoint(), watermark);
+        ClauseCutBarrier barrier = new ClauseCutBarrier(environment, environment.getCutPoint());
         LocalContext newContext = environment.newLocalContext();
         EndLocalScope callScope = new EndLocalScope(environment);
         environment.setLocalContext(newContext);

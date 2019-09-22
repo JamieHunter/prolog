@@ -3,6 +3,7 @@
 //
 package org.jprolog.execution;
 
+import org.jprolog.cuts.ClauseCutBarrier;
 import org.jprolog.cuts.CutPoint;
 import org.jprolog.expressions.Term;
 import org.jprolog.instructions.DeferredCallInstruction;
@@ -50,7 +51,7 @@ public class Query {
     public void compile(Term term) {
         environment.reset();
         environment.setLocalContext(context); // establish for purpose of compiling and exceptions
-        environment.setCutPoint(initialCutPoint); // related cut point
+        environment.setCutPoint(initialCutPoint); // reset
         instruction = new ExecDefer(new DeferredCallInstruction(term));
     }
 
@@ -61,7 +62,7 @@ public class Query {
      * @return true on success, false otherwise
      */
     public ExecutionState run() {
-        reset();
+        start();
         ExecutionState state;
         do {
             state = cycle();
@@ -69,10 +70,10 @@ public class Query {
         return state;
     }
 
-    public void reset() {
+    public void start() {
         environment.reset();
         environment.setLocalContext(context);
-        environment.setCutPoint(initialCutPoint);
+        environment.setCutPoint(new ClauseCutBarrier(environment, initialCutPoint));
         instruction.invoke(environment);
     }
 
