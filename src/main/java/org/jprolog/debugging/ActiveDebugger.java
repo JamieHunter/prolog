@@ -685,7 +685,7 @@ public class ActiveDebugger implements DebuggerHook {
             return null;
         }
         Query query = new Query(new Environment(environment));
-        query.compile(term);
+        query.prepare(term);
         query.run();
         return null;
     }

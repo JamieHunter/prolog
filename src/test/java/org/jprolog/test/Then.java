@@ -39,6 +39,11 @@ public interface Then {
     Then expectLog(Matcher<? super Term>... matchers);
 
     /**
+     * @return true if query was successful.
+     */
+    boolean isSuccess();
+
+    /**
      * Verify query was successful
      *
      * @return self
@@ -69,19 +74,18 @@ public interface Then {
     Then backtrackDepth(Matcher<? super Integer> matcher);
 
     /**
+     * More generalized form of and-when etc.
+     * @return new given, same state
+     */
+    Given and();
+
+    /**
      * Begins anotherSolution test
      *
      * @param text Same as when(text)
      * @return self
      */
     Then andWhen(String text);
-
-    /**
-     * For additional setup
-     * @param lambda Lambda function to further state
-     * @return state also passed into lambda
-     */
-    Then andWhen(Consumer<Then> lambda);
 
     /**
      * Another solution, same test.

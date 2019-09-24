@@ -3,7 +3,11 @@
 //
 package org.jprolog.test;
 
+import org.jprolog.execution.Environment;
+import org.jprolog.expressions.Term;
+
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
 public interface Given {
     /**
@@ -13,6 +17,14 @@ public interface Given {
      * @return Self
      */
     Given that(String text);
+
+    /**
+     * Sets up precondition.
+     *
+     * @param term Prolog term, assumes clause or fact unless ?-(x) or :-(x).
+     * @return Self
+     */
+    Given that(Term term);
 
     /**
      * Sets up precondition. Same as that(), but provides english sugar.
@@ -31,8 +43,22 @@ public interface Given {
     Then when(String text);
 
     /**
-     * Given specified working directory
-     * @param directory New current working directory.
+     * Assumes text is pre-parsed.
+     * @param term Prolog term, assumes clause or fact unless ?-(x) or :-(x).
+     * @return {@link Then}
      */
-    Given cwd(Path directory);
+    Then when(Term term);
+
+    /**
+     * For additional setup, obtains a then state, then calls lambda
+     * @param lambda Lambda function to further state
+     * @return state also passed into lambda
+     */
+    Then when(Consumer<Then> lambda);
+
+    /**
+     * Perform environment operations
+     * @return environment Underlying environment
+     */
+    Given environment(Consumer<Environment> consumer);
 }

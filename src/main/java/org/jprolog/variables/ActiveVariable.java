@@ -9,7 +9,8 @@ import org.jprolog.execution.CompileContext;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.LocalContext;
 import org.jprolog.expressions.Term;
-import org.jprolog.instructions.DeferredCallInstruction;
+import org.jprolog.instructions.ExecBlock;
+import org.jprolog.instructions.ExecFuture;
 import org.jprolog.instructions.ExecCall;
 import org.jprolog.io.WriteContext;
 
@@ -165,7 +166,7 @@ public class ActiveVariable implements Variable {
         // This case can happen, e.g. call(once(X)), X is resolved in the call context,
         // and infers a call of an active variable for once()
         compiling.addCall(this, new ExecCall(
-                new DeferredCallInstruction(this)));
+                ExecBlock.future(this)));
     }
 
     /**

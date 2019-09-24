@@ -34,9 +34,9 @@ public final class ThrowCatch {
         Term matchTerm = source.get(1);
         Term recoverTerm = source.get(2);
         compiling.add(source, new ExecCatch(
-                ExecBlock.deferred(callTerm),
+                ExecBlock.future(callTerm),
                 matchTerm,
-                ExecBlock.deferred(recoverTerm)));
+                ExecBlock.future(recoverTerm)));
     }
 
     /**

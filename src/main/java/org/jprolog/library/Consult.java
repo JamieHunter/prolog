@@ -100,7 +100,7 @@ public final class Consult {
         final LoadGroup priorGroup = environment.getLoadGroup();
         final LoadGroup newGroup = new LoadGroup(newId, time);
 
-        new ExecFinally(ExecBlock.deferred(callable),
+        new ExecFinally(ExecBlock.future(callable),
                 e -> {
                     environment.changeLoadGroup(newGroup);
                 },
@@ -124,7 +124,7 @@ public final class Consult {
         }
         final LinkNode node = new LinkNode(path);
 
-        new ExecFinally(ExecBlock.deferred(callable),
+        new ExecFinally(ExecBlock.future(callable),
                 e -> {
                     environment.getSearchPath().addHead(node);
                 },

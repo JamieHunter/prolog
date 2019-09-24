@@ -70,8 +70,18 @@ public final class ExecBlock implements Instruction {
      * @param term Term to call, compilation deferred
      * @return Instruction
      */
-    public static Instruction deferred(Term term) {
-        return new DeferredCallInstruction(term);
+    public static Instruction future(Term term) {
+        return new ExecFuture(term);
+    }
+
+    /**
+     * Deferred compile of a nested block wrapped in a call.
+     *
+     * @param term Term to call, compilation deferred
+     * @return Instruction
+     */
+    public static Instruction callFuture(Term term) {
+        return new ExecCall(future(term));
     }
 
     /**

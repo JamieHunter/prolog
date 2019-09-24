@@ -5,10 +5,9 @@ package org.jprolog.variables;
 
 import org.jprolog.enumerators.EnumTermStrategy;
 import org.jprolog.execution.CompileContext;
-import org.jprolog.execution.Environment;
 import org.jprolog.execution.LocalContext;
 import org.jprolog.expressions.Term;
-import org.jprolog.instructions.DeferredCallInstruction;
+import org.jprolog.instructions.ExecFuture;
 import org.jprolog.instructions.ExecCall;
 import org.jprolog.io.WriteContext;
 
@@ -148,6 +147,6 @@ public class LabeledVariable implements Variable {
     public void compile(CompileContext compiling) {
         // A compiled variable is considered the same as compiling 'call'
         compiling.addCall(this, new ExecCall(
-                new DeferredCallInstruction(this)));
+                new ExecFuture(this)));
     }
 }

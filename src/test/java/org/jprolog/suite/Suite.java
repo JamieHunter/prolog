@@ -17,6 +17,6 @@ public class Suite {
         Path cwd = Paths.get("src/test/prolog").toAbsolutePath();
         Path testDir = cwd.resolve(directory).normalize().toAbsolutePath();
         assertTrue(Files.isDirectory(testDir), "Directory not found");
-        return PrologTest.given().cwd(testDir);
+        return PrologTest.given().environment(e -> e.setCWD(testDir));
     }
 }

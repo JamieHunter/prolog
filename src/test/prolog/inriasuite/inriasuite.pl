@@ -577,6 +577,26 @@ run_tests(File) :-
         loop_through(File,S),
         close(S).
 
+%%%%%%%%%
+%
+%   read all tests from a file without running
+%
+
+read_tests(File, Tests) :-
+        asserta(score(File, total(0), wrong(0))),
+	open(File, read, S),
+        read_tests_list(S, Tests),
+        close(S).
+
+read_tests_list(S, Tests) :-
+    !,
+    read(S,X),
+    (X == end_of_file ->
+        Tests = []
+        ;
+        read_tests_list(S, Partial),
+        Tests = [X|Partial]).
+
 %%%%%%%%%%%%%%%%%%%%
 %
 %    loop_through(+File,+Source)

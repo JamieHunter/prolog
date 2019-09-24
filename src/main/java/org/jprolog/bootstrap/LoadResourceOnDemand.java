@@ -7,7 +7,8 @@ import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
 import org.jprolog.expressions.CompoundTerm;
 import org.jprolog.expressions.Term;
-import org.jprolog.instructions.DeferredCallInstruction;
+import org.jprolog.instructions.ExecBlock;
+import org.jprolog.instructions.ExecFuture;
 import org.jprolog.instructions.ExecOnce;
 import org.jprolog.predicates.OnDemand;
 import org.jprolog.flags.ReadOptions;
@@ -68,7 +69,7 @@ public class LoadResourceOnDemand implements OnDemand {
                     CompoundTerm clause = (CompoundTerm) term;
                     final Term goalTerm = clause.get(0);
                     Instruction callable = new ExecOnce(
-                            new DeferredCallInstruction(goalTerm));
+                            ExecBlock.future(goalTerm));
                     callable.invoke(environment);
                     if (!environment.isForward()) {
                         throw new InternalError("Directive error in resource " + resource);

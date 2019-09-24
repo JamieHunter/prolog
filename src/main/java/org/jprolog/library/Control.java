@@ -155,7 +155,7 @@ public final class Control {
         // cut behavior is modified by the call
         // note that compilation of the call is deferred further, so any error only occurs if actually trying
         // to call.
-        compiling.add(source, new ExecCall(ExecBlock.deferred(callTerm)));
+        compiling.add(source, new ExecCall(ExecBlock.future(callTerm)));
     }
 
     /**

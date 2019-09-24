@@ -13,18 +13,19 @@ import org.jprolog.expressions.Term;
 import java.util.Optional;
 
 /**
- * Compile instruction on the fly at the time of the call.
+ * Compile instruction on the fly at the time of the instruction. This should generally be wrapped directly or
+ * indirectly in a call variant.
  */
-public class DeferredCallInstruction implements Instruction {
-    private final Term callable;
+public class ExecFuture implements Instruction {
+    private final Term future;
 
-    public DeferredCallInstruction(Term callable) {
-        this.callable = callable;
+    public ExecFuture(Term future) {
+        this.future = future;
     }
 
     @Override
     public void invoke(Environment environment) {
-        Term bound = callable.resolve(environment.getLocalContext());
+        Term bound = future.resolve(environment.getLocalContext());
         if (!bound.isInstantiated()) {
             throw PrologInstantiationError.error(environment, bound);
         }

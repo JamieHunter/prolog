@@ -157,7 +157,7 @@ public class ConsultTest {
                 .assertSuccess()
                 .andWhen("?- a(1), a(2).")
                 .assertSuccess()
-                .andWhen(w -> {
+                .and().when(w -> {
                     try {
                         Files.copy(Paths.get(path2), Paths.get(pathOut), StandardCopyOption.REPLACE_EXISTING);
                     } catch (IOException ioe) {

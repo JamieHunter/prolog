@@ -62,7 +62,7 @@ public class Run {
                     return;
                 }
                 InteractiveQuery query = new InteractiveQuery(environment);
-                query.compile(term);
+                query.prepare(term);
                 query.run();
             } catch (PrologHalt ph) {
                 System.exit(ph.getHaltCode());

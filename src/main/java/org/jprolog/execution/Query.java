@@ -3,14 +3,14 @@
 //
 package org.jprolog.execution;
 
+import org.jprolog.bootstrap.Interned;
 import org.jprolog.cuts.ClauseCutBarrier;
 import org.jprolog.cuts.CutPoint;
 import org.jprolog.expressions.Term;
-import org.jprolog.instructions.DeferredCallInstruction;
+import org.jprolog.instructions.ExecBlock;
 import org.jprolog.instructions.ExecDefer;
-import org.jprolog.predicates.Predication;
-import org.jprolog.bootstrap.Interned;
 import org.jprolog.library.Control;
+import org.jprolog.predicates.Predication;
 
 /**
  * Main entry point into the interpreter. Compile and execute a query.
@@ -44,15 +44,15 @@ public class Query {
     }
 
     /**
-     * Compile a query to prepare for execution. Note, this resets any environment state.
+     * Prepare an instruction to execute.
      *
-     * @param term Callable term to compile.
+     * @param term Callable term to execute in the future.
      */
-    public void compile(Term term) {
-        environment.reset();
-        environment.setLocalContext(context); // establish for purpose of compiling and exceptions
-        environment.setCutPoint(initialCutPoint); // reset
-        instruction = new ExecDefer(new DeferredCallInstruction(term));
+    public void prepare(Term term) {
+        instruction = new ExecDefer(
+                // Don't execute at start()
+                ExecBlock.callFuture(term)
+        );
     }
 
     /**
@@ -66,13 +66,18 @@ public class Query {
         ExecutionState state;
         do {
             state = cycle();
-        } while(!state.isTerminal());
+        } while (!state.isTerminal());
         return state;
     }
 
-    public void start() {
+    public void reset() {
         environment.reset();
         environment.setLocalContext(context);
+        environment.setCutPoint(initialCutPoint);
+    }
+
+    public void start() {
+        reset();
         environment.setCutPoint(new ClauseCutBarrier(environment, initialCutPoint));
         instruction.invoke(environment);
     }

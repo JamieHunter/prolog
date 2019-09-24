@@ -14,6 +14,7 @@ import org.jprolog.expressions.Term;
 import org.jprolog.flags.ReadOptions;
 import org.jprolog.io.LogicalStream;
 import org.jprolog.library.Dictionary;
+import org.jprolog.test.Given;
 import org.jprolog.test.StreamUtils;
 import org.jprolog.test.Then;
 import org.jprolog.variables.ActiveVariable;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class ThenImpl implements Then {
 
+    private final GivenImpl given;
     private final StateImpl state;
     private Query query;
     private ExecutionState lastExec = null;
@@ -45,27 +47,27 @@ public class ThenImpl implements Then {
         return var.resolve(throwAway).value(); // make sure all recursive variables are resolved.
     }
 
-    ThenImpl(StateImpl state) {
+    ThenImpl(GivenImpl given, StateImpl state) {
+        this.given = given;
         this.state = state;
         query = new TestQuery(state.environment);
     }
 
-    /**
-     * Parse text for purpose of testing. This behaves similar to consult/query.
-     *
-     * @param text Text to interpret
-     */
-    void parse(String text) {
+    void run(String text) {
+        LogicalStream stream = StreamUtils.logical(StreamUtils.prologString(text));
+        Term term = stream.read(state.environment, null, new ReadOptions(state.environment, null));
+        run(term);
+    }
+
+    void run(Term term) {
         try(ThenScope scope = new ThenScope(this)) {
             state.reset();
             query.reset();
             lastExec = null;
-            LogicalStream stream = StreamUtils.logical(StreamUtils.prologString(text));
-            Term term = stream.read(state.environment, null, new ReadOptions(state.environment, null));
             if (CompoundTerm.termIsA(term, Interned.QUERY_FUNCTOR, 1)) {
                 CompoundTerm clause = (CompoundTerm) term;
-                query.compile(clause.get(0));
-                query.reset();
+                query.prepare(clause.get(0));
+                query.start();
                 cycle();
             } else if (CompoundTerm.termIsA(term, Interned.CLAUSE_FUNCTOR, 1)) {
                 // Directive, not implemented for tests at this time
@@ -112,14 +114,23 @@ public class ThenImpl implements Then {
     }
 
     @Override
+    public boolean isSuccess() {
+        return lastExec == ExecutionState.SUCCESS;
+    }
+
+    @Override
     public Then assertSuccess() {
-        assertTrue(lastExec == ExecutionState.SUCCESS, "directive failed");
+        if (!isSuccess()) {
+            fail("directive failed when it should have succeeded");
+        }
         return this;
     }
 
     @Override
     public Then assertFailed() {
-        assertTrue(lastExec == ExecutionState.FAILED, "directive succeeded");
+        if (lastExec != ExecutionState.FAILED) {
+            fail("directive succeeded when it should have failed");
+        }
         return this;
     }
 
@@ -140,17 +151,13 @@ public class ThenImpl implements Then {
     }
 
     @Override
-    public Then andWhen(Consumer<Then> lambda) {
-        ThenImpl next = new ThenImpl(state);
-        lambda.accept(next);
-        return next;
+    public Given and() {
+        return given;
     }
 
     @Override
     public Then andWhen(String text) {
-        ThenImpl next = new ThenImpl(state);
-        next.parse(text);
-        return next;
+        return and().when(text);
     }
 
     @Override
@@ -167,11 +174,29 @@ public class ThenImpl implements Then {
             return assertFailed();
         }
         for(int soln = 0; soln < solutions.length; soln ++) {
-            assertSuccess();
+            if(!isSuccess()) {
+                if (soln == 0) {
+                    fail("no solutions provided out of " + solutions.length + " expected");
+                } else {
+                    fail("only " + soln + " solution(s) provided out of " + solutions.length + " expected");
+                }
+            };
             solutions[soln].accept(this);
             anotherSolution();
         }
-        assertFailed();
+        if (isSuccess()) {
+            // see how many additional solutions were provided
+            int count = solutions.length;
+            while(isSuccess()) {
+                count++;
+                anotherSolution();
+            }
+            if (solutions.length == 0) {
+                fail(count + " solution(s) provided when none expected");
+            } else {
+                fail(count + " solution(s) provided when only " + solutions.length + " solution(s) expected");
+            }
+        };
         return this;
     }
 

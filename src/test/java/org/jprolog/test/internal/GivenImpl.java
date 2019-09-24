@@ -3,10 +3,12 @@
 //
 package org.jprolog.test.internal;
 
+import org.jprolog.execution.Environment;
+import org.jprolog.expressions.Term;
 import org.jprolog.test.Given;
 import org.jprolog.test.Then;
 
-import java.nio.file.Path;
+import java.util.function.Consumer;
 
 /**
  * PrologTest given clause. This sets up pre-conditions. For the interpreter, all preconditions are applied to
@@ -14,12 +16,20 @@ import java.nio.file.Path;
  */
 public class GivenImpl implements Given {
 
-    private final StateImpl state = new StateImpl();
+    private final StateImpl state;
+
+    public GivenImpl() {
+        this.state = new StateImpl();
+    }
 
     @Override
     public Given that(String text) {
-        when(text);
-        return this;
+        return when(text).and();
+    }
+
+    @Override
+    public Given that(Term term) {
+        return when(term).and();
     }
 
     @Override
@@ -28,16 +38,30 @@ public class GivenImpl implements Given {
     }
 
     @Override
-    public Given cwd(Path directory) {
-        state.environment().setCWD(directory);
-        return this;
+    public Then when(String text) {
+        ThenImpl then = new ThenImpl(this, state);
+        then.run(text);
+        return then;
     }
 
     @Override
-    public Then when(String text) {
-        ThenImpl then = new ThenImpl(state);
-        then.parse(text);
+    public Then when(Term term) {
+        ThenImpl then = new ThenImpl(this, state);
+        then.run(term);
         return then;
+    }
+
+    @Override
+    public Then when(Consumer<Then> lambda) {
+        ThenImpl then = new ThenImpl(this, state);
+        lambda.accept(then);
+        return then;
+    }
+
+    @Override
+    public Given environment(Consumer<Environment> consumer) {
+        consumer.accept(state.environment());
+        return this;
     }
 
 }
