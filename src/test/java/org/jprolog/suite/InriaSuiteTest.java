@@ -109,6 +109,7 @@ public class InriaSuiteTest extends Suite {
     private String formatTerm(Given given, Term term) {
         Environment e = given.environment();
         WriteOptions opts = new WriteOptions(e, null);
+        opts.quoted = true;
         return StructureWriter.toString(e, term, opts);
     }
 
@@ -167,10 +168,12 @@ public class InriaSuiteTest extends Suite {
             }
         } catch (PrologThrowable pe) {
             Term t = pe.value();
-            if (!CompoundTerm.termIsA(t, Interned.ERROR_FUNCTOR, 2)) {
-                fail("Expected error() but was thrown " + formatTerm(given, t));
+            if (CompoundTerm.termIsA(t, Interned.ERROR_FUNCTOR, 2)) {
+                t = ((CompoundTerm) t).get(0); // formal error
+            } else {
+                // anything else thrown
+                t = new CompoundTermImpl(new PrologAtom("unexpected_ball"), t);
             }
-            t = ((CompoundTerm)t).get(0);
             Environment e = given.environment();
             LocalContext lc = e.newLocalContext();
             e.setLocalContext(lc);

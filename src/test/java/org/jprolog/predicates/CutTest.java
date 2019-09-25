@@ -6,6 +6,8 @@ import org.jprolog.test.PrologTest;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.jprolog.test.Matchers.isInteger;
+
 /**
  * Verify correct cut behavior across predicate boundaries
  * See also {@link TailCallRecursionTest}
@@ -28,6 +30,8 @@ public class CutTest {
                 .and("goal(log('Three ')).")
                 .and("calls(X) :- copy_term(X, X1), call(X1).")
                 .and("catches(X) :- catch(X, B, log(thrown)).")
+                .and("bar(A,B) :- A=1,B=2, ! .")
+                .and("bar(A,B) :- A=2,B=3 .")
         ;
     }
 
@@ -89,16 +93,27 @@ public class CutTest {
                 );
     }
 
-    @Disabled("Incorrect test?")
     @Test
     public void testMultiEntryInListWithFail() {
         // if cut is working correctly, we should get x_split, x_fail
-        // one scenario with a bug is that this succeeds to try other clauses
+        // one scenario with a bug is that this succeeds to try other clauses, see also testTailCut below.
         given().when("?- foo([fail,bang,boom]).")
                 .assertFailed()
                 .expectLog(
                         Matchers.isAtom("x_split"), // [fail,bang,boom]
                         Matchers.isAtom("x_fail")
+                );
+    }
+
+    @Test
+    public void testTailCut() {
+        // based off of a failing Inria test
+        given().when("?- bar(A,B).")
+                .solutions(
+                  soln -> {
+                      soln.variable("A", isInteger(1));
+                      soln.variable("B", isInteger(2));
+                  }
                 );
     }
 

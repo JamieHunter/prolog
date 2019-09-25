@@ -170,8 +170,12 @@ public class Conversions {
         if (list.isGrounded()) {
             // construct number through parsing
             String text = TermList.extractString(environment, list);
+            ReadOptions options = new ReadOptions(environment, null);
+            //options.whiteSpace = whiteSpace;
             try {
-                parsedNumber = parseAndFoldInput(environment, text, new ParseAndFold<PrologNumber>() {
+                parsedNumber = parseAndFoldInput(
+                        environment, text, options,
+                        new ParseAndFold<PrologNumber>() {
                     long sign = 0;
                     PrologNumber value = null;
 
@@ -195,7 +199,8 @@ public class Conversions {
                             if (sign < 0) {
                                 value = value.negate();
                             }
-                            return true; // done parsing
+                            options.whiteSpace = ReadOptions.WhiteSpace.ATOM_atom; // do not allow anything after number
+                            return true; // "done parsing"
                         } else {
                             throw PrologSyntaxError.tokenError(environment, "other");
                         }
@@ -256,6 +261,7 @@ public class Conversions {
      */
     private static <R> R parseAndFoldInput(Environment environment,
                                            String text,
+                                           ReadOptions options,
                                            ParseAndFold<R> helper) {
         PrologInputStream stream =
                 new InputBuffered(
@@ -265,7 +271,7 @@ public class Conversions {
                                 ), StandardCharsets.UTF_8), -1);
         Tokenizer tok = new Tokenizer(
                 environment,
-                new ReadOptions(environment, null),
+                options,
                 stream);
         boolean done = false;
         for(;;) {

@@ -5,6 +5,7 @@ package org.jprolog.parser;
 
 import org.jprolog.constants.PrologAtom;
 import org.jprolog.exceptions.PrologSyntaxError;
+import org.jprolog.flags.ReadOptions;
 
 import java.io.IOException;
 
@@ -35,8 +36,13 @@ class TokenParseCoreState extends ActiveParsingState {
         String match;
         match = lineMatcher.group(Tokenizer.WS_TAG);
         if (match != null) {
-            // trivial whitespace is ignored
-            return this;
+            if (tokenizer.options().whiteSpace == ReadOptions.WhiteSpace.ATOM_skip) {
+                // trivial whitespace is ignored
+                return this;
+            } else {
+                // options can control how whitespace is parsed
+                return ParseState.finish(new PrologAtom(match));
+            }
         }
         match = lineMatcher.group(Tokenizer.ATOM_TAG);
         if (match != null) {
@@ -87,7 +93,13 @@ class TokenParseCoreState extends ActiveParsingState {
         if (match != null) {
             if (match.length() == 0) {
                 if (tokenizer.newLine(lineMatcher)) {
-                    return this;
+                    if (tokenizer.options().whiteSpace == ReadOptions.WhiteSpace.ATOM_skip) {
+                        // trivial whitespace (new line) is ignored
+                        return this;
+                    } else {
+                        // options can control how whitespace is parsed
+                        return ParseState.finish(new PrologAtom("\n"));
+                    }
                 } else {
                     return tokenizer.parseReachedEOF();
                 }

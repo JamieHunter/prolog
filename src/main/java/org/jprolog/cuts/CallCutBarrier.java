@@ -11,12 +11,12 @@ import org.jprolog.execution.Environment;
 public class CallCutBarrier implements CutPoint {
     protected final Environment environment;
     protected final CutPoint parent;
-    private final int depth;
+    private final int backtrackMark;
 
     public CallCutBarrier(Environment environment, CutPoint parent) {
         this.environment = environment;
         this.parent = parent;
-        this.depth = environment.getBacktrackDepth(); // a cut will trim
+        this.backtrackMark = environment.getBacktrackDepth(); // a cut will trim
     }
 
     /**
@@ -24,7 +24,9 @@ public class CallCutBarrier implements CutPoint {
      */
     @Override
     public void cut() {
-        environment.cutBacktrackStack(depth);
+        // throw away items in backtrack stack that are not needed
+        environment.cutBacktrackStack(backtrackMark);
+        // throw away any inner cut points
         environment.setCutPoint(this);
     }
 

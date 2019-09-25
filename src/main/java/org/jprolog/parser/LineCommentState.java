@@ -3,6 +3,9 @@
 //
 package org.jprolog.parser;
 
+import org.jprolog.constants.PrologAtom;
+import org.jprolog.flags.ReadOptions;
+
 import java.io.IOException;
 
 /**
@@ -22,6 +25,12 @@ class LineCommentState extends ActiveParsingState {
      */
     public ParseState next() throws IOException {
         tokenizer.newLine(null); // comment to end of line
-        return tokenizer.parseAnyToken(); // handles EOF
+        if (tokenizer.options().whiteSpace == ReadOptions.WhiteSpace.ATOM_skip) {
+            // comments are ignored (also handles EOF)
+            return tokenizer.parseAnyToken();
+        } else {
+            // options can control how comments are parsed
+            return ParseState.finish(new PrologAtom("%")); // TODO: capture comment
+        }
     }
 }

@@ -3,7 +3,9 @@
 //
 package org.jprolog.parser;
 
+import org.jprolog.constants.PrologAtom;
 import org.jprolog.exceptions.PrologSyntaxError;
+import org.jprolog.flags.ReadOptions;
 
 import java.io.IOException;
 import java.util.regex.Pattern;
@@ -35,6 +37,12 @@ class BlockCommentState extends ActiveParsingState {
             }
         }
         lineMatcher.end();
-        return tokenizer.parseAnyToken();
+        if (tokenizer.options().whiteSpace == ReadOptions.WhiteSpace.ATOM_skip) {
+            // comments are ignored
+            return tokenizer.parseAnyToken();
+        } else {
+            // options can control how comments are parsed
+            return ParseState.finish(new PrologAtom("/**/")); // TODO: capture comment
+        }
     }
 }

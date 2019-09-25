@@ -13,12 +13,12 @@
 				    [S2 <-- 'rit'],
 				    [S2 <-- 'ity']]].
 [sub_atom('ab', Before, Length, After, Sub_atom),
-	[[Before <-- 1, Length <-- 0, Sub_atom <-- ''],
-	 [Before <-- 1, Length <-- 1, Sub_atom <-- 'a'],
-	 [Before <-- 1, Length <-- 2, Sub_atom <-- 'ab'],
-	 [Before <-- 2, Length <-- 0, Sub_atom <-- ''],
-	 [Before <-- 2, Length <-- 1, Sub_atom <-- 'b'],
-	 [Before <-- 3, Length <-- 0, Sub_atom <-- '']]].
+	[[Before <-- 0, Length <-- 0, Sub_atom <-- ''],
+	 [Before <-- 0, Length <-- 1, Sub_atom <-- 'a'],
+	 [Before <-- 0, Length <-- 2, Sub_atom <-- 'ab'],
+	 [Before <-- 1, Length <-- 0, Sub_atom <-- ''],
+	 [Before <-- 1, Length <-- 1, Sub_atom <-- 'b'],
+	 [Before <-- 2, Length <-- 0, Sub_atom <-- '']]].
 
 [sub_atom(Banana, 3, 2, _, S2), instantiation_error].
 [sub_atom(f(a), 2, 2, _, S2), type_error(atom,f(a))].

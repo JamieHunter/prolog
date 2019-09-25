@@ -31,7 +31,9 @@ public class ClauseCutBarrier implements CutPoint {
      */
     @Override
     public void cut() {
-        // prune cut point to this barrier
+        // throw away items in backtrack stack that are not needed
+        environment.cutBacktrackStack(backtrackMark);
+        // throw away any inner cut points
         environment.setCutPoint(this);
     }
 
@@ -42,9 +44,10 @@ public class ClauseCutBarrier implements CutPoint {
     public boolean isDeterministic(long variableId) {
         if (variableId >= watermark) {
             // all variables in this cut-scope may be deterministic (don't write a trace)
+            // only if nothing has been added to the backtrack stack.
             return this.backtrackMark == environment.getBacktrackDepth();
         } else {
-            // earlier variables must be delegated
+            // earlier variables must be delegated so that they are not accidentally considered as deterministic
             return parent.isDeterministic(variableId);
         }
     }

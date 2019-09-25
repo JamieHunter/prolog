@@ -28,6 +28,7 @@ public class ReadOptions implements Flags {
         parser.enumFlag(Interned.internAtom("singletons"), Singletons.class, (o, v) -> o.singletons = v);
         parser.enumFlag(Interned.internAtom("syntax_errors"), SyntaxErrors.class, (o, v) -> o.syntaxErrors = v);
         parser.enumFlag(Interned.internAtom("full_stop"), FullStop.class, (o, v) -> o.fullStop = v);
+        parser.enumFlag(Interned.internAtom("white_space"), WhiteSpace.class, (o, v) -> o.whiteSpace = v);
         parser.booleanFlag(Interned.internAtom("var_prefix"), (o, v) -> o.varPrefix = v);
         parser.other(Interned.internAtom("variables"), (o, v) -> o.variables = Optional.of(v));
         parser.other(Interned.internAtom("variable_names"), (o, v) -> o.variableNames = Optional.of(v));
@@ -65,6 +66,10 @@ public class ReadOptions implements Flags {
      * Specify how to handle missing '.' at end of file.
      */
     public FullStop fullStop = FullStop.ATOM_required;
+    /**
+     * Specify how to handle whitespace.
+     */
+    public WhiteSpace whiteSpace = WhiteSpace.ATOM_skip;
     /**
      * Force variables to begin with '_'
      */
@@ -109,5 +114,10 @@ public class ReadOptions implements Flags {
     public enum FullStop {
         ATOM_required,
         ATOM_optional
+    }
+
+    public enum WhiteSpace {
+        ATOM_skip,
+        ATOM_atom
     }
 }

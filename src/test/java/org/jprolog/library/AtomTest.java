@@ -1,10 +1,11 @@
 package org.jprolog.library;
 
-import org.junit.jupiter.api.Test;
 import org.jprolog.test.Given;
 import org.jprolog.test.PrologTest;
+import org.junit.jupiter.api.Test;
 
-import static org.jprolog.test.Matchers.*;
+import static org.jprolog.test.Matchers.isAtom;
+import static org.jprolog.test.Matchers.isInteger;
 
 /**
  * Tests atom manipulation
@@ -41,7 +42,7 @@ public class AtomTest {
                 .variable("X", isAtom("foo"))
                 .andWhen("?- atom_concat(X, bad, foobar).")
                 .assertFailed()
-                ;
+        ;
     }
 
     @Test
@@ -108,7 +109,7 @@ public class AtomTest {
                 .variable("A", isInteger(4))
                 .anotherSolution()
                 .assertFailed()
-                ;
+        ;
     }
 
     @Test
@@ -306,70 +307,94 @@ public class AtomTest {
     }
 
     @Test
-    public void testSubAtomUnconstrained() {
-        // examples of sub_atom that iterates all solutuions
+    public void testSubAtomUnconstrained1() {
+        // examples of sub_atom that iterates all solutions, matching Inria test
+        given()
+                .when("?- sub_atom(ab, B, L, _, S).")
+                .solutions(
+                        soln -> soln
+                                .variable("B", isInteger(0))
+                                .variable("L", isInteger(0))
+                                .variable("S", isAtom("")),
+                        soln -> soln
+                                .variable("B", isInteger(0))
+                                .variable("L", isInteger(1))
+                                .variable("S", isAtom("a")),
+                        soln -> soln
+                                .variable("B", isInteger(0))
+                                .variable("L", isInteger(2))
+                                .variable("S", isAtom("ab")),
+                        soln -> soln
+                                .variable("B", isInteger(1))
+                                .variable("L", isInteger(0))
+                                .variable("S", isAtom("")),
+                        soln -> soln
+                                .variable("B", isInteger(1))
+                                .variable("L", isInteger(1))
+                                .variable("S", isAtom("b")),
+                        soln -> soln
+                                .variable("B", isInteger(2))
+                                .variable("L", isInteger(0))
+                                .variable("S", isAtom(""))
+                );
+    }
+
+    @Test
+    public void testSubAtomUnconstrained2() {
+        // examples of sub_atom that iterates all solutions
         given()
                 .when("?- sub_atom(abc, B, L, A, X).")
-                .assertSuccess()
-                .variable("B", isInteger(0))
-                .variable("L", isInteger(0))
-                .variable("A", isInteger(3))
-                .variable("X", isAtom(""))
-                .anotherSolution()
-                .assertSuccess()
-                .variable("B", isInteger(0))
-                .variable("L", isInteger(1))
-                .variable("A", isInteger(2))
-                .variable("X", isAtom("a"))
-                .anotherSolution()
-                .assertSuccess()
-                .variable("B", isInteger(0))
-                .variable("L", isInteger(2))
-                .variable("A", isInteger(1))
-                .variable("X", isAtom("ab"))
-                .anotherSolution()
-                .assertSuccess()
-                .variable("B", isInteger(0))
-                .variable("L", isInteger(3))
-                .variable("A", isInteger(0))
-                .variable("X", isAtom("abc"))
-                .anotherSolution()
-                .assertSuccess()
-                .variable("B", isInteger(1))
-                .variable("L", isInteger(0))
-                .variable("A", isInteger(2))
-                .variable("X", isAtom(""))
-                .anotherSolution()
-                .assertSuccess()
-                .variable("B", isInteger(1))
-                .variable("L", isInteger(1))
-                .variable("A", isInteger(1))
-                .variable("X", isAtom("b"))
-                .anotherSolution()
-                .assertSuccess()
-                .variable("B", isInteger(1))
-                .variable("L", isInteger(2))
-                .variable("A", isInteger(0))
-                .variable("X", isAtom("bc"))
-                .anotherSolution()
-                .assertSuccess()
-                .variable("B", isInteger(2))
-                .variable("L", isInteger(0))
-                .variable("A", isInteger(1))
-                .variable("X", isAtom(""))
-                .anotherSolution()
-                .assertSuccess()
-                .variable("B", isInteger(2))
-                .variable("L", isInteger(1))
-                .variable("A", isInteger(0))
-                .variable("X", isAtom("c"))
-                .anotherSolution()
-                .assertSuccess()
-                .variable("B", isInteger(3))
-                .variable("L", isInteger(0))
-                .variable("A", isInteger(0))
-                .variable("X", isAtom(""))
-                .anotherSolution()
-                .assertFailed();
+                .solutions(
+                        soln -> soln
+                                .variable("B", isInteger(0))
+                                .variable("L", isInteger(0))
+                                .variable("A", isInteger(3))
+                                .variable("X", isAtom("")),
+                        soln -> soln
+                                .variable("B", isInteger(0))
+                                .variable("L", isInteger(1))
+                                .variable("A", isInteger(2))
+                                .variable("X", isAtom("a")),
+                        soln -> soln
+                                .variable("B", isInteger(0))
+                                .variable("L", isInteger(2))
+                                .variable("A", isInteger(1))
+                                .variable("X", isAtom("ab")),
+                        soln -> soln
+                                .variable("B", isInteger(0))
+                                .variable("L", isInteger(3))
+                                .variable("A", isInteger(0))
+                                .variable("X", isAtom("abc")),
+                        soln -> soln
+                                .variable("B", isInteger(1))
+                                .variable("L", isInteger(0))
+                                .variable("A", isInteger(2))
+                                .variable("X", isAtom("")),
+                        soln -> soln
+                                .variable("B", isInteger(1))
+                                .variable("L", isInteger(1))
+                                .variable("A", isInteger(1))
+                                .variable("X", isAtom("b")),
+                        soln -> soln
+                                .variable("B", isInteger(1))
+                                .variable("L", isInteger(2))
+                                .variable("A", isInteger(0))
+                                .variable("X", isAtom("bc")),
+                        soln -> soln
+                                .variable("B", isInteger(2))
+                                .variable("L", isInteger(0))
+                                .variable("A", isInteger(1))
+                                .variable("X", isAtom("")),
+                        soln -> soln
+                                .variable("B", isInteger(2))
+                                .variable("L", isInteger(1))
+                                .variable("A", isInteger(0))
+                                .variable("X", isAtom("c")),
+                        soln -> soln
+                                .variable("B", isInteger(3))
+                                .variable("L", isInteger(0))
+                                .variable("A", isInteger(0))
+                                .variable("X", isAtom(""))
+                );
     }
 }

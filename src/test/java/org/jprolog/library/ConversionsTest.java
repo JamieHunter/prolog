@@ -1,10 +1,12 @@
 package org.jprolog.library;
 
+import org.jprolog.exceptions.PrologSyntaxError;
 import org.junit.jupiter.api.Test;
 import org.jprolog.test.Given;
 import org.jprolog.test.PrologTest;
 
 import static org.jprolog.test.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests various conversions
@@ -43,7 +45,7 @@ public class ConversionsTest {
                 .andWhen("?- atom_codes(ab, Y).")
                 .assertSuccess()
                 .variable("Y", isList(isInteger('a'), isInteger('b')))
-                ;
+        ;
     }
 
     @Test
@@ -76,6 +78,15 @@ public class ConversionsTest {
                 .variable("Y", isList(isAtom("3"), isAtom("3"), isAtom("."),
                         isAtom("0"), isAtom("0"), isAtom("0"), isAtom("0")))
         ;
+
+    }
+
+    @Test
+    public void testNumberCharsBadNumber() {
+        assertThrows(PrologSyntaxError.class, () -> {
+            given()
+                    .when("?- number_chars(X, ['3', ' ']).");
+        });
 
     }
 

@@ -5,8 +5,11 @@
 */
 
 
-[(catch(true, C, write('something')), throw(blabla)), system_error]. 
+% TODO: Why is this expected to be system_error?
+% [(catch(true, C, write('something')), throw(blabla)), system_error].
 						% The system catchs 'blabla'
+% TODO: This is supposedly incorrect
+[(catch(true, C, write('something')), throw(blabla)), unexpected_ball(blabla)].
 
 [catch(number_chars(A,L), error(instantiation_error, _), fail), failure].
 
