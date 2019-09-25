@@ -61,4 +61,9 @@ public interface Given {
      * @return environment Underlying environment
      */
     Given environment(Consumer<Environment> consumer);
+
+    /**
+     * @return Environment
+     */
+    Environment environment();
 }

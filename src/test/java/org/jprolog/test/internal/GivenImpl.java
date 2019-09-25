@@ -64,4 +64,9 @@ public class GivenImpl implements Given {
         return this;
     }
 
+    @Override
+    public Environment environment() {
+        return state.environment();
+    }
+
 }
