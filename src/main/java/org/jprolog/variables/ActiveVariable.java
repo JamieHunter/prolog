@@ -87,10 +87,13 @@ public class ActiveVariable implements Variable {
     public long corefId() {
         // effective id after resolving coreferences
         Term v = value;
+        long i = id;
         while (v instanceof ActiveVariable) {
-            v = ((ActiveVariable) v).value;
+            ActiveVariable av = (ActiveVariable)v;
+            i = av.id;
+            v = av.value;
         }
-        return id;
+        return i;
     }
 
     /**

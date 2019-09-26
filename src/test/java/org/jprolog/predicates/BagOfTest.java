@@ -34,22 +34,20 @@ public class BagOfTest {
     public void testBagOfWithBacktracking() {
         given()
                 .when("?- bagof(A, legs(A,N), B).")
-                .assertSuccess()
-                .variable("A", Matchers.isUninstantiated())
-                .variable("N", Matchers.isInteger(6))
-                .variable("B", Matchers.isList(Matchers.isAtom("bee"), Matchers.isAtom("ant")))
-                .anotherSolution()
-                .assertSuccess()
-                .variable("A", Matchers.isUninstantiated())
-                .variable("N", Matchers.isInteger(4))
-                .variable("B", Matchers.isList(Matchers.isAtom("horse"), Matchers.isAtom("cat"), Matchers.isAtom("dog")))
-                .anotherSolution()
-                .assertSuccess()
-                .variable("A", Matchers.isUninstantiated())
-                .variable("N", Matchers.isInteger(8))
-                .variable("B", Matchers.isList(Matchers.isAtom("tarantula")))
-                .anotherSolution()
-                .assertFailed();
+                .solutions(
+                        soln -> soln
+                                .variable("A", Matchers.isUninstantiated())
+                                .variable("N", Matchers.isInteger(6))
+                                .variable("B", Matchers.isList(Matchers.isAtom("bee"), Matchers.isAtom("ant"))),
+                        soln -> soln
+                                .variable("A", Matchers.isUninstantiated())
+                                .variable("N", Matchers.isInteger(4))
+                                .variable("B", Matchers.isList(Matchers.isAtom("horse"), Matchers.isAtom("cat"), Matchers.isAtom("dog"))),
+                        soln -> soln
+                                .variable("A", Matchers.isUninstantiated())
+                                .variable("N", Matchers.isInteger(8))
+                                .variable("B", Matchers.isList(Matchers.isAtom("tarantula")))
+                );
     }
 
     @Test
@@ -150,10 +148,8 @@ public class BagOfTest {
                 .assertFailed();
         given()
                 // from sec810.pl, edge case fails
-                .when("?- setof(X, member(X, [V, U, f(U), f(V)]), [a, b, f(b), f(a)]).")
-                .assertSuccess()
-                .anotherSolution()
-                .assertFailed();
+                .when("?- setof(X, member(X, [V, U, f(U), f(V)]), [a, b, f(a), f(b)]).")
+                .solutions(soln -> soln.assertSuccess());
     }
 
     @Test
@@ -161,8 +157,29 @@ public class BagOfTest {
         // this is the Inria Suite Test bagof(A,(A=B;A=C),D)
         given()
                 .when("?- bagof(A,(A=B;A=C),D).")
-                .assertSuccess()
-                .variable("D", Matchers.isList(Matchers.isVariable("B"), Matchers.isVariable("C")));
-                ;
+                .solutions(soln ->
+                        soln.variable("D", Matchers.isList(Matchers.isVariable("B"), Matchers.isVariable("C")))
+                )
+        ;
+    }
+
+    @Test
+    public void testBagOfVariablesMultipleSolutions() {
+        //Inria test [bagof(X,(X=Y;X=Z;Y=1),L), [[L <-- [Y, Z]], [L <-- [_], Y <-- 1]]].
+        //Findall produces:
+        //1) x^[Y,Z] (X=Y, Z=_)
+        //2) X^[Y,Z] (X=Z, Y=_)
+        //3) X^[1,Z] (Y=1, X=_, Z=_)
+        // 1 and 2 should collapse into one bag with two different X values
+        // 3, X is uninstantiated, and mismatches
+        given()
+                .when("?- bagof(X,(X=Y;X=Z;Y=1),L).")
+                .solutions(soln ->
+                                soln.variable("L", Matchers.isList(Matchers.isVariable("Y"), Matchers.isVariable("Z"))),
+                        soln ->
+                                soln.variable("L", Matchers.isList(Matchers.isVariable()))
+                                        .variable("Y", Matchers.isInteger(1))
+                )
+        ;
     }
 }

@@ -108,14 +108,14 @@ public class ExecBagOf extends ExecFindAll {
     private class ProduceIterator extends DecisionPointImpl {
 
         private final Unifier listUnifier;
-        private final Unifier varUnifier;
+        private final CompoundTerm freeVariables;
         private final List<Term> solutions;
         private int iter = 0;
 
         protected ProduceIterator(Environment environment, CompoundTerm freeVariables,
                                   List<Term> solutions, Unifier listUnifier) {
             super(environment);
-            this.varUnifier = UnifyBuilder.from(freeVariables);
+            this.freeVariables = freeVariables;
             this.listUnifier = listUnifier;
             this.solutions = solutions;
         }
@@ -133,34 +133,26 @@ public class ExecBagOf extends ExecFindAll {
             environment.forward();
             environment.pushDecisionPoint(this);
             LocalContext context = environment.getLocalContext();
-
-            // Collect possible solutions - solutions may be merged together including unification.
-            // original logic just used sort, but that is not sufficient
-            CompoundTerm entry = (CompoundTerm) solutions.get(iter++).resolve(context);
-            CompoundTerm freeVarVals = (CompoundTerm) entry.get(1);
-
-            // bind key with free variables
-            if (!varUnifier.unify(context, freeVarVals)) {
-                throw new InternalError("Unexpected unify failure");
-            }
-
-            // dedup/collate all other viable entries that can be considered to have the same set of values
+            HashSet<Long> bound = new HashSet<>();
             ArrayList<Term> values = new ArrayList<>();
-            values.add(entry.get(0));
             for (int i = iter; i < solutions.size(); i++) {
                 Term next = solutions.get(i);
                 if (next == PrologEmptyList.EMPTY_LIST) {
+                    // skip anything previously picked
                     continue;
                 }
-                int depth = environment.getBacktrackDepth();
                 CompoundTerm compNext = (CompoundTerm) next.resolve(context);
-                if (varUnifier.unify(context, compNext.get(1))) {
+                CompoundTerm solnValues = (CompoundTerm)compNext.get(1);
+                if (tryMatch(solnValues,bound)) {
                     values.add(compNext.get(0));
                     solutions.set(i, PrologEmptyList.EMPTY_LIST); // don't include again
-                } else {
-                    // localized rollback
-                    environment.trimBacktrackStackToDepth(depth);
+                    if (i == iter) {
+                        iter++;
+                    }
                 }
+            }
+            if (values.size() == 0) {
+                throw new InternalError("No values collected");
             }
             Term outTerm = TermList.from(collate(values));
             // Unify
@@ -168,6 +160,33 @@ public class ExecBagOf extends ExecFindAll {
                 environment.backtrack();
                 return;
             }
+        }
+
+        /**
+         * Succeeds if either free variables contain the same value as before, or if the free variables can be assigned
+         * new values not previously seen before
+         * @param solnValues Values in this solution
+         * @param bound Set identifying what free variables have been unified
+         * @return true if solution can be included
+         */
+        protected boolean tryMatch(CompoundTerm solnValues, Set<Long> bound) {
+            List<Long> newBound = new ArrayList<>();
+            int depth = environment.getBacktrackDepth();
+            for(int j = 0; j < freeVariables.arity(); j++) {
+                ActiveVariable freeVariable = (ActiveVariable)freeVariables.get(j);
+                Term solnValue = solnValues.get(j);
+                if (freeVariable.compareTo(solnValue) != 0) {
+                    // pick? make sure free variable is not already picked and unify it
+                    if (bound.contains(freeVariable.id()) || !freeVariable.instantiate(solnValue)) {
+                        environment.trimBacktrackStackToDepth(depth);
+                        return false;
+                    } else {
+                        newBound.add(freeVariable.id());
+                    }
+                }
+            }
+            bound.addAll(newBound);
+            return true;
         }
     }
 

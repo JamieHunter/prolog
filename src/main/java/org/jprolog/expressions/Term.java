@@ -146,7 +146,7 @@ public interface Term extends Comparable<Term> {
      */
     @Override
     default int compareTo(Term o) {
-        return compare(this, o);
+        return compare(this.value(), o.value());
     }
 
     /**
