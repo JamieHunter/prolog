@@ -16,7 +16,8 @@
 
 [bagof(X,Y^((X=1;Y=1);(X=2,Y=2)),S), [[S <-- [1, _, 2]]]].
 
-[bagof(X,Y^((X=1;Y=1);X=3),S), [[S <-- [3], Y <-- _]]].
+[(set_prolog_flag(unknown, warning),
+bagof(X,(Y^(X=1;Y=1);X=3),S)), [[S <-- [3], Y <-- _]]].
 
 [bagof(X,(X=Y;X=Z;Y=1),L), [[L <-- [Y, Z]], [L <-- [_], Y <-- 1]]].
 

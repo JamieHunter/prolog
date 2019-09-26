@@ -22,6 +22,10 @@ public class GivenImpl implements Given {
         this.state = new StateImpl();
     }
 
+    private GivenImpl(GivenImpl other) {
+        this.state = new StateImpl(other.state);
+    }
+
     @Override
     public Given that(String text) {
         return when(text).and();
@@ -69,4 +73,9 @@ public class GivenImpl implements Given {
         return state.environment();
     }
 
+    @Override
+    public Given breakEnvironment() {
+        // execute a break
+        return new GivenImpl(this);
+    }
 }

@@ -202,8 +202,12 @@ public class TokenizerTest {
     }
 
     @Test
-    public void testDoubleQuotedCharList() {
+    public void testDoubleQuotedModes() {
         readOptions.doubleQuotes = PrologFlags.Quotes.ATOM_symbol_char;
+        expect("\"123\" \"abc\"",
+                isList(isAtom("1"), isAtom("2"), isAtom("3")),
+                isList(isAtom("a"), isAtom("b"), isAtom("c")));
+        readOptions.doubleQuotes = PrologFlags.Quotes.ATOM_chars;
         expect("\"123\" \"abc\"",
                 isList(isAtom("1"), isAtom("2"), isAtom("3")),
                 isList(isAtom("a"), isAtom("b"), isAtom("c")));
@@ -211,6 +215,14 @@ public class TokenizerTest {
         expect("\"123\" \"abc\"",
                 isList(isInteger('1'), isInteger('2'), isInteger('3')),
                 isList(isInteger('a'), isInteger('b'), isInteger('c')));
+        readOptions.doubleQuotes = PrologFlags.Quotes.ATOM_atom;
+        expect("\"123\" \"abc\"",
+                isAtom("123"),
+                isAtom("abc"));
+        readOptions.doubleQuotes = PrologFlags.Quotes.ATOM_string;
+        expect("\"123\" \"abc\"",
+                isString("123"),
+                isString("abc"));
     }
 
     @Test

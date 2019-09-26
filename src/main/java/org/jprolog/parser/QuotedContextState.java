@@ -3,6 +3,7 @@
 //
 package org.jprolog.parser;
 
+import org.jprolog.constants.PrologAtom;
 import org.jprolog.constants.PrologChars;
 import org.jprolog.constants.PrologCodePoints;
 import org.jprolog.constants.PrologInteger;
@@ -135,12 +136,16 @@ class QuotedContextState extends ActiveParsingState {
                     str = new PrologQuotedAtom(builder.toString());
                     break;
                 default:
-                    switch(tokenizer.options().doubleQuotes) {
+                    switch (tokenizer.options().doubleQuotes) {
                         case ATOM_symbol_char:
+                        case ATOM_chars:
                             str = new PrologChars(builder.toString());
                             break;
                         case ATOM_codes:
                             str = new PrologCodePoints(builder.toString());
+                            break;
+                        case ATOM_atom:
+                            str = new PrologAtom(builder.toString());
                             break;
                         default:
                             str = new PrologString(builder.toString());

@@ -187,8 +187,10 @@ public class PrologFlags implements Flags {
     }
 
     public enum Quotes {
+        ATOM_atom,
         ATOM_codes,
         ATOM_symbol_char,
+        ATOM_chars,
         ATOM_string
     }
 

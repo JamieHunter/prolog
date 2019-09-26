@@ -66,4 +66,10 @@ public interface Given {
      * @return Environment
      */
     Environment environment();
+
+    /**
+     * Creates a new context/environment.
+     * @return break' given
+     */
+    Given breakEnvironment();
 }

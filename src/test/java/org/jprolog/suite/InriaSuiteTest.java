@@ -3,6 +3,9 @@ package org.jprolog.suite;
 import org.jprolog.bootstrap.Interned;
 import org.jprolog.constants.PrologAtom;
 import org.jprolog.constants.PrologAtomInterned;
+import org.jprolog.constants.PrologInteger;
+import org.jprolog.constants.PrologString;
+import org.jprolog.enumerators.SimplifyTerm;
 import org.jprolog.enumerators.VariableCollector;
 import org.jprolog.exceptions.PrologThrowable;
 import org.jprolog.execution.Environment;
@@ -19,92 +22,118 @@ import org.jprolog.unification.Unifier;
 import org.jprolog.variables.LabeledVariable;
 import org.jprolog.variables.Variable;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.TestInstance;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class InriaSuiteTest extends Suite {
 
     static final int MAX_TIMES = 100;
 
-    private Then loadInriaSuite() {
-        return given(Paths.get("inriasuite"))
+    private Given loadInriaSuite() {
+        Then setup = given(Paths.get("inriasuite"))
                 .when("?- ['inriasuite.pl'].").assertSuccess();
+        return setup.and();
     }
 
-    @Disabled("INRIA Native test suite ignored, it will fail")
+    @Disabled("Use only for diagnostics")
     @Test
     public void testInriaSuiteNative() {
-        loadInriaSuite().andWhen("?- run_all_tests.").assertSuccess();
+        loadInriaSuite().when("?- run_all_tests.").assertSuccess();
     }
 
     /**
-     * Generate a dynamic test per whitelisted file.
+     * Generate a dynamic container per whitelisted file.
+     *
      * @return list of tests
      */
     @TestFactory
-    public List<DynamicTest> testInriaSuiteFactory() {
-        Then loaded = loadInriaSuite();
+    public List<DynamicContainer> testInriaSuiteFactory() {
         // collect the set of files
-        ArrayList<DynamicTest> tests = new ArrayList<>();
-        loaded = loaded.andWhen("?- file(N), absolute_file_name(N,P).");
-        while (loaded.isSuccess()) {
-            Term value = loaded.getVariableValue("P");
+        ArrayList<DynamicContainer> tests = new ArrayList<>();
+        Then recurse = loadInriaSuite().when("?- file(N), absolute_file_name(N,P).").assertSuccess();
+        while (recurse.isSuccess()) {
+            Term value = recurse.getVariableValue("P");
             String name = value.toString();
             Path path = Paths.get(name);
-            tests.add(DynamicTest.dynamicTest("Inria test " + name,
-                    path.toUri(), () -> testInriaFile(path)));
-            loaded.anotherSolution();
+            tests.add(DynamicContainer.dynamicContainer("Inria test " + name,
+                    path.toUri(), parseInriaFile(path)));
+            recurse.anotherSolution();
         }
         return tests;
     }
 
     /**
-     * Test single test (dynamic)
-     * @param path Path to Inria test file
+     * Generate a test per entry per file
+     *
+     * @param path Path of Prolog file
+     * @return stream of tests, assumed to execute sequentially
      */
-    private void testInriaFile(Path path) {
-        PrologAtom successAtom = new PrologAtom("success");
-        PrologAtom failureAtom = new PrologAtom("failure");
-        Then loaded = loadInriaSuite();
-        Given chain = loaded.and();
-        Term tests = chain
-                .when("?- read_tests(\"" + path.toString().replace("\\", "\\\\") + "\", Tests).")
+    Stream<DynamicTest> parseInriaFile(Path path) {
+        Given given = loadInriaSuite(); // new copy per file
+        Term tests = given.when(prepareGoal(new CompoundTermImpl(
+                new PrologAtom("read_tests"),
+                new PrologString(path.toString()),
+                new LabeledVariable("Tests", given.environment().nextVariableId()))))
                 .assertSuccess()
                 .getVariableValue("Tests");
-        for (Term test : TermList.extractList(tests)) {
+        return TermList.extractList(tests).stream().map(test -> {
+            test = test.enumTerm(new SimplifyTerm(given.environment()));
             List<Term> parts = TermList.extractList(test);
-            if (parts.size() != 2) {
-                fail("Invalid test file, entry: " + tests);
+            if (parts.size() != 3) {
+                fail("Invalid test file, entry: " + parts + " at line " + parts.get(0));
             }
-            Term goal = parts.get(0);
-            Term expectations = parts.get(1);
-            if (TermList.isList(expectations)) {
-                assertAllSolutions(chain, goal, expectations);
-            } else if (successAtom.compareTo(expectations) == 0) {
-                assertSuccess(chain, goal);
-            } else if (failureAtom.compareTo(expectations) == 0) {
-                assertFailed(chain, goal);
-            } else {
-                // assume everything else is an exception?
-                assertPrologException(chain, goal, expectations);
-            }
+            int line = PrologInteger.from(parts.get(0)).toInteger();
+            URI uri = URI.create(path.toUri().toString() + "?line=" + line);
+            String goal = formatTerm(given, parts.get(1));
+            Given perTest = given.breakEnvironment();
+            Term goalTerm = parts.get(1);
+            Term expectations = parts.get(2);
+            return DynamicTest.dynamicTest(goal, uri, () -> performTest(perTest, goalTerm, expectations));
+        });
+    }
+
+    /**
+     * Perform a test
+     *
+     * @param perTest      Given context, for the file
+     * @param goal         Goal being tested
+     * @param expectations Expectations of goal
+     */
+    private void performTest(Given perTest, Term goal, Term expectations) {
+        PrologAtom successAtom = new PrologAtom("success");
+        PrologAtom failureAtom = new PrologAtom("failure");
+        if (TermList.isList(expectations)) {
+            assertAllSolutions(perTest, goal, expectations);
+        } else if (successAtom.compareTo(expectations) == 0) {
+            assertSuccess(perTest, goal);
+        } else if (failureAtom.compareTo(expectations) == 0) {
+            assertFailed(perTest, goal);
+        } else {
+            // assume everything else is an exception?
+            assertPrologException(perTest, goal, expectations);
         }
     }
 
     /**
      * Pretty-print a term
+     *
      * @param given Given context
-     * @param term Term to format
-     * @return
+     * @param term  Term to format
+     * @return formatted term
      */
     private String formatTerm(Given given, Term term) {
         Environment e = given.environment();
@@ -115,6 +144,7 @@ public class InriaSuiteTest extends Suite {
 
     /**
      * Wraps a goal in ?-/1
+     *
      * @param goal
      * @return prepared goal
      */
@@ -124,8 +154,9 @@ public class InriaSuiteTest extends Suite {
 
     /**
      * Assert that goal succeeded
+     *
      * @param given Given context
-     * @param goal Goal under test
+     * @param goal  Goal under test
      */
     private void assertSuccess(Given given, Term goal) {
         Then result = given.when(prepareGoal(goal));
@@ -141,8 +172,9 @@ public class InriaSuiteTest extends Suite {
 
     /**
      * Assert goal failed
+     *
      * @param given Given context
-     * @param goal Goal under test
+     * @param goal  Goal under test
      */
     private void assertFailed(Given given, Term goal) {
         Then result = given.when(prepareGoal(goal));
@@ -154,8 +186,9 @@ public class InriaSuiteTest extends Suite {
 
     /**
      * Assert that prolog throws an exception
-     * @param given Given context
-     * @param goal Goal under test
+     *
+     * @param given   Given context
+     * @param goal    Goal under test
      * @param pattern Exception pattern
      */
     private void assertPrologException(Given given, Term goal, Term pattern) {
@@ -185,8 +218,9 @@ public class InriaSuiteTest extends Suite {
 
     /**
      * Exhaust all possible solutions
-     * @param given Given context
-     * @param goal Goal under test
+     *
+     * @param given        Given context
+     * @param goal         Goal under test
      * @param expectations Collection of expectations
      */
     private void assertAllSolutions(Given given, Term goal, Term expectations) {
@@ -217,14 +251,14 @@ public class InriaSuiteTest extends Suite {
         builder.append("Executed [" + formatTerm(given, goal) + "] " + times + " out of " + expected + " times.");
         if (solutions.size() > 0) {
             builder.append(" Missing solutions: ");
-            for(Term soln : solutions) {
+            for (Term soln : solutions) {
                 builder.append(formatTerm(given, soln));
                 builder.append(" ");
             }
         }
         if (extra.size() > 0) {
             builder.append(" Extra solutions: ");
-            for(Term soln : extra) {
+            for (Term soln : extra) {
                 builder.append(formatTerm(given, soln));
                 builder.append(" ");
             }
@@ -236,11 +270,12 @@ public class InriaSuiteTest extends Suite {
 
     /**
      * Either match/extract a solution, or place unique solution into extra list
-     * @param given Given context
-     * @param result Result context
-     * @param goal Goal under test
+     *
+     * @param given     Given context
+     * @param result    Result context
+     * @param goal      Goal under test
      * @param solutions Remaining unmatched solution expectations
-     * @param extra Extra solutions collected
+     * @param extra     Extra solutions collected
      * @param variables Variables in goal
      */
     private void extractOneSolution(Given given, Then result, Term goal, List<Term> solutions, List<Term> extra, List<? extends Variable> variables) {
@@ -256,7 +291,8 @@ public class InriaSuiteTest extends Suite {
 
     /**
      * true if all constraints for the given solutions expectation are fulfilled.
-     * @param given Given context
+     *
+     * @param given       Given context
      * @param constraints List of constraints for given solution expectation
      * @return true if fulfilled
      */
@@ -294,8 +330,9 @@ public class InriaSuiteTest extends Suite {
 
     /**
      * If a solution was not matched, construct something useful to aid debugging
-     * @param given Given context
-     * @param result Result context
+     *
+     * @param given     Given context
+     * @param result    Result context
      * @param variables Variables to construct mismatch from
      * @return Mismatching term
      */

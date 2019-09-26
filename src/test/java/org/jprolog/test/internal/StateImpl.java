@@ -24,13 +24,20 @@ import java.util.LinkedList;
  */
 public class StateImpl {
 
-    final TestEnvironment environment = new TestEnvironment();
+    final Environment environment;
     int callDepth;
     int backtrackDepth;
     final LinkedList<Term> log = new LinkedList<>();
     final HashMap<String, OutputMonitor> textLogs = new HashMap<>();
 
     StateImpl() {
+        environment = new TestEnvironment();
+        reset();
+    }
+
+    StateImpl(StateImpl other) {
+        // break
+        environment = new Environment(other.environment);
         reset();
     }
 

@@ -21,6 +21,12 @@
 %    A more readable output can be obtained if the processor
 %   supports numbervars/3 by  restoring the commented out
 %   line in  write_if_wrong/5.
+%
+%    Revised April 8 1999.
+%
+%   Matching of solutions is not yet  perfected.
+%
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -111,7 +117,7 @@ result(G, Res) :-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%   certain substitutions appears in
+%   certain substitutions appear in
 %   a simplified form.
 %
 
@@ -170,7 +176,7 @@ vars_in_term(Term, VarsIn, VarsOut) :-
         ->
         VarsOut=VarsIn
         ;
-        do_append(VarsIn, [Term], VarsOut)
+        append(VarsIn, [Term], VarsOut)
         ). 
 
 % Term is a list.
@@ -376,7 +382,7 @@ compress_sub_list(Vars,LIn, LOut) :-
       var(A),!,
       sub(X <-- A, Before, BN),
       sub(X <-- A, After, AN),
-      do_append(BN,AN, L1),
+      append(BN,AN, L1),
       compress_sub_list(Vars, L1, LOut).
 
 compress_sub_list(_,L,L).
@@ -450,7 +456,7 @@ list_exp_sub(S, [E|ER], [EN|ERN]) :-
 
 
 split_list(Element, Before, After, List) :-
-	do_append(Before, [Element | After], List).
+	append(Before, [Element | After], List).
        
 	
 
@@ -468,39 +474,38 @@ split_list(Element, Before, After, List) :-
 %
 
 % special cases
-
 compare_subst_lists(F,S, [],[]) :-
 	\+ (F = [_|_]),
         \+ (S = [_|_]), 
-        F == S, !.
+        F = S, !.
 compare_subst_lists(F,S, F,S) :-
       	\+ (F = [_|_]),
         \+ (S = [_|_]), !.
 compare_subst_lists(F,S, FNS, SNF) :-
         \+(F = [_|_]), !,
        del_item(F, S, SNF),
-      (is_member(F,S) -> FNS =[]; FNS = F).
+      (member(F,S) -> FNS =[]; FNS = F).
 compare_subst_lists(F,S, FNS,SNF) :-
      \+( S = [_|_]), !,
       del_item(S, F, FNS),
-      (is_member(S,F) -> SNF =[]; SNF = S).
+      (member(S,F) -> SNF =[]; SNF = S).
 
 compare_subst_lists(F, S, [], []) :-
-     list_length(F,1),
-     list_length(S,1), F == S, !.
+     F= [F1], S = [S1],
+     same_subst(F1, S1), !.
  
 compare_subst_lists(F, S, F, S) :-
-     list_length(F,1),
-     list_length(S,1), !. 
+     length(F,1),
+     length(S,1), !. 
 
 compare_subst_lists(F,S, FNS,SNF) :-
-     list_length(F,1),!,
+     length(F,1),!,
       del_item(F, S, SNF),
-      (is_member(F,S) -> FNS =[]; FNS = F).
+      (member(F,S) -> FNS =[]; FNS = F).
 compare_subst_lists(F,S, FNS,SNF) :-
-     list_length(S,1), !,
+     length(S,1),
       del_item(S, F, FNS),
-      (is_member(S,F) -> SNF =[]; SNF = S).
+      (member(S,F) -> SNF =[]; SNF = S).
 
 
 compare_subst_lists(F,S, FNS, SNF) :-
@@ -516,9 +521,9 @@ list_del_item([It|R], L1, Left) :-
         list_del_item(R, LInter, Left).
            
 del_item(_Item, [],[]).
-del_item(Item, [It |Rest], R) :-
-      same_subst(Item, It), ! ,
-      del_item(Item, Rest, R).
+del_item(Item, [It |R], R) :-
+      same_subst(Item, It), ! .
+    %  del_item(Item, Rest, R).
 del_item(Item, [It|Rest], [It |R]) :-
 	del_item(Item, Rest, R).
 
@@ -540,7 +545,7 @@ same_subst([S1|SRest], Subs) :-
 % special delete for substitutions.
 %
 
-
+delmemb(_E, [], []).
 delmemb(E <-- E1 , [F <-- F1| R], R) :-
          E == F, 
 	copy_term(E <-- E1 ,F <-- F1).  % only when LHS's are eq.
@@ -591,11 +596,12 @@ read_tests(File, Tests) :-
 read_tests_list(S, Tests) :-
     !,
     read(S,X),
+    line_count(S, LC),
     (X == end_of_file ->
         Tests = []
         ;
         read_tests_list(S, Partial),
-        Tests = [X|Partial]).
+        Tests = [[LC|X]|Partial]).
 
 %%%%%%%%%%%%%%%%%%%%
 %
@@ -635,6 +641,12 @@ test(F,[G,Expected]) :-
         write_if_wrong(F, G, Expected, Extra, Missing),
         update_score(F, Missing, Extra).
 
+test(F, [G, ProgFile, Expected]) :-
+	[ProgFile],
+        result(G,R),
+        compare_subst_lists(R, Expected, Extra, Missing),
+        write_if_wrong(F, G, Expected, Extra, Missing),
+        update_score(F, Missing, Extra). 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %   write_if_wrong(+File, +Goal, +Expected, +Extra, +Missing)
@@ -642,6 +654,8 @@ test(F,[G,Expected]) :-
 % If Either Extra or Missing are non empty write
 % an appropriate message.
 %
+%  A more legant output is possible if the processor supports
+%  numbervars/3, insert ther commented out line.
 %
 
 write_if_wrong(_,_,_,[],[]):- !.
@@ -817,13 +831,6 @@ make_list1(N, [_|L1]) :-
      N1 is N -1,
      make_list(N1, L1).
 
-%%%%%%%%%%%%%%%%%%
-%
-%  ISO versions for some predicates that are builtins in
-%  many implementations.
-%
-%  numbervars/3, length/2, member/2, append/3.
-%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -845,38 +852,14 @@ fake_numbervars(T, N, M) :-
         T =.. [_F |Args],
         fake_numbervars(Args, N,M).
 
-
-%%%%%%%%%%%%%%
-%
-%  list_length(+List, -Len)
-%
-
-list_length(List, Len) :-
-	ll1(List, 0, Len).
-
-ll1([],N,N).
-ll1([_H|T], N, Len) :-
-	N1 is N + 1,
-        ll1(T,N1, Len).
-
-
-%%%%%%%%%%%%%%%
-%
-%   is_member(+El, +List)
-%
-
-is_member(X, [X|_]).
-is_member(X, [_|T]) :-
-	is_member(X,T).
-
 %%%%%%%%%%%%%%%%%%%%
 %
 %  do_append(Begin, End, Appended).
 %
 
-do_append([],L,L).
-do_append([H|L1], L2, [H|L3]) :-
-	do_append(L1,L2,L3).
+append([],L,L).
+append([H|L1], L2, [H|L3]) :-
+	append(L1,L2,L3).
 
 % :-initialization((run_all_tests, halt)).
 %:- initialization(run_all_tests).

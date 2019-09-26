@@ -25,6 +25,7 @@ import org.jprolog.expressions.CompoundTerm;
 import org.jprolog.expressions.Term;
 import org.jprolog.expressions.TermList;
 import org.jprolog.generators.YieldSolutions;
+import org.jprolog.io.Position;
 import org.jprolog.unification.Unifier;
 import org.jprolog.flags.AbsoluteFileNameOptions;
 import org.jprolog.flags.CloseOptions;
@@ -306,6 +307,29 @@ public final class Io {
     }
 
     /**
+     * Current line position
+     * @param environment Execution environment
+     * @param stream Stream to query
+     * @param count line count
+     */
+    @Predicate("line_count")
+    public static void lineCount(Environment environment, Term stream, Term count) {
+        LogicalStream logicalStream = lookupStream(environment, stream);
+        Position pos = new Position();
+        long countPos = 0;
+        try {
+            logicalStream.getStream().getPosition(pos);
+            if (pos.getLinePos().isPresent()) {
+                countPos = pos.getLinePos().get();
+            }
+        } catch (IOException e) {
+        }
+        if (!Unifier.unify(environment.getLocalContext(), count, PrologInteger.from(countPos))) {
+            environment.backtrack();
+        }
+    }
+
+    /**
      * Retrieve detailed positioning information of stream
      *
      * @param environment  Execution environment
@@ -315,6 +339,7 @@ public final class Io {
      */
     @Predicate("stream_position_data")
     public static void streamPositionData(Environment environment, Term positionTerm, Term method, Term data) {
+
         // Obtain position of a stream (compare with seek)
         throw new UnsupportedOperationException("NYI");
     }
