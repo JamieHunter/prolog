@@ -45,23 +45,8 @@ public class AtomWriter extends TermWriter<PrologAtomLike> {
                 context.beginAlphaNum();
             }
             output.write(term.name());
-        } else if (context.options().quoted) {
-            writeQuoted('\'', term.name());
-        } else if (term.name().length() == 0) {
-            // write nothing
         } else {
-            // guess if whitespace is required or not
-            char first = term.name().charAt(0);
-            char last = term.name().charAt(term.name().length()-1);
-            if (first <= 0x20) {
-                context.beginSafe();
-            } else {
-                context.beginUnknown();
-            }
-            output.write(term.name());
-            if (last <= 0x20) {
-                context.beginSafe();
-            }
+            writeMaybeQuoted('\'', term.name());
         }
     }
 

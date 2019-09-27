@@ -1,5 +1,4 @@
 /* file number_chars */
-/* Some goals fails because the parser is not yet implemented */
 
 [number_chars(33,L), [[L <-- ['3','3']]]].
 [number_chars(33,['3','3']), success].
@@ -19,8 +18,6 @@
 [number_chars(A,L), instantiation_error].
 [number_chars(a,L), type_error(number, a)].
 [number_chars(A,4), type_error(list, 4)].
-% TODO: Deviation - We allow mixing of characters and numbers
-%% [number_chars(A,['4',2]), type_error(character, 2)].
-[number_chars(A,['4',2]), syntax_error(_)].
+[number_chars(A,['4',2]), type_error(character, 2)].
 
 /* end of file number_chars */

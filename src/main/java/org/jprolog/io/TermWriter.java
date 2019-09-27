@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 
 /**
  * Format a term (base class) to {@link WriteContext}.
+ *
  * @param <T> Kind of Term written by this Writer.
  */
 public abstract class TermWriter<T extends Term> extends TokenRegex {
@@ -20,6 +21,7 @@ public abstract class TermWriter<T extends Term> extends TokenRegex {
 
     /**
      * Create writer utility.
+     *
      * @param context Write context
      */
     protected TermWriter(WriteContext context) {
@@ -47,21 +49,51 @@ public abstract class TermWriter<T extends Term> extends TokenRegex {
 
     /**
      * Override with actual write functionality.
+     *
      * @throws IOException Thrown if there is an IO error
      */
     public abstract void write(Term term) throws IOException;
 
     /**
-     * Format a string correctly quoted
+     * Format a string depending on quoting mode
+     *
      * @param quote Style of quotes to apply
-     * @param text text to convert
+     * @param text  text to convert
+     * @throws IOException IO Error
+     */
+    public void writeMaybeQuoted(char quote, String text) throws IOException {
+        if (context.options().quoted) {
+            writeQuoted(quote, text);
+        } else if (text.length() == 0) {
+            // write nothing
+        } else {
+            // guess if whitespace is required or not
+            char first = text.charAt(0);
+            char last = text.charAt(text.length() - 1);
+            if (first <= 0x20) {
+                context.beginSafe();
+            } else {
+                context.beginUnknown();
+            }
+            output.write(text);
+            if (last <= 0x20) {
+                context.beginSafe();
+            }
+        }
+    }
+
+    /**
+     * Format a string correctly quoted
+     *
+     * @param quote Style of quotes to apply
+     * @param text  text to convert
      * @throws IOException IO Error
      */
     public void writeQuoted(char quote, String text) throws IOException {
         context.beginQuoted();
         output.write(quote);
         Matcher m = STRING_SPLITTER.matcher(text);
-        for(;m.lookingAt();m.region(m.end(), m.regionEnd())) {
+        for (; m.lookingAt(); m.region(m.end(), m.regionEnd())) {
             String x = m.group(PRINTABLE_TAG);
             if (x != null) {
                 output.write(x);
@@ -82,7 +114,7 @@ public abstract class TermWriter<T extends Term> extends TokenRegex {
             }
             x = m.group(ALL_TAG);
             if (x != null) {
-                switch(x.charAt(0)) {
+                switch (x.charAt(0)) {
                     case '\002':
                         output.write("\\a");
                         break;
@@ -106,9 +138,9 @@ public abstract class TermWriter<T extends Term> extends TokenRegex {
                         break;
                     default:
                         if (x.charAt(0) < 0x20) {
-                            output.write(String.format("\\%03o\\", (int)x.charAt(0)));
+                            output.write(String.format("\\%03o\\", (int) x.charAt(0)));
                         } else {
-                            output.write(String.format("\\x%x\\", (int)x.charAt(0)));
+                            output.write(String.format("\\x%x\\", (int) x.charAt(0)));
                         }
                         break;
                 }

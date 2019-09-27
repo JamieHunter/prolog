@@ -1,0 +1,15 @@
+/* file string_codes */
+
+[string_codes("",L), [[L <-- []]]].
+[string_codes("[]",L), [[L <-- [ 0'[, 0'] ]]]].
+[string_codes("""",L), [[L <-- [ 0'" ]]]].
+[string_codes("iso",L), [[L <-- [ 0'i, 0's, 0'o ]]]].
+[string_codes(A,[ 0'p, 0'r, 0'o, 0'l, 0'o, 0'g]), [[A <-- "prolog"]]].
+[string_codes("North",[0'N | L]), [[L <-- [0'o, 0'r, 0't, 0'h]]]].
+[string_codes("iso",[0'i, 0's]), failure].
+[string_codes(A,L), instantiation_error].
+[string_codes(f(a),L), type_error(string,f(a))].
+[string_codes(A, 0'x), type_error(list,0'x)].
+[string_codes(A,[ 0'i, 0's, 99999]), representation_error(character_code)]. % 99999 not a code
+
+/* end of file string_codes */

@@ -1,0 +1,13 @@
+/* file atom_string */
+
+[atom_string('',L), [[L <-- ""]]].
+[atom_string('[]',L), [[L <-- "[]"]]].
+[atom_string('''',L), [[L <-- "'"]]].
+[atom_string('iso',L), [[L <-- "iso"]]].
+[atom_string(A,"prolog"), [[A <-- 'prolog']]].
+[atom_string('iso',"is"), failure].
+[atom_string(A,L), instantiation_error].
+
+[atom_string(A,iso), type_error(string,iso)].
+
+/* end of file atom_string */

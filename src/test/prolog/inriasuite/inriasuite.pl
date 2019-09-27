@@ -729,6 +729,7 @@ file(assertz).
 file(atom).
 file(atom_chars).
 file(atom_codes).
+file(atom_string).
 file(atom_concat).
 file(atom_length).
 file(atomic).
@@ -758,19 +759,28 @@ file(not_unify).
 file(number).
 file(number_chars).
 file(number_codes).
+file(number_string).
 file(once).
 file(or).
+file(read_term_from_atom).
 file(repeat).
 file(retract).
 file(set_prolog_flag).
 file(setof).
+file(string_chars).
+file(string_codes).
+file(string_concat).
+file(string_length).
 file(sub_atom).
+file(sub_string).
 file(term_diff).
 file(term_eq).
 file(term_gt).
 file('term_gt=').
 file(term_lt).
 file('term_lt=').
+file(term_string).
+file(text_to_string).
 file(true).
 file(unify).
 

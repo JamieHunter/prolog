@@ -7,20 +7,17 @@ import org.jprolog.bootstrap.Predicate;
 import org.jprolog.constants.PrologAtom;
 import org.jprolog.constants.PrologAtomLike;
 import org.jprolog.constants.PrologCharacter;
-import org.jprolog.constants.PrologChars;
-import org.jprolog.constants.PrologCodePoints;
 import org.jprolog.constants.PrologEOF;
-import org.jprolog.constants.PrologEmptyList;
 import org.jprolog.constants.PrologInteger;
 import org.jprolog.constants.PrologNumber;
+import org.jprolog.constants.PrologString;
 import org.jprolog.exceptions.PrologError;
 import org.jprolog.exceptions.PrologInstantiationError;
 import org.jprolog.exceptions.PrologSyntaxError;
 import org.jprolog.exceptions.PrologTypeError;
 import org.jprolog.execution.Environment;
+import org.jprolog.expressions.Strings;
 import org.jprolog.expressions.Term;
-import org.jprolog.expressions.TermList;
-import org.jprolog.unification.Unifier;
 import org.jprolog.flags.ReadOptions;
 import org.jprolog.flags.WriteOptions;
 import org.jprolog.io.InputBuffered;
@@ -32,6 +29,7 @@ import org.jprolog.io.SequentialInputStream;
 import org.jprolog.io.SequentialOutputStream;
 import org.jprolog.io.WriteContext;
 import org.jprolog.parser.Tokenizer;
+import org.jprolog.unification.Unifier;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -48,24 +46,68 @@ public class Conversions {
      */
     @Predicate("atom_chars")
     public static void atomChars(Environment environment, Term atom, Term list) {
-        atomCharsCommon(environment, atom, list, PrologChars::new);
+        atomCharsCommon(environment, atom, list, Strings::stringFromChars, Strings::charsFromString);
     }
 
     /**
-     * Construct, deconstruct or compare an atom with array of atom-characters
+     * Construct, deconstruct or compare an atom with array of code points
      *
      * @param environment Execution environment
      */
     @Predicate("atom_codes")
     public static void atomCodes(Environment environment, Term atom, Term list) {
-        atomCharsCommon(environment, atom, list, PrologCodePoints::new);
+        atomCharsCommon(environment, atom, list, Strings::stringFromCodePoints, Strings::codePointsFromString);
+    }
+
+    /**
+     * Construct, deconstruct or compare an atom with string
+     *
+     * @param environment Execution environment
+     */
+    @Predicate("atom_string")
+    public static void atomString(Environment environment, Term atom, Term stringTerm) {
+        atomCharsCommon(environment, atom, stringTerm, Strings::stringFromAnyString, PrologString::new);
+    }
+
+    /**
+     * Construct, deconstruct or compare a string with array of atom-characters
+     *
+     * @param environment Execution environment
+     */
+    @Predicate("string_chars")
+    public static void stringChars(Environment environment, Term atom, Term list) {
+        stringCharsCommon(environment, atom, list, Strings::stringFromChars, Strings::charsFromString);
+    }
+
+    /**
+     * Construct, deconstruct or compare an atom with array of code points
+     *
+     * @param environment Execution environment
+     */
+    @Predicate("string_codes")
+    public static void stringCodes(Environment environment, Term atom, Term list) {
+        stringCharsCommon(environment, atom, list, Strings::stringFromCodePoints, Strings::codePointsFromString);
+    }
+
+    /**
+     * Convert any form of text to a string
+     *
+     * @param environment Execution environment
+     */
+    @Predicate("text_to_string")
+    public static void textToString(Environment environment, Term textTerm, Term stringTerm) {
+        String text = Strings.stringFromAtomOrAnyString(textTerm);
+        if (!Unifier.unify(environment.getLocalContext(), stringTerm, new PrologString(text))) {
+            environment.backtrack();
+        }
     }
 
     /**
      * COnvert between atom character and character code
+     *
      * @param environment Execution environment
-     * @param atomTerm Atom character
-     * @param codeTerm Code representation
+     * @param atomTerm    Atom character
+     * @param codeTerm    Code representation
      */
     @Predicate("char_code")
     public static void charCode(Environment environment, Term atomTerm, Term codeTerm) {
@@ -91,7 +133,7 @@ public class Conversions {
                 environment.backtrack();
             }
         } else if (codeFromAtom != null) {
-            if(!Unifier.unify(environment.getLocalContext(), codeTerm, codeFromAtom)) {
+            if (!Unifier.unify(environment.getLocalContext(), codeTerm, codeFromAtom)) {
                 environment.backtrack();
             }
         } else {
@@ -104,31 +146,60 @@ public class Conversions {
      *
      * @param environment Execution environment
      * @param atom        Atom to create or deconstruct
-     * @param list        Target list
-     * @param allocator   Defines how the deconstructed atom behaves
+     * @param listTerm    Term providing a list of chars/codes
+     * @param extract     Function to extract string from list
+     * @param create      Function to create a list
      */
-    protected static void atomCharsCommon(Environment environment, Term atom, Term list, Function<String, Term> allocator) {
-        if (!atom.isInstantiated()) {
-            if (!list.isInstantiated()) {
-                throw PrologInstantiationError.error(environment, atom);
-            }
-            // construct atom, list must be grounded
-            String text = TermList.extractString(environment, list);
-            PrologAtom newAtom = new PrologAtom(text);
-            if (!Unifier.unify(environment.getLocalContext(), atom, newAtom)) {
+    protected static void atomCharsCommon(Environment environment, Term atom, Term listTerm,
+                                          Function<Term, String> extract, Function<String, Term> create) {
+        textCharsCommon(environment, atom, listTerm, t -> PrologAtomLike.from(t).name(), PrologAtom::new,
+                extract, create);
+    }
+
+    /**
+     * Common code for string_chars and string_codes
+     *
+     * @param environment Execution environment
+     * @param stringTerm  PrologString to create or deconstruct
+     * @param listTerm    Term providing a list of chars/codes
+     * @param extract     Function to extract string from list
+     * @param create      Function to create a list
+     */
+    protected static void stringCharsCommon(Environment environment, Term stringTerm, Term listTerm,
+                                            Function<Term, String> extract, Function<String, Term> create) {
+        textCharsCommon(environment, stringTerm, listTerm, t -> PrologString.from(t).get(), PrologString::new,
+                extract, create);
+    }
+
+    /**
+     * Common code for atom_chars and atom_codes
+     *
+     * @param environment  Execution environment
+     * @param leftTerm     Left term to create or deconstruct
+     * @param rightTerm    Right term to create or compare
+     * @param extractLeft  Function to convert left to a string
+     * @param createLeft   Function to convert string to left term to unify
+     * @param extractRight Function to convert right to a string
+     * @param createRight  Function to convert string to right term to unify
+     */
+    protected static void textCharsCommon(Environment environment, Term leftTerm, Term rightTerm,
+                                          Function<Term, String> extractLeft, Function<String, Term> createLeft,
+                                          Function<Term, String> extractRight, Function<String, Term> createRight) {
+        if (leftTerm.isInstantiated()) {
+            String leftText = extractLeft.apply(leftTerm);
+            Term newRight = createRight.apply(leftText);
+            if (!Unifier.unify(environment.getLocalContext(), rightTerm, newRight)) {
                 environment.backtrack();
             }
-            return;
-        }
-        PrologAtomLike realAtom = PrologAtomLike.from(atom);
-        Term deconstructed;
-        if (realAtom.name().length() == 0) {
-            deconstructed = PrologEmptyList.EMPTY_LIST;
+        } else if (!rightTerm.isInstantiated()) {
+            throw PrologInstantiationError.error(environment, leftTerm);
         } else {
-            deconstructed = allocator.apply(realAtom.name());
-        }
-        if (!Unifier.unify(environment.getLocalContext(), list, deconstructed)) {
-            environment.backtrack();
+            // construct left (atom or string), right must be grounded
+            String rightText = extractRight.apply(rightTerm);
+            Term newLeft = createLeft.apply(rightText);
+            if (!Unifier.unify(environment.getLocalContext(), leftTerm, newLeft)) {
+                environment.backtrack();
+            }
         }
     }
 
@@ -141,7 +212,7 @@ public class Conversions {
      */
     @Predicate("number_chars")
     public static void numberChars(Environment environment, Term number, Term list) {
-        numberCharsCommon(environment, number, list, PrologChars::new);
+        numberCharsCommon(environment, number, list, Strings::stringFromChars, Strings::charsFromString);
     }
 
     /**
@@ -153,7 +224,19 @@ public class Conversions {
      */
     @Predicate("number_codes")
     public static void numberCodes(Environment environment, Term number, Term list) {
-        numberCharsCommon(environment, number, list, PrologCodePoints::new);
+        numberCharsCommon(environment, number, list, Strings::stringFromCodePoints, Strings::codePointsFromString);
+    }
+
+    /**
+     * Construct, deconstruct or compare a number with a string
+     *
+     * @param environment Execution environment
+     * @param number      Term representing a number2
+     * @param stringTerm  Term containing a string
+     */
+    @Predicate("number_string")
+    public static void numberString(Environment environment, Term number, Term stringTerm) {
+        numberCharsCommon(environment, number, stringTerm, Strings::stringFromAnyString, PrologString::new);
     }
 
 
@@ -162,56 +245,57 @@ public class Conversions {
      *
      * @param environment Execution environment
      * @param number      Number to create or deconstruct
-     * @param list        Target list
-     * @param allocator   Defines how the deconstructed atom behaves
+     * @param stringTerm  Term containing a string
+     * @param extractor   Function to extract string from term
+     * @param create      Function to create a string term
      */
-    protected static void numberCharsCommon(Environment environment, Term number, Term list, Function<String, Term> allocator) {
+    protected static void numberCharsCommon(Environment environment, Term number, Term stringTerm,
+                                            Function<Term, String> extractor, Function<String, Term> create) {
         PrologNumber parsedNumber = null;
-        if (list.isGrounded()) {
+        if (stringTerm.isGrounded()) {
             // construct number through parsing
-            String text = TermList.extractString(environment, list);
+            String text = extractor.apply(stringTerm);
             ReadOptions options = new ReadOptions(environment, null);
-            //options.whiteSpace = whiteSpace;
             try {
                 parsedNumber = parseAndFoldInput(
                         environment, text, options,
                         new ParseAndFold<PrologNumber>() {
-                    long sign = 0;
-                    PrologNumber value = null;
+                            long sign = 0;
+                            PrologNumber value = null;
 
-                    @Override
-                    public boolean accept(Term term) {
-                        if (term.isAtom()) {
-                            if (sign != 0) {
-                                throw PrologSyntaxError.tokenError(environment, "sign");
+                            @Override
+                            public boolean accept(Term term) {
+                                if (term.isAtom()) {
+                                    if (sign != 0) {
+                                        throw PrologSyntaxError.tokenError(environment, "sign");
+                                    }
+                                    String val = PrologAtomLike.from(term).name();
+                                    if (val.equals("-")) {
+                                        sign = -1;
+                                    } else if (val.equals("+")) {
+                                        sign = 1;
+                                    } else {
+                                        throw PrologSyntaxError.tokenError(environment, "sign");
+                                    }
+                                    return false; // keep parsing
+                                } else if (term.isNumber()) {
+                                    value = (PrologNumber) term;
+                                    if (sign < 0) {
+                                        value = value.negate();
+                                    }
+                                    options.whiteSpace = ReadOptions.WhiteSpace.ATOM_atom; // do not allow anything after number
+                                    return true; // "done parsing"
+                                } else {
+                                    throw PrologSyntaxError.tokenError(environment, "other");
+                                }
                             }
-                            String val = PrologAtomLike.from(term).name();
-                            if (val.equals("-")) {
-                                sign = -1;
-                            } else if (val.equals("+")) {
-                                sign = 1;
-                            } else {
-                                throw PrologSyntaxError.tokenError(environment, "sign");
-                            }
-                            return false; // keep parsing
-                        } else if (term.isNumber()) {
-                            value = (PrologNumber) term;
-                            if (sign < 0) {
-                                value = value.negate();
-                            }
-                            options.whiteSpace = ReadOptions.WhiteSpace.ATOM_atom; // do not allow anything after number
-                            return true; // "done parsing"
-                        } else {
-                            throw PrologSyntaxError.tokenError(environment, "other");
-                        }
-                    }
 
-                    @Override
-                    public PrologNumber get() {
-                        return value;
-                    }
-                });
-            } catch(PrologError pe) {
+                            @Override
+                            public PrologNumber get() {
+                                return value;
+                            }
+                        });
+            } catch (PrologError pe) {
                 throw PrologSyntaxError.tokenError(environment, "Cannot parse " + text + " as a number");
             }
         }
@@ -222,14 +306,14 @@ public class Conversions {
             if (parsedNumber == null) {
                 // write number and unify
                 String text = termToString(environment, number);
-                Term deconstructed = allocator.apply(text);
-                if (!Unifier.unify(environment.getLocalContext(), list, deconstructed)) {
+                Term deconstructed = create.apply(text);
+                if (!Unifier.unify(environment.getLocalContext(), stringTerm, deconstructed)) {
                     environment.backtrack();
                 }
                 return;
             }
         } else if (parsedNumber == null) {
-            throw PrologInstantiationError.error(environment, list);
+            throw PrologInstantiationError.error(environment, stringTerm);
         }
         if (!Unifier.unify(environment.getLocalContext(), number, parsedNumber)) {
             environment.backtrack();
@@ -239,6 +323,7 @@ public class Conversions {
     private interface ParseAndFold<R> {
         /**
          * Accept next term
+         *
          * @param term Term read from input, guaranteed to not be end-of-file
          * @return true if parsing complete, false otherwise
          */
@@ -255,8 +340,8 @@ public class Conversions {
      *
      * @param environment Execution environment
      * @param text        Text to convert
-     * @param helper     Class to accept terms to generate a parsed value
-     * @param <R>           Return type
+     * @param helper      Class to accept terms to generate a parsed value
+     * @param <R>         Return type
      * @return resulting value
      */
     private static <R> R parseAndFoldInput(Environment environment,
@@ -274,7 +359,7 @@ public class Conversions {
                 options,
                 stream);
         boolean done = false;
-        for(;;) {
+        for (; ; ) {
             Term term = tok.nextToken();
             if (term == PrologEOF.EOF) {
                 if (done) {

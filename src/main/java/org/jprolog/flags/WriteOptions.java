@@ -10,6 +10,7 @@ import org.jprolog.execution.Environment;
 import org.jprolog.expressions.Term;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Structured options parsed from a list of option atoms. Options used for write formatting.
@@ -107,17 +108,31 @@ public class WriteOptions implements Flags {
      * Set this object of options from a list of option terms.
      *
      * @param environment Execution environment
+     * @param prepare Prepare defaults
      * @param optionsTerm List of options
      */
-    public WriteOptions(Environment environment, Term optionsTerm) {
+    public WriteOptions(Environment environment, Consumer<WriteOptions> prepare, Term optionsTerm) {
         PrologFlags flags = environment.getFlags();
         try {
             backQuotes = flags.backQuotes;
             characterEscapes = flags.characterEscapes;
+            if (prepare != null) {
+                prepare.accept(this);
+            }
             parser.apply(environment, this, optionsTerm);
         } catch (FutureFlagError ffe) {
             throw PrologDomainError.error(environment, environment.internAtom("write_option"), ffe.getTerm(), ffe);
         }
+    }
+
+    /**
+     * Set this object of options from a list of option terms.
+     *
+     * @param environment Execution environment
+     * @param optionsTerm List of options
+     */
+    public WriteOptions(Environment environment, Term optionsTerm) {
+        this(environment, null, optionsTerm);
     }
 
     public enum Spacing {

@@ -10,6 +10,7 @@ import org.jprolog.execution.Environment;
 import org.jprolog.expressions.Term;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Structured options parsed from a list of option atoms, used for reading.
@@ -87,18 +88,32 @@ public class ReadOptions implements Flags {
      * Set this object of options from a list of option terms.
      *
      * @param environment Execution environment
+     * @param prepare Prepare defaults
      * @param optionsTerm List of options
      */
-    public ReadOptions(Environment environment, Term optionsTerm) {
+    public ReadOptions(Environment environment, Consumer<ReadOptions> prepare, Term optionsTerm) {
         PrologFlags flags = environment.getFlags();
         try {
             backquotedString = flags.backQuotes == PrologFlags.Quotes.ATOM_string;
             doubleQuotes = flags.doubleQuotes;
             characterEscapes = flags.characterEscapes;
+            if (prepare != null) {
+                prepare.accept(this);
+            }
             parser.apply(environment, this, optionsTerm);
         } catch (FutureFlagError ffe) {
             throw PrologDomainError.error(environment, environment.internAtom("read_option"), ffe.getTerm(), ffe);
         }
+    }
+
+    /**
+     * Set this object of options from a list of option terms.
+     *
+     * @param environment Execution environment
+     * @param optionsTerm List of options
+     */
+    public ReadOptions(Environment environment, Term optionsTerm) {
+        this(environment, null, optionsTerm);
     }
 
     public enum Singletons {

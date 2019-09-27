@@ -4,8 +4,10 @@
 package org.jprolog.constants;
 
 import org.jprolog.execution.Environment;
+import org.jprolog.expressions.Strings;
 import org.jprolog.expressions.Term;
 import org.jprolog.expressions.TermList;
+import org.jprolog.io.StructureWriter;
 import org.jprolog.io.TermWriter;
 import org.jprolog.io.WriteContext;
 
@@ -22,15 +24,14 @@ public class PrologChars extends PrologStringAsList {
 
     /**
      * Convert list to PrologChars
-     * @param environment Execution environment
      * @param term Term to convert
      * @return converted term (empty-list remains unconverted).
      */
-    public static Term from(Environment environment, Term term) {
+    public static Term from(Term term) {
         if (term == PrologEmptyList.EMPTY_LIST || term instanceof PrologChars) {
             return term;
         }
-        String text = TermList.extractString(environment, term);
+        String text = Strings.stringFromChars(term);
         if (text.isEmpty()) {
             return PrologEmptyList.EMPTY_LIST;
         } else {
@@ -62,7 +63,11 @@ public class PrologChars extends PrologStringAsList {
         new TermWriter<PrologStringAsList>(context) {
             @Override
             public void write(Term term) throws IOException {
-                writeQuoted('`', term.toString());
+                if (context.options().ignoreOps) {
+                    new StructureWriter(context).write(term);
+                } else {
+                    writeMaybeQuoted('`', term.toString());
+                }
             }
         }.write(this);
     }

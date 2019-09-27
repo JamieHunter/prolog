@@ -84,6 +84,7 @@ public final class Interned {
     public static final PrologAtomInterned CALLABLE_TYPE = internAtom("callable");
     public static final PrologAtomInterned EVALUABLE_TYPE = internAtom("evaluable");
     public static final PrologAtomInterned PREDICATE_INDICATOR_TYPE = internAtom("predicate_indicator");
+    public static final PrologAtomInterned STRING_TYPE = internAtom("string");
     public static final PrologAtomInterned ACCESS_ACTION = internAtom("access");
     public static final PrologAtomInterned MODIFY_ACTION = internAtom("modify");
     public static final PrologAtomInterned COMPOUND_OR_ATOM_TYPE = internAtom("compound_or_atom");

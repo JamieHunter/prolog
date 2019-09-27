@@ -1,0 +1,14 @@
+/* file string_length */
+
+[string_length("enchanted evening", N), [[N <-- 17]]].
+[string_length(`enchanted evening`, N), [[N <-- 17]]].
+%[string_length("enchanted\
+% evening", N), [[N <-- 17]]].
+[string_length("", N), [[N <-- 0]]].
+[string_length("scarlet", 5), failure].
+[string_length(String, 4), instantiation_error]. % Culprit String
+[string_length(1.23, 4), type_error(string, 1.23)].
+[string_length(atom, 4), type_error(string, atom)].
+[string_length("atom", '4'), type_error(integer, '4')].
+
+/* end of file string_length */

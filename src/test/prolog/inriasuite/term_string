@@ -1,0 +1,10 @@
+/* file term_string */
+
+[term_string([],L), [[L <-- "[]"]]].
+[term_string(`abc`,L), [[L <-- "`abc`"]]].
+[term_string(a(b,c),L), [[L <-- "a(b,c)"]]].
+[term_string(T,"a(b,c)"), [[T <-- a(b,c)]]].
+[term_string("a",L, []), [[L <-- "\"a\""]]].
+[term_string("a",L, [quoted=false]), [[L <-- "a"]]].
+
+/* end of file term_string */

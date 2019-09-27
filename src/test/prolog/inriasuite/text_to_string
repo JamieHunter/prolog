@@ -1,0 +1,14 @@
+/* file text_to_string */
+
+[text_to_string('',L), [[L <-- ""]]].
+[text_to_string('[]',L), [[L <-- "[]"]]].
+[text_to_string([],L), [[L <-- ""]]].
+[text_to_string("'",L), [[L <-- "'"]]].
+[text_to_string(iso,L), [[L <-- "iso"]]].
+[text_to_string(['a','b','c'],L), [[L <-- "abc"]]].
+[text_to_string([0'a,0'b,0'c],L), [[L <-- "abc"]]].
+[text_to_string('iso',"iso"), success].
+[text_to_string('iso',"is"), failure].
+[text_to_string(A,"iso"), instantiation_error].
+
+/* end of file text_to_string */

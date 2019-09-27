@@ -1,0 +1,7 @@
+/* file read_term_from_atom */
+
+[read_term_from_atom('[]', L, []), [[L <-- []]]].
+[read_term_from_atom('a(b,c)',L, []), [[L <-- a(b,c)]]].
+[read_term_from_atom('a(b,c).',L, []), [[L <-- a(b,c)]]].
+
+/* end of file read_term_from_atom */

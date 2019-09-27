@@ -3,6 +3,10 @@
 //
 package org.jprolog.expressions;
 
+import org.jprolog.constants.PrologAtom;
+import org.jprolog.constants.PrologChars;
+import org.jprolog.constants.PrologCodePoints;
+import org.jprolog.exceptions.PrologRepresentationError;
 import org.jprolog.unification.HeadTailUnifyIterator;
 import org.jprolog.unification.UnifyIterator;
 import org.jprolog.bootstrap.Interned;
@@ -204,57 +208,6 @@ public interface TermList extends CompoundTerm {
             }
         }
         return arr;
-    }
-
-    /**
-     * Utility to extract list of code-points/code-characters to a string
-     *
-     * @param list Term to query of length at least one
-     * @return PrologCodePoints
-     */
-    static String extractString(Environment environment, Term list) {
-        Term origList = list;
-        if (list == PrologEmptyList.EMPTY_LIST) {
-            return "";
-        }
-        if (list instanceof PrologStringAsList) {
-            return ((PrologStringAsList) list).getStringValue();
-        }
-        if (list instanceof PrologString) {
-            return ((PrologString) list).get();
-        }
-        StringBuilder builder = new StringBuilder();
-        while (list != PrologEmptyList.EMPTY_LIST) {
-            if (list instanceof PrologStringAsList) {
-                builder.append(((PrologStringAsList) list).getStringValue());
-                return builder.toString();
-            }
-            if (list instanceof PrologString) {
-                builder.append(((PrologString) list).get());
-                return builder.toString();
-            }
-            if (isList(list)) {
-                CompoundTerm comp = (CompoundTerm) list;
-                Term e = comp.get(0);
-                list = comp.get(1);
-                if (e instanceof PrologCharacter) {
-                    builder.append(((PrologCharacter) e).get());
-                } else if (e instanceof PrologAtomLike) {
-                    builder.append(((PrologAtomLike) e).name().charAt(0));
-                } else if (e instanceof PrologInteger) {
-                    builder.append(((PrologInteger) e).toChar());
-                } else if (!e.isInstantiated()) {
-                    throw PrologInstantiationError.error(environment, list);
-                } else {
-                    throw PrologTypeError.characterExpected(environment, e);
-                }
-            } else if (!list.isInstantiated()) {
-                throw new FutureInstantiationError(list);
-            } else {
-                throw PrologTypeError.listExpected(environment, origList);
-            }
-        }
-        return builder.toString();
     }
 
     /**

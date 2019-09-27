@@ -1,0 +1,18 @@
+/* file string_chars */
+
+[string_chars("",L), [[L <-- []]]].
+[string_chars("[]",L), [[L <-- ['[',']']]]].
+[string_chars("""",L), [[L <-- ['"']]]].
+[string_chars("iso",L), [[L <-- ['i','s','o']]]].
+[string_chars(A,['p','r','o','l','o','g']), [[A <-- "prolog"]]].
+[string_chars("North",['N'|X]), [[X <-- ['o','r','t','h']]]].
+[string_chars("iso",['i','s']), failure].
+[string_chars(A,L), instantiation_error].
+
+[string_chars(A,[a,E,c]), instantiation_error].
+[string_chars(A,[a,b|L]), instantiation_error].
+[string_chars(f(a),L), type_error(string,f(a))].
+[string_chars(A,iso), type_error(list,iso)].
+[string_chars(A,[a,f(b)]), type_error(character,f(b))].
+
+/* end of file string_chars */

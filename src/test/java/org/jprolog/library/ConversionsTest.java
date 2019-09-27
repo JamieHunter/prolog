@@ -31,7 +31,7 @@ public class ConversionsTest {
                 .andWhen("?- atom_chars(Q, `12`).")
                 .assertSuccess()
                 .variable("Q", isAtom("12"))
-                .andWhen("?- atom_chars(Q, \"pq\").")
+                .andWhen("?- atom_string(Q, \"pq\").")
                 .assertSuccess()
                 .variable("Q", isAtom("pq"));
     }

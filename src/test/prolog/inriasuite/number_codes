@@ -1,5 +1,4 @@
 /* file number_codes */
-/* Some goals fails because the parser is not yet implemented */
 
 [number_codes(33,L), [[L <-- [0'3,0'3]]]].
 [number_codes(33,[0'3,0'3]), success].

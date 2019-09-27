@@ -3,6 +3,9 @@
 //
 package org.jprolog.constants;
 
+import org.jprolog.bootstrap.Interned;
+import org.jprolog.exceptions.FutureTypeError;
+import org.jprolog.exceptions.PrologTypeError;
 import org.jprolog.execution.Environment;
 import org.jprolog.expressions.Term;
 import org.jprolog.expressions.TermList;
@@ -34,15 +37,14 @@ public class PrologString extends AtomicBase {
 
     /**
      * Convert term to PrologString
-     * @param environment Execution environment
      * @param term Term to convert
      * @return converted term
      */
-    public static PrologString from(Environment environment, Term term) {
+    public static PrologString from(Term term) {
         if (term instanceof PrologString) {
             return (PrologString)term;
         }
-        return new PrologString(TermList.extractString(environment, term));
+        throw new FutureTypeError(Interned.STRING_TYPE, term);
     }
 
     /**
@@ -102,7 +104,7 @@ public class PrologString extends AtomicBase {
 
             @Override
             public void write(Term term) throws IOException {
-                writeQuoted('"', get());
+                writeMaybeQuoted('"', get());
             }
         }.write(this);
     }

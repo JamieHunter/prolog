@@ -5,6 +5,7 @@ package org.jprolog.test.internal;
 
 import org.jprolog.constants.PrologAtomInterned;
 import org.jprolog.constants.PrologInteger;
+import org.jprolog.constants.PrologString;
 import org.jprolog.exceptions.PrologDomainError;
 import org.jprolog.execution.Environment;
 import org.jprolog.expressions.Term;
@@ -82,7 +83,7 @@ public class StateImpl {
 
     private void textLog(Environment environment, Term aliasTerm, Term grepTerm) {
         PrologAtomInterned alias = PrologAtomInterned.from(environment, aliasTerm);
-        String grepString = TermList.extractString(environment, grepTerm);
+        String grepString = PrologString.from(grepTerm).get();
         String aliasName = alias.name();
         OutputMonitor monitor = new OutputMonitor(grepString);
         PrologInteger id = LogicalStream.unique();

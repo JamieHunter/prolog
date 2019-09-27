@@ -4,6 +4,7 @@
 package org.jprolog.constants;
 
 import org.jprolog.execution.Environment;
+import org.jprolog.expressions.Strings;
 import org.jprolog.expressions.Term;
 import org.jprolog.expressions.TermList;
 
@@ -18,15 +19,14 @@ public class PrologCodePoints extends PrologStringAsList {
 
     /**
      * Convert list to PrologCodePoints
-     * @param environment Execution environment
      * @param term Term to convert
      * @return converted term (empty-list remains unconverted).
      */
-    public static Term from(Environment environment, Term term) {
+    public static Term from(Term term) {
         if (term == PrologEmptyList.EMPTY_LIST || term instanceof PrologCodePoints) {
             return term;
         }
-        String text = TermList.extractString(environment, term);
+        String text = Strings.stringFromCodePoints(term);
         if (text.isEmpty()) {
             return PrologEmptyList.EMPTY_LIST;
         } else {

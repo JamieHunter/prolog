@@ -14,6 +14,7 @@ import org.jprolog.constants.PrologFloat;
 import org.jprolog.constants.PrologInteger;
 import org.jprolog.constants.PrologString;
 import org.jprolog.exceptions.FutureFlagError;
+import org.jprolog.exceptions.FutureTypeError;
 import org.jprolog.exceptions.PrologDomainError;
 import org.jprolog.exceptions.PrologError;
 import org.jprolog.exceptions.PrologExistenceError;
@@ -22,6 +23,7 @@ import org.jprolog.exceptions.PrologPermissionError;
 import org.jprolog.exceptions.PrologTypeError;
 import org.jprolog.execution.Environment;
 import org.jprolog.expressions.CompoundTerm;
+import org.jprolog.expressions.Strings;
 import org.jprolog.expressions.Term;
 import org.jprolog.expressions.TermList;
 import org.jprolog.generators.YieldSolutions;
@@ -979,14 +981,8 @@ public final class Io {
      * @return Path to open
      */
     private static Path parsePathBasic(Environment environment, Term fileName) {
-        String pathName;
-        if (fileName.isAtom()) {
-            pathName = ((PrologAtomLike) (fileName.value())).name();
-        } else if (fileName.isString()) {
-            pathName = ((PrologString) (fileName.value())).get();
-        } else {
-            throw PrologDomainError.sourceSink(environment, fileName);
-        }
+        String pathName = Strings.stringFromAtomOrAnyString(fileName);
+        //throw PrologDomainError.sourceSink(environment, fileName); TODO: When is this thrown?
         return Paths.get(pathName);
     }
 
