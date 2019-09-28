@@ -1,8 +1,8 @@
 /* file atom_length */
 
 [atom_length('enchanted evening', N), [[N <-- 17]]].
-%[atom_length('enchanted\
-% evening', N), [[N <-- 17]]].
+[atom_length('enchanted\
+ evening', N), [[N <-- 17]]].
 [atom_length('', N), [[N <-- 0]]].
 [atom_length('scarlet', 5), failure].
 [atom_length(Atom, 4), instantiation_error]. % Culprit Atom

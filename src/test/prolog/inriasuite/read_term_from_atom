@@ -1,7 +1,14 @@
 /* file read_term_from_atom */
 
-[read_term_from_atom('[]', L, []), [[L <-- []]]].
-[read_term_from_atom('a(b,c)',L, []), [[L <-- a(b,c)]]].
-[read_term_from_atom('a(b,c).',L, []), [[L <-- a(b,c)]]].
+[read_term_from_atom('[]', T, []), [[T <-- []]]].
+[read_term_from_atom('a(b,c)', T, []), [[T <-- a(b,c)]]].
+[read_term_from_atom('a(b,c).', T, []), [[T <-- a(b,c)]]].
+[read_term_from_atom('a(b,c).', a(b,c), []), success].
+[read_term_from_atom('a(b,c).', a(b), []), failure].
+
+[read_term_from_atom(A, T, []), instantiation_error].
+[read_term_from_atom(A, bar, []), instantiation_error].
+[read_term_from_atom("foo", T, []), type_error(atom,"foo")].
+[read_term_from_atom('a(b,c)', T, [full_stop=required]), syntax_error(_)].
 
 /* end of file read_term_from_atom */

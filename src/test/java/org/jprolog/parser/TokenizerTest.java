@@ -139,6 +139,16 @@ public class TokenizerTest {
     }
 
     @Test
+    public void testQuotedSplitLinesIgnored() {
+        expect("'x\\\ny\\\nz'", isAtom("xyz"));
+    }
+
+    @Test
+    public void testQuotedSplitLinesLiteral() {
+        expect("'x\ny\nz'", isAtom("x\ny\nz"));
+    }
+
+    @Test
     public void testLineComment() {
         expect("foo%123\nbar", isAtom("foo"), isAtom("bar"));
         expect("%123\no", isAtom("o"));

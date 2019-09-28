@@ -2,8 +2,8 @@
 
 [string_length("enchanted evening", N), [[N <-- 17]]].
 [string_length(`enchanted evening`, N), [[N <-- 17]]].
-%[string_length("enchanted\
-% evening", N), [[N <-- 17]]].
+[string_length("enchanted\
+ evening", N), [[N <-- 17]]].
 [string_length("", N), [[N <-- 0]]].
 [string_length("scarlet", 5), failure].
 [string_length(String, 4), instantiation_error]. % Culprit String

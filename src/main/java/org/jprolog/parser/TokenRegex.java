@@ -34,7 +34,7 @@ public class TokenRegex {
     public static final String START_LINE_COMMENT = "%";
     public static final String START_BLOCK_COMMENT = "/\\*";
     public static final String CATCH_ALL = ".?";
-    public static final String BACKSLASH_CATCH_ALL = "\\\\.?";
+    public static final String BACKSLASH_CATCH_ALL = "\\\\.";
 
     /**
      * Regex helper, construct a regex named group from a pattern.

@@ -1,10 +1,18 @@
 /* file term_string */
 
-[term_string([],L), [[L <-- "[]"]]].
-[term_string(`abc`,L), [[L <-- "`abc`"]]].
-[term_string(a(b,c),L), [[L <-- "a(b,c)"]]].
+[term_string([],S), [[S <-- "[]"]]].
+[term_string(`abc`,S), [[S <-- "`abc`"]]].
+[term_string(a(b,c),S), [[S <-- "a(b,c)"]]].
 [term_string(T,"a(b,c)"), [[T <-- a(b,c)]]].
-[term_string("a",L, []), [[L <-- "\"a\""]]].
-[term_string("a",L, [quoted=false]), [[L <-- "a"]]].
+[term_string("a",S, []), [[S <-- "\"a\""]]].
+[term_string("a",S, [quoted=false]), [[S <-- "a"]]].
+[term_string(a(b,c),"a(b,c)"), success].
+[term_string(a(b),"a(b,c)"), failure].
+[term_string(a(b,c),"'a'(b,c)"), success].
+[term_string(a(b,c),`'a'(b,c)`), success].
+[term_string(T,atom,[]), [[T <-- atom]]].
+
+[term_string(T,S), instantiation_error].
+[term_string(T,S,[]), instantiation_error].
 
 /* end of file term_string */
