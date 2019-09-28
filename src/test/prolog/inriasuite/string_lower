@@ -1,0 +1,13 @@
+/* file string_lower */
+
+[string_lower("Foo",S), [[S <-- "foo"]]].
+[string_lower("bAR",`bar`), success].
+[string_lower('fooBAR','foobar'), success].
+[string_lower(``,[]), success].
+[string_lower(`fooBAR`,'FooBAR'), failure].
+
+[string_lower(X, "foo"), instantiation_error].
+[string_lower(123, "foo"), type_error(string, 123)].
+[string_lower("foo", 456), type_error(string, 456)].
+
+/* end of file string_lower */

@@ -775,6 +775,8 @@ file(string_code).
 file(string_codes).
 file(string_concat).
 file(string_length).
+file(string_lower).
+file(string_upper).
 file(sub_atom).
 file(sub_string).
 file(term_diff).

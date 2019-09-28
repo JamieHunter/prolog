@@ -10,6 +10,7 @@ import org.jprolog.constants.PrologInteger;
 import org.jprolog.constants.PrologQuotedAtom;
 import org.jprolog.constants.PrologString;
 import org.jprolog.exceptions.PrologSyntaxError;
+import org.jprolog.expressions.Strings;
 import org.jprolog.expressions.Term;
 
 import java.io.IOException;
@@ -129,7 +130,7 @@ class QuotedContextState extends ActiveParsingState {
                     if (tokenizer.options().backquotedString) {
                         str = new PrologString(builder.toString());
                     } else {
-                        str = new PrologChars(builder.toString());
+                        str = Strings.charsFromString(builder.toString());
                     }
                     break;
                 case "'":
@@ -139,10 +140,10 @@ class QuotedContextState extends ActiveParsingState {
                     switch (tokenizer.options().doubleQuotes) {
                         case ATOM_symbol_char:
                         case ATOM_chars:
-                            str = new PrologChars(builder.toString());
+                            str = Strings.charsFromString(builder.toString());
                             break;
                         case ATOM_codes:
-                            str = new PrologCodePoints(builder.toString());
+                            str = Strings.codePointsFromString(builder.toString());
                             break;
                         case ATOM_atom:
                             str = new PrologAtom(builder.toString());

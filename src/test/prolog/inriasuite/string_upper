@@ -1,0 +1,13 @@
+/* file string_upper */
+
+[string_upper("Foo",S), [[S <-- "FOO"]]].
+[string_upper("bAR",`BAR`), success].
+[string_upper('fooBAR','FOOBAR'), success].
+[string_upper(``,[]), success].
+[string_upper(`fooBAR`,'FooBAR'), failure].
+
+[string_upper(X, "FOO"), instantiation_error].
+[string_upper(123, "FOO"), type_error(string, 123)].
+[string_upper("foo", 456), type_error(string, 456)].
+
+/* end of file string_upper */

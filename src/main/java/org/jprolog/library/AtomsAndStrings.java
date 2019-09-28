@@ -28,6 +28,7 @@ import org.jprolog.unification.Unifier;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
 
 /**
@@ -309,6 +310,7 @@ public final class AtomsAndStrings {
             PrologInteger.from(codeTerm).toChar(); // validate as a character code
         }
         int code = sourceText.charAt(index - 1);
+        Unifier.unifyInteger(environment, codeTerm, BigInteger.valueOf(code));
         if (!Unifier.unify(environment.getLocalContext(), codeTerm, PrologInteger.from(code))) {
             environment.backtrack();
         }
@@ -369,9 +371,9 @@ public final class AtomsAndStrings {
                     throw PrologTypeError.atomicExpected(environment, t);
                 }
             }
-            if (!Unifier.unify(environment.getLocalContext(), outTerm, new PrologString(output.toString()))) {
-                environment.backtrack();
-            }
+            Unifier.unifyString(environment, outTerm, output.toString(),
+                    Strings::stringFromAtomOrAnyString,
+                    PrologString::new);
         } catch (IOException e) {
             throw new InternalError(e.getMessage(), e);
         }
@@ -387,6 +389,22 @@ public final class AtomsAndStrings {
     @Predicate("atomics_to_string")
     public static void atomicsToString(Environment environment, Term listTerm, Term outTerm) {
         atomicsToString(environment, listTerm, null, outTerm);
+    }
+
+    @Predicate("string_upper")
+    public static void stringUpper(Environment environment, Term textTerm, Term upperTerm) {
+        String text = Strings.stringFromAtomOrAnyString(textTerm);
+        text = text.toUpperCase(Locale.ENGLISH); // TODO: Support locale?
+        Unifier.unifyString(environment, upperTerm, text,
+                Strings::stringFromAtomOrAnyString, PrologString::new);
+    }
+
+    @Predicate("string_lower")
+    public static void stringLower(Environment environment, Term textTerm, Term lowerTerm) {
+        String text = Strings.stringFromAtomOrAnyString(textTerm);
+        text = text.toLowerCase(Locale.ENGLISH); // TODO: Support locale?
+        Unifier.unifyString(environment, lowerTerm, text,
+                Strings::stringFromAtomOrAnyString, PrologString::new);
     }
 
     private static class Concat extends DecisionPointImpl {
@@ -800,12 +818,8 @@ public final class AtomsAndStrings {
                 environment.pushDecisionPoint(this);
             }
             int code = sourceString.charAt(index - 1); // if codeConstraint >= 0, assume constraint checked
-            if (!codeTerm.isInstantiated() && !codeTerm.instantiate(PrologInteger.from(code))) {
-                environment.backtrack();
-            }
-            if (!indexTerm.isInstantiated() && !indexTerm.instantiate(PrologInteger.from(index))) {
-                environment.backtrack();
-            }
+            if (codeConstraint < 0) Unifier.unifyInteger(environment, codeTerm, BigInteger.valueOf(code));
+            if (!indexTerm.isInstantiated()) Unifier.unifyInteger(environment, indexTerm, BigInteger.valueOf(index));
             index++;
         }
     }
