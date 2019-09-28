@@ -1,0 +1,11 @@
+/* file string */
+
+[string("foo"), success].
+[string(""), success].
+[string(foo), failure].
+[string(`foo`), failure].
+[string(3), failure].
+[string(X), failure].
+
+/* end of string */
+

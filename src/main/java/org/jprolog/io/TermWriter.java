@@ -30,6 +30,13 @@ public abstract class TermWriter<T extends Term> extends TokenRegex {
     }
 
     /**
+     * Reset concept of safe-ness
+     */
+    public void reset() {
+        context.beginSafe();
+    }
+
+    /**
      * General quoting rules.
      */
     private static final String BACKSLASH_TAG = "b";

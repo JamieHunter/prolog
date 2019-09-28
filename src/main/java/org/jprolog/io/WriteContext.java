@@ -99,7 +99,7 @@ public final class WriteContext {
     }
 
     /**
-     * Transition to a safe single graphic character (eg brackets).
+     * Transition to a safe single graphic character (eg brackets), or otherwise consider no whitespace is required.
      */
     public void beginSafe() {
         safety = Safety.SAFE;
@@ -173,7 +173,8 @@ public final class WriteContext {
             boolean nextQuoted() {
                 return true;
             }
-        },;
+        },
+        ;
 
         /**
          * @return true if whitespace is always required

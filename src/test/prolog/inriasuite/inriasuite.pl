@@ -733,6 +733,7 @@ file(atom_string).
 file(atom_concat).
 file(atom_length).
 file(atomic).
+file(atomics_to_string).
 file(bagof).
 file(call).
 file('catch-and-throw').
@@ -768,6 +769,7 @@ file(repeat).
 file(retract).
 file(set_prolog_flag).
 file(setof).
+file(string).
 file(string_chars).
 file(string_code).
 file(string_codes).

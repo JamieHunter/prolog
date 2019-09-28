@@ -1,0 +1,16 @@
+/* file atomics_to_string */
+
+[atomics_to_string(["foo"], S), [[S <-- "foo"]]].
+[atomics_to_string([], S), [[S <-- ""]]].
+[atomics_to_string(["foo", "bar"], S), [[S <-- "foobar"]]].
+[atomics_to_string([foo, "bar"], `, `, S), [[S <-- "foo, bar"]]].
+[atomics_to_string([1, 2, 3], ', ', "1, 2, 3"), success].
+[atomics_to_string([1, 2, 3], ', ', "123"), failure].
+
+[atomics_to_string("bar", "foo"), type_error(list, "bar")].
+[atomics_to_string(["foo"], 123, X), type_error(string, 123)].
+[atomics_to_string(L, "foo", "foo"), instantiation_error].
+[atomics_to_string([], S, "foo"), instantiation_error].
+
+/* end of atomics_to_string */
+

@@ -10,19 +10,24 @@ import org.jprolog.constants.PrologInteger;
 import org.jprolog.constants.PrologString;
 import org.jprolog.exceptions.PrologDomainError;
 import org.jprolog.exceptions.PrologInstantiationError;
+import org.jprolog.exceptions.PrologTypeError;
 import org.jprolog.execution.DecisionPointImpl;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.LocalContext;
 import org.jprolog.expressions.Strings;
 import org.jprolog.expressions.Term;
+import org.jprolog.expressions.TermList;
 import org.jprolog.flags.ReadOptions;
 import org.jprolog.flags.WriteOptions;
+import org.jprolog.io.StringOutputStream;
 import org.jprolog.io.StructureWriter;
+import org.jprolog.io.WriteContext;
 import org.jprolog.parser.StringParser;
 import org.jprolog.unification.Unifier;
-import org.jprolog.unification.UnifyBuilder;
 
+import java.io.IOException;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -58,7 +63,7 @@ public final class AtomsAndStrings {
         commonLength(environment, stringTerm, lengthTerm, Strings::stringFromAnyString);
     }
 
-    public static void commonLength(Environment environment, Term sourceTerm, Term lengthTerm, Function<Term,String> extract) {
+    public static void commonLength(Environment environment, Term sourceTerm, Term lengthTerm, Function<Term, String> extract) {
         if (!sourceTerm.isInstantiated()) {
             throw PrologInstantiationError.error(environment, sourceTerm);
         }
@@ -284,6 +289,14 @@ public final class AtomsAndStrings {
                 Strings::stringFromAnyString, PrologString::new).redo();
     }
 
+    /**
+     * Retrieve code at given 1-based index of string
+     *
+     * @param environment Execution environment
+     * @param indexTerm   Index to retrieve from, must be instantiated, and is validated
+     * @param stringTerm  String (or string-like) term
+     * @param codeTerm    Unified with code (integer) at index
+     */
     @Predicate("get_string_code")
     public static void getStringCode(Environment environment, Term indexTerm, Term stringTerm, Term codeTerm) {
         // 1-index of code, range checked
@@ -295,17 +308,85 @@ public final class AtomsAndStrings {
         if (codeTerm.isInstantiated()) {
             PrologInteger.from(codeTerm).toChar(); // validate as a character code
         }
-        int code = sourceText.charAt(index-1);
+        int code = sourceText.charAt(index - 1);
         if (!Unifier.unify(environment.getLocalContext(), codeTerm, PrologInteger.from(code))) {
             environment.backtrack();
         }
     }
 
+
+    /**
+     * Retrieve code at given 1-based index of string. Or index where code appears, or iterate index and codes.
+     *
+     * @param environment Execution environment
+     * @param indexTerm   Index or variable.
+     * @param stringTerm  String (or string-like) term
+     * @param codeTerm    Unified with code (integer) at index.
+     */
     @Predicate("string_code")
     public static void stringCode(Environment environment, Term indexTerm, Term stringTerm, Term codeTerm) {
         // 1-index of code, with backtracking
         String sourceString = Strings.stringFromAtomOrAnyString(stringTerm);
         new StringCodeIndex(environment, sourceString, indexTerm, codeTerm).redo();
+    }
+
+    /**
+     * Concatenate list of atomic values with separator.
+     *
+     * @param environment Execution environment
+     * @param listTerm    List of values
+     * @param sepTerm     Separator. Null indicates ""
+     * @param outTerm     Term unified with concatenated value.
+     */
+    @Predicate("atomics_to_string")
+    public static void atomicsToString(Environment environment, Term listTerm, Term sepTerm, Term outTerm) {
+        List<Term> list = TermList.extractList(listTerm);
+        String sepString;
+        if (sepTerm == null) {
+            sepString = "";
+        } else {
+            sepString = Strings.stringFromAtomOrAnyString(sepTerm);
+        }
+        WriteOptions opts = new WriteOptions(environment, null);
+        try (StringOutputStream output = new StringOutputStream()) {
+            WriteContext context = new WriteContext(
+                    environment,
+                    opts,
+                    output);
+            StructureWriter structWriter = new StructureWriter(context);
+            boolean writeSep = false;
+            for (Term t : list) {
+                if (t.isAtomic()) {
+                    if (writeSep) {
+                        output.write(sepString);
+                    }
+                    structWriter.reset();
+                    structWriter.write(t);
+                    writeSep = true;
+                } else if (!t.isInstantiated()) {
+                    throw PrologInstantiationError.error(environment, t);
+                } else {
+                    throw PrologTypeError.atomicExpected(environment, t);
+                }
+            }
+            if (!Unifier.unify(environment.getLocalContext(), outTerm, new PrologString(output.toString()))) {
+                environment.backtrack();
+            }
+        } catch (IOException e) {
+            throw new InternalError(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Concatenate list of atomic values with no separator.
+     *
+     * @param environment Execution environment
+     * @param listTerm    List of values
+     * @param outTerm     Term unified with concatenated value.
+     */
+    @Predicate("atomics_to_string")
+    public static void atomicsToString(Environment environment, Term listTerm, Term outTerm) {
+        atomicsToString(environment, listTerm, null, outTerm);
     }
 
     private static class Concat extends DecisionPointImpl {
@@ -702,8 +783,8 @@ public final class AtomsAndStrings {
         public void redo() {
             if (codeConstraint >= 0) {
                 // find next index
-                while(index <= limit && index > 0) {
-                    if (sourceString.charAt(index-1) == codeConstraint) {
+                while (index <= limit && index > 0) {
+                    if (sourceString.charAt(index - 1) == codeConstraint) {
                         break;
                     }
                     index++;
@@ -718,7 +799,7 @@ public final class AtomsAndStrings {
                 // this may backtrack to another solution
                 environment.pushDecisionPoint(this);
             }
-            int code = sourceString.charAt(index-1); // if codeConstraint >= 0, assume constraint checked
+            int code = sourceString.charAt(index - 1); // if codeConstraint >= 0, assume constraint checked
             if (!codeTerm.isInstantiated() && !codeTerm.instantiate(PrologInteger.from(code))) {
                 environment.backtrack();
             }
