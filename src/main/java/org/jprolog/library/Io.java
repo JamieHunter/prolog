@@ -8,13 +8,11 @@ import org.jprolog.bootstrap.Predicate;
 import org.jprolog.constants.Atomic;
 import org.jprolog.constants.PrologAtom;
 import org.jprolog.constants.PrologAtomInterned;
-import org.jprolog.constants.PrologAtomLike;
 import org.jprolog.constants.PrologEmptyList;
 import org.jprolog.constants.PrologFloat;
 import org.jprolog.constants.PrologInteger;
 import org.jprolog.constants.PrologString;
 import org.jprolog.exceptions.FutureFlagError;
-import org.jprolog.exceptions.FutureTypeError;
 import org.jprolog.exceptions.PrologDomainError;
 import org.jprolog.exceptions.PrologError;
 import org.jprolog.exceptions.PrologExistenceError;
@@ -26,19 +24,21 @@ import org.jprolog.expressions.CompoundTerm;
 import org.jprolog.expressions.Strings;
 import org.jprolog.expressions.Term;
 import org.jprolog.expressions.TermList;
-import org.jprolog.generators.YieldSolutions;
-import org.jprolog.io.Position;
-import org.jprolog.unification.Unifier;
 import org.jprolog.flags.AbsoluteFileNameOptions;
 import org.jprolog.flags.CloseOptions;
 import org.jprolog.flags.OpenOptions;
 import org.jprolog.flags.StreamProperties;
 import org.jprolog.flags.WriteOptions;
+import org.jprolog.generators.YieldSolutions;
 import org.jprolog.io.FileReadWriteStreams;
 import org.jprolog.io.LogicalStream;
+import org.jprolog.io.Position;
 import org.jprolog.io.PrologInputStream;
 import org.jprolog.io.PrologOutputStream;
+import org.jprolog.io.SequentialInputStream;
+import org.jprolog.unification.Unifier;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -110,6 +110,53 @@ public final class Io {
     @Predicate("open")
     public static void open(Environment environment, Term fileName, Term mode, Term streamIdent, Term options) {
         openHelper(environment, options, fileName, mode, streamIdent);
+    }
+
+    /**
+     * Open a string for parsing.
+     *
+     * @param environment Execution environment
+     * @param stringTerm  String to be parsed
+     * @param streamIdent Captures stream identifier
+     */
+    @Predicate("open_string")
+    public static void openString(Environment environment, Term stringTerm, Term streamIdent) {
+        String stringToParse = Strings.stringFromAtomOrAnyString(stringTerm);
+        StreamProperties.OpenMode openMode = StreamProperties.OpenMode.ATOM_read;
+        PrologAtomInterned aliasName = null;
+        if (streamIdent.isInstantiated()) {
+            if (!(streamIdent.isAtom())) {
+                throw PrologTypeError.atomExpected(environment, streamIdent);
+            }
+            aliasName = PrologAtomInterned.from(environment, streamIdent);
+        }
+
+        LogicalStream binding;
+        PrologInputStream input = new SequentialInputStream(
+                new ByteArrayInputStream(
+                        stringToParse.getBytes()
+                ));
+
+        PrologInteger id = LogicalStream.unique();
+        if (aliasName == null) {
+            if (!Unifier.unify(environment.getLocalContext(), streamIdent, id)) {
+                environment.backtrack();
+                return;
+            }
+        }
+        binding = new LogicalStream(id, input, null, openMode);
+        binding.setBufferMode(StreamProperties.Buffering.ATOM_line);
+        binding.setType(StreamProperties.Type.ATOM_text);
+        binding.setEncoding(StreamProperties.Encoding.ATOM_utf8);
+        //binding.setCloseOnAbort(true);
+        //binding.setCloseOnExec(options.closeOnExec);
+        binding.setEofAction(StreamProperties.EofAction.ATOM_eof_code);
+        binding.setObjectTerm(stringTerm);
+        binding.setIsTTY(false);
+        environment.addStream(binding.getId(), binding);
+        if (aliasName != null) {
+            environment.addStreamAlias(aliasName, binding);
+        }
     }
 
     /**
@@ -310,9 +357,10 @@ public final class Io {
 
     /**
      * Current line position
+     *
      * @param environment Execution environment
-     * @param stream Stream to query
-     * @param count line count
+     * @param stream      Stream to query
+     * @param count       line count
      */
     @Predicate("line_count")
     public static void lineCount(Environment environment, Term stream, Term count) {
