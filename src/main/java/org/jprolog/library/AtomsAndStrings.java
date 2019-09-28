@@ -8,6 +8,7 @@ import org.jprolog.constants.PrologAtom;
 import org.jprolog.constants.PrologAtomLike;
 import org.jprolog.constants.PrologInteger;
 import org.jprolog.constants.PrologString;
+import org.jprolog.exceptions.PrologDomainError;
 import org.jprolog.exceptions.PrologInstantiationError;
 import org.jprolog.execution.DecisionPointImpl;
 import org.jprolog.execution.Environment;
@@ -19,6 +20,7 @@ import org.jprolog.flags.WriteOptions;
 import org.jprolog.io.StructureWriter;
 import org.jprolog.parser.StringParser;
 import org.jprolog.unification.Unifier;
+import org.jprolog.unification.UnifyBuilder;
 
 import java.math.BigInteger;
 import java.util.function.Function;
@@ -280,6 +282,30 @@ public final class AtomsAndStrings {
         }
         new Sub(environment, sourceString, beforeTerm, lengthTerm, afterTerm, subStringTerm,
                 Strings::stringFromAnyString, PrologString::new).redo();
+    }
+
+    @Predicate("get_string_code")
+    public static void getStringCode(Environment environment, Term indexTerm, Term stringTerm, Term codeTerm) {
+        // 1-index of code, range checked
+        String sourceText = Strings.stringFromAtomOrAnyString(stringTerm);
+        int index = PrologInteger.from(indexTerm).toInteger();
+        if (index < 1 || index > sourceText.length()) {
+            throw PrologDomainError.range(environment, 1, sourceText.length(), indexTerm);
+        }
+        if (codeTerm.isInstantiated()) {
+            PrologInteger.from(codeTerm).toChar(); // validate as a character code
+        }
+        int code = sourceText.charAt(index-1);
+        if (!Unifier.unify(environment.getLocalContext(), codeTerm, PrologInteger.from(code))) {
+            environment.backtrack();
+        }
+    }
+
+    @Predicate("string_code")
+    public static void stringCode(Environment environment, Term indexTerm, Term stringTerm, Term codeTerm) {
+        // 1-index of code, with backtracking
+        String sourceString = Strings.stringFromAtomOrAnyString(stringTerm);
+        new StringCodeIndex(environment, sourceString, indexTerm, codeTerm).redo();
     }
 
     private static class Concat extends DecisionPointImpl {
@@ -627,5 +653,79 @@ public final class AtomsAndStrings {
             }
         }
 
+    }
+
+    private static class StringCodeIndex extends DecisionPointImpl {
+        private final String sourceString;
+        private final Term indexTerm;
+        private final Term codeTerm;
+        private final int codeConstraint;
+        private int index;
+        private int limit;
+
+        /**
+         * Backtrackable algorithm to enumerate all indexes matching code, or all code/index combinations
+         *
+         * @param environment Execution environment
+         */
+        protected StringCodeIndex(Environment environment, String sourceString, Term indexTerm, Term codeTerm) {
+            super(environment);
+            this.sourceString = sourceString;
+            this.indexTerm = indexTerm;
+            this.codeTerm = codeTerm;
+
+            if (indexTerm.isInstantiated()) {
+                index = PrologInteger.from(indexTerm).toInteger(); // 1-based
+                if (index < 1 || index > sourceString.length()) {
+                    // force immediate failure
+                    index = -1;
+                    limit = 0;
+                } else {
+                    limit = index; // inclusive
+                }
+            } else {
+                index = 1;
+                limit = sourceString.length();
+            }
+
+            if (codeTerm.isInstantiated()) {
+                codeConstraint = PrologInteger.from(codeTerm).toChar();
+            } else {
+                codeConstraint = -1;
+            }
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void redo() {
+            if (codeConstraint >= 0) {
+                // find next index
+                while(index <= limit && index > 0) {
+                    if (sourceString.charAt(index-1) == codeConstraint) {
+                        break;
+                    }
+                    index++;
+                }
+            }
+            if (index > limit || index <= 0) {
+                environment.backtrack();
+                return;
+            }
+            environment.forward();
+            if (index < limit) {
+                // this may backtrack to another solution
+                environment.pushDecisionPoint(this);
+            }
+            int code = sourceString.charAt(index-1); // if codeConstraint >= 0, assume constraint checked
+            if (!codeTerm.isInstantiated() && !codeTerm.instantiate(PrologInteger.from(code))) {
+                environment.backtrack();
+            }
+            if (!indexTerm.isInstantiated() && !indexTerm.instantiate(PrologInteger.from(index))) {
+                environment.backtrack();
+            }
+            index++;
+        }
     }
 }

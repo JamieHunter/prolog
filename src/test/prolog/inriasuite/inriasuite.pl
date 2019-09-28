@@ -749,6 +749,7 @@ file(cut).
 file(findall).
 file(float).
 file(functor).
+file(get_string_code).
 file('if-then').
 file('if-then-else').
 file(integer).
@@ -768,6 +769,7 @@ file(retract).
 file(set_prolog_flag).
 file(setof).
 file(string_chars).
+file(string_code).
 file(string_codes).
 file(string_concat).
 file(string_length).

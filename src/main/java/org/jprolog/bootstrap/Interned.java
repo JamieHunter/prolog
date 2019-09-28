@@ -93,7 +93,7 @@ public final class Interned {
     public static final PrologAtomInterned STATIC_PROCEDURE_TYPE = internAtom("static_procedure");
     public static final PrologAtomInterned NOT_LESS_THAN_ZERO_DOMAIN = internAtom("not_less_than_zero");
     public static final PrologAtomInterned NON_EMPTY_LIST_DOMAIN = internAtom("non_empty_list");
-    public static final PrologAtomInterned OUT_OF_RANGE_DOMAIN = internAtom("out_of_range");
+    public static final PrologAtomInterned RANGE_DOMAIN = internAtom("range");
     public static final PrologAtomInterned STREAM_OR_ALIAS_DOMAIN = internAtom("stream_or_alias");
     public static final PrologAtomInterned STREAM_DOMAIN = internAtom("stream");
     public static final PrologAtomInterned STREAM_PROPERTY_DOMAIN = internAtom("stream_property");

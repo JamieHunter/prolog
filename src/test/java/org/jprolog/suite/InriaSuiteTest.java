@@ -19,6 +19,7 @@ import org.jprolog.io.StructureWriter;
 import org.jprolog.test.Given;
 import org.jprolog.test.Then;
 import org.jprolog.unification.Unifier;
+import org.jprolog.variables.ActiveVariable;
 import org.jprolog.variables.LabeledVariable;
 import org.jprolog.variables.Variable;
 import org.junit.jupiter.api.Disabled;
@@ -340,8 +341,9 @@ public class InriaSuiteTest extends Suite {
         PrologAtomInterned arrow = given.environment().internAtom("<--");
         Environment e = given.environment();
         List<Term> terms = variables.stream().map(v -> {
-            if (v.isInstantiated()) {
-                return new CompoundTermImpl(arrow, v.label(), v.value());
+            ActiveVariable av = e.getLocalContext().copy((LabeledVariable)v);
+            if (av.isInstantiated()) {
+                return new CompoundTermImpl(arrow, v.label(), av.value());
             } else if (!"_".equals(v.name())) {
                 return new CompoundTermImpl(arrow, v.label(), new LabeledVariable("_", -1));
             } else {

@@ -1,0 +1,17 @@
+/* file get_string_code */
+
+[get_string_code(1, "abc", C), [[C <-- 0'a]]].
+[get_string_code(2, "abc", C), [[C <-- 0'b]]].
+[get_string_code(3, "abc", C), [[C <-- 0'c]]].
+[get_string_code(2, def, C), [[C <-- 0'e]]].
+[get_string_code(3, `def`, 0'f), success].
+[get_string_code(3, `def`, 0'g), failure].
+
+[get_string_code(0, "", C), domain_error(range(1,0), 0)].
+[get_string_code(1, "", C), domain_error(range(1,0), 1)].
+[get_string_code(2, "a", C), domain_error(range(1,1), 2)].
+[get_string_code(-1, "a", C), domain_error(range(1,1), -1)].
+[get_string_code(Index, "a", C), instantiation_error].
+[get_string_code(0, String, C), instantiation_error].
+
+/* end of file get_string_code */

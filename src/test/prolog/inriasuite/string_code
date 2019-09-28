@@ -1,0 +1,20 @@
+/* file string_code */
+
+[string_code(1, "abc", C), [[C <-- 0'a]]].
+[string_code(2, "abc", C), [[C <-- 0'b]]].
+[string_code(3, "abc", C), [[C <-- 0'c]]].
+[string_code(2, def, C), [[C <-- 0'e]]].
+[string_code(3, `def`, 0'f), success].
+[string_code(3, `def`, 0'g), failure].
+[string_code(I, "ab", C), [[I <-- 1, C <-- 0'a], [I <-- 2, C <-- 0'b]]].
+[string_code(I, "abara", 0'a), [[I <-- 1], [I <-- 3], [I <-- 5]]].
+
+[string_code(0, "", C), failure].
+[string_code(1, "", C), failure].
+[string_code(I, "", C), failure].
+[string_code(2, "a", C), failure].
+[string_code(-1, "a", C), failure].
+
+[string_code(0, String, C), instantiation_error].
+
+/* end of file string_code */

@@ -3,11 +3,12 @@
 //
 package org.jprolog.exceptions;
 
-import org.jprolog.expressions.Term;
 import org.jprolog.bootstrap.Interned;
 import org.jprolog.constants.PrologAtom;
-import org.jprolog.constants.PrologAtomLike;
+import org.jprolog.constants.PrologInteger;
 import org.jprolog.execution.Environment;
+import org.jprolog.expressions.CompoundTermImpl;
+import org.jprolog.expressions.Term;
 
 /**
  * Prolog Domain error. A domain error occurs when a value is of the correct type, but outside of the expected domain
@@ -24,7 +25,7 @@ public class PrologDomainError extends PrologError {
      * @param cause       Exception that lead to this error
      * @return Domain error (not thrown)
      */
-    public static PrologDomainError error(Environment environment, PrologAtomLike domain, Term target, Throwable cause) {
+    public static PrologDomainError error(Environment environment, Term domain, Term target, Throwable cause) {
         return new PrologDomainError(
                 formal(Interned.DOMAIN_ERROR_FUNCTOR, domain, target),
                 context(environment, "Domain error: " + domain.toString()),
@@ -39,7 +40,7 @@ public class PrologDomainError extends PrologError {
      * @param target      Term that has the error
      * @return Domain error (not thrown)
      */
-    public static PrologDomainError error(Environment environment, PrologAtomLike domain, Term target) {
+    public static PrologDomainError error(Environment environment, Term domain, Term target) {
         return error(environment, domain, target, null);
     }
 
@@ -92,11 +93,15 @@ public class PrologDomainError extends PrologError {
      * Integer/Float is outside of expected range
      *
      * @param environment Execution environment.
+     * @param min         Minimum value
+     * @param max         Maximum value
      * @param target      Term with error
      * @return Domain error (not thrown)
      */
-    public static PrologDomainError outOfRange(Environment environment, Term target) {
-        return error(environment, Interned.OUT_OF_RANGE_DOMAIN, target);
+    public static PrologDomainError range(Environment environment, long min, long max, Term target) {
+        return error(environment,
+                new CompoundTermImpl(Interned.RANGE_DOMAIN,
+                        PrologInteger.from(min), PrologInteger.from(max)), target);
     }
 
     /**
@@ -173,7 +178,7 @@ public class PrologDomainError extends PrologError {
      * @return Domain error (not thrown)
      */
     public static PrologDomainError readOption(Environment environment, Term target) {
-        return error(environment,  new PrologAtom("read_option"), target);
+        return error(environment, new PrologAtom("read_option"), target);
     }
 
     /**
