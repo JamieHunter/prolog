@@ -5,6 +5,7 @@ package org.jprolog.library;
 
 import org.jprolog.bootstrap.Interned;
 import org.jprolog.bootstrap.Predicate;
+import org.jprolog.constants.PrologAtomLike;
 import org.jprolog.execution.Environment;
 import org.jprolog.expressions.Term;
 import org.jprolog.unification.Unifier;
@@ -106,7 +107,7 @@ public class Collation {
     @Predicate("compare")
     public static void orderCompare(Environment environment, Term rel, Term left, Term right) {
         int order = left.compareTo(right);
-        Term res;
+        PrologAtomLike res;
         if (order < 0) {
             res = Interned.LESS_THAN_ATOM;
         } else if (order > 0) {
@@ -114,8 +115,6 @@ public class Collation {
         } else {
             res = Interned.EQUALS_ATOM;
         }
-        if (!Unifier.unify(environment.getLocalContext(), rel, res)) {
-            environment.backtrack();
-        }
+        Unifier.unifyAtom(environment, rel, res);
     }
 }

@@ -211,7 +211,7 @@ public class InriaSuiteTest extends Suite {
             Environment e = given.environment();
             LocalContext lc = e.newLocalContext();
             e.setLocalContext(lc);
-            if (!Unifier.unify(lc, pattern, t)) {
+            if (!Unifier.unifyInternal(lc, pattern, t)) {
                 fail("Expected error signature " + formatTerm(given, pattern) + " but got " + formatTerm(given, t));
             }
         }
@@ -225,7 +225,7 @@ public class InriaSuiteTest extends Suite {
      * @param expectations Collection of expectations
      */
     private void assertAllSolutions(Given given, Term goal, Term expectations) {
-        List<Term> solutions = TermList.extractList(expectations);
+        List<Term> solutions = new ArrayList<>(TermList.extractList(expectations));
         if (solutions.size() == 0) {
             assertFailed(given, goal);
             return;
@@ -319,7 +319,7 @@ public class InriaSuiteTest extends Suite {
                     }
                     continue;
                 }
-                if (!Unifier.unify(context, var, value)) {
+                if (!Unifier.unifyInternal(context, var, value)) {
                     return false;
                 }
             }
@@ -350,6 +350,6 @@ public class InriaSuiteTest extends Suite {
                 return null;
             }
         }).filter(t -> t != null).collect(Collectors.toList());
-        return TermList.from(terms);
+        return TermList.from(terms).toTerm();
     }
 }

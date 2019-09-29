@@ -154,7 +154,7 @@ public class ExecBagOf extends ExecFindAll {
             if (values.size() == 0) {
                 throw new InternalError("No values collected");
             }
-            Term outTerm = TermList.from(collate(values));
+            Term outTerm = TermList.from(collate(values)).toTerm();
             // Unify
             if (!listUnifier.unify(context, outTerm)) {
                 environment.backtrack();

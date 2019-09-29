@@ -69,7 +69,7 @@ public class ExecFindAll implements Instruction {
                 }),
                 // When callable finally fails, we're complete (executed in future)
                 () -> {
-                    if (!listUnifier.unify(environment.getLocalContext(), TermList.from(builder))) {
+                    if (!listUnifier.unify(environment.getLocalContext(), TermList.from(builder).toTerm())) {
                         environment.backtrack();
                     }
                 });

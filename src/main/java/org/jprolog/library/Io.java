@@ -6,12 +6,10 @@ package org.jprolog.library;
 import org.jprolog.bootstrap.Interned;
 import org.jprolog.bootstrap.Predicate;
 import org.jprolog.constants.Atomic;
-import org.jprolog.constants.PrologAtom;
 import org.jprolog.constants.PrologAtomInterned;
 import org.jprolog.constants.PrologEmptyList;
 import org.jprolog.constants.PrologFloat;
 import org.jprolog.constants.PrologInteger;
-import org.jprolog.constants.PrologString;
 import org.jprolog.exceptions.FutureFlagError;
 import org.jprolog.exceptions.PrologDomainError;
 import org.jprolog.exceptions.PrologError;
@@ -67,6 +65,8 @@ public final class Io {
         // Static methods/fields only
     }
 
+
+    private static final PrologAtomInterned OPEN_ACTION = Interned.internAtom("open");
     // Universal EOF atom
     public static final PrologAtomInterned END_OF_FILE = Interned.internAtom("end_of_file");
     // Stream modes
@@ -139,10 +139,7 @@ public final class Io {
 
         PrologInteger id = LogicalStream.unique();
         if (aliasName == null) {
-            if (!Unifier.unify(environment.getLocalContext(), streamIdent, id)) {
-                environment.backtrack();
-                return;
-            }
+            Unifier.unifyAtomic(environment, streamIdent, id);
         }
         binding = new LogicalStream(id, input, null, openMode);
         binding.setBufferMode(StreamProperties.Buffering.ATOM_line);
@@ -185,9 +182,7 @@ public final class Io {
             throw PrologDomainError.stream(environment, streamIdent);
         }
         LogicalStream currentInputStream = environment.getInputStream();
-        if (!Unifier.unify(environment.getLocalContext(), streamIdent, currentInputStream.getId())) {
-            environment.backtrack();
-        }
+        Unifier.unifyAtomic(environment, streamIdent, currentInputStream.getId());
     }
 
     /**
@@ -216,9 +211,7 @@ public final class Io {
             throw PrologDomainError.stream(environment, streamIdent);
         }
         LogicalStream currentOutputStream = environment.getOutputStream();
-        if (!Unifier.unify(environment.getLocalContext(), streamIdent, currentOutputStream.getId())) {
-            environment.backtrack();
-        }
+        Unifier.unifyAtomic(environment, streamIdent, currentOutputStream.getId());
     }
 
     /**
@@ -317,10 +310,8 @@ public final class Io {
     @Predicate("current_stream")
     public static void currentStream(Environment environment, Term object, Term mode, Term streamIdent) {
         forEachStream(environment, streamIdent, (id, stream) -> {
-            if (!(Unifier.unify(environment.getLocalContext(), object, stream.getFileName()) &&
-                    Unifier.unify(environment.getLocalContext(), mode, stream.getMode()))) {
-                environment.backtrack();
-            }
+            Unifier.unifyTerm(environment, object, stream.getFileName());
+            Unifier.unifyTerm(environment, mode, stream.getMode());
         });
     }
 
@@ -374,9 +365,7 @@ public final class Io {
             }
         } catch (IOException e) {
         }
-        if (!Unifier.unify(environment.getLocalContext(), count, PrologInteger.from(countPos))) {
-            environment.backtrack();
-        }
+        Unifier.unifyInteger(environment, count, countPos);
     }
 
     /**
@@ -412,15 +401,13 @@ public final class Io {
      * Get single character from current input stream
      *
      * @param environment Execution environment
-     * @param term        Receives read character
+     * @param chr         Character retrieved (or end_of_file)
      */
     @Predicate("get_char")
-    public static void getChar(Environment environment, Term term) {
+    public static void getChar(Environment environment, Term chr) {
         LogicalStream logicalStream = environment.getInputStream();
         Atomic value = logicalStream.getChar(environment, null);
-        if (!Unifier.unify(environment.getLocalContext(), term, value)) {
-            environment.backtrack();
-        }
+        Unifier.unifyAtomic(environment, chr, value);
     }
 
     /**
@@ -428,61 +415,53 @@ public final class Io {
      *
      * @param environment Execution environment
      * @param streamIdent Stream to get character from
-     * @param chr         Character retrieved
+     * @param chr         Character retrieved (or end_of_file)
      */
     @Predicate("get_char")
     public static void getChar(Environment environment, Term streamIdent, Term chr) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
         Atomic value = logicalStream.getChar(environment, (Atomic) streamIdent);
-        if (!Unifier.unify(environment.getLocalContext(), chr, value)) {
-            environment.backtrack();
-        }
+        Unifier.unifyAtomic(environment, chr, value);
     }
 
     /**
      * Get single character from current input stream
      *
      * @param environment Execution environment
-     * @param term        Receives read code
+     * @param code        Receives read code (or end_of_file)
      */
     @Predicate("get_code")
-    public static void getCode(Environment environment, Term term) {
+    public static void getCode(Environment environment, Term code) {
         LogicalStream logicalStream = environment.getInputStream();
         Atomic value = logicalStream.getCode(environment, null);
-        if (!Unifier.unify(environment.getLocalContext(), term, value)) {
-            environment.backtrack();
-        }
+        Unifier.unifyAtomic(environment, code, value);
     }
 
     /**
      * Get single character code from current input stream
      *
      * @param environment Execution environment
-     * @param streamIdent Stream to get character from
-     * @param code        Character retrieved
+     * @param streamIdent Stream to get character code from
+     * @param code        Receives read code (or end_of_file)
      */
     @Predicate("get_code")
     public static void getCode(Environment environment, Term streamIdent, Term code) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
         Atomic value = logicalStream.getCode(environment, (Atomic) streamIdent);
-        if (!Unifier.unify(environment.getLocalContext(), code, value)) {
-            environment.backtrack();
-        }
+        Unifier.unifyAtomic(environment, code, value);
     }
 
     /**
      * Get single character from current input stream
      *
      * @param environment Execution environment
-     * @param term        Receives read code
+     * @param byteCode    Receives read code (or end_of_file)
      */
     @Predicate("get_byte")
-    public static void getByte(Environment environment, Term term) {
+    public static void getByte(Environment environment, Term byteCode) {
         LogicalStream logicalStream = environment.getInputStream();
         Atomic value = logicalStream.getByte(environment, null);
-        if (!Unifier.unify(environment.getLocalContext(), term, value)) {
-            environment.backtrack();
-        }
+        Unifier.unifyAtomic(environment, byteCode, value);
     }
 
     /**
@@ -490,15 +469,13 @@ public final class Io {
      *
      * @param environment Execution environment
      * @param streamIdent Stream to get character from
-     * @param code        Character retrieved
+     * @param byteCode    Receives read code (or end_of_file)
      */
     @Predicate("get_byte")
-    public static void getByte(Environment environment, Term streamIdent, Term code) {
+    public static void getByte(Environment environment, Term streamIdent, Term byteCode) {
         LogicalStream logicalStream = lookupStream(environment, streamIdent);
         Atomic value = logicalStream.getByte(environment, (Atomic) streamIdent);
-        if (!Unifier.unify(environment.getLocalContext(), code, value)) {
-            environment.backtrack();
-        }
+        Unifier.unifyAtomic(environment, byteCode, value);
     }
 
     /**
@@ -801,9 +778,7 @@ public final class Io {
     public static void timeFile(Environment environment, Term fileName, Term timeTerm) {
         Path path = parsePathWithCWD(environment, fileName);
         PrologFloat time = Time.toPrologTime(path.toFile().lastModified());
-        if (!Unifier.unify(environment.getLocalContext(), timeTerm, time)) {
-            environment.backtrack();
-        }
+        Unifier.unifyFloat(environment, timeTerm, time.get());
     }
 
     /**
@@ -816,7 +791,7 @@ public final class Io {
     @Predicate("absolute_file_name")
     public static void absoluteFileName(Environment environment, Term fileSpec, Term fileName) {
         Path path = absoluteFileName(environment, fileSpec, new AbsoluteFileNameOptions(environment, null));
-        unifyFilePath(environment, path, fileName);
+        Unifier.unifyPath(environment, fileName, path);
     }
 
     /**
@@ -830,7 +805,7 @@ public final class Io {
     @Predicate("absolute_file_name")
     public static void absoluteFileName(Environment environment, Term fileSpec, Term fileName, Term options) {
         Path path = absoluteFileName(environment, fileSpec, new AbsoluteFileNameOptions(environment, options));
-        unifyFilePath(environment, path, fileName);
+        Unifier.unifyPath(environment, fileName, path);
     }
 
     /**
@@ -845,10 +820,7 @@ public final class Io {
 
         Path path = parsePathBasic(environment, fileSpec);
         // TODO: Interpret expansion meta-characters
-        Term expanded = TermList.from(Arrays.asList(fileSpec));
-        if (!Unifier.unify(environment.getLocalContext(), expansion, expanded)) {
-            environment.backtrack();
-        }
+        Unifier.unifyList(environment, expansion, TermList.from(Arrays.asList(fileSpec)));
     }
 
     /**
@@ -875,12 +847,8 @@ public final class Io {
                 environment.backtrack();
                 return;
             }
-        } else {
-            Term cwdTerm = new PrologAtom(environment.getCWD().toAbsolutePath().toString());
-            if (!oldDirTerm.instantiate(cwdTerm)) {
-                environment.backtrack();
-                return;
-            }
+        } else if (!Unifier.unifyPath(environment, oldDirTerm, environment.getCWD().toAbsolutePath())) {
+            return;
         }
         if (!newDirTerm.isInstantiated()) {
             // note, we cannot do this until here, as newDirTerm might be unified with oldDirTerm,
@@ -897,8 +865,6 @@ public final class Io {
     // ====================================================================
     // Helper methods
     // ====================================================================
-
-    private static final PrologAtomInterned OPEN_ACTION = Interned.internAtom("open");
 
     /**
      * Translates an open error
@@ -995,10 +961,7 @@ public final class Io {
         PrologOutputStream output = mode != OPEN_READ ? fileStream : null;
         PrologInteger id = LogicalStream.unique();
         if (aliasName == null) {
-            if (!Unifier.unify(environment.getLocalContext(), streamTarget, id)) {
-                environment.backtrack();
-                return;
-            }
+            Unifier.unifyAtomic(environment, streamTarget, id);
         }
         binding = new LogicalStream(id, input, output, openMode);
         binding.setBufferMode(options.buffer);
@@ -1155,16 +1118,6 @@ public final class Io {
         return usePath;
     }
 
-    public static boolean unifyFilePath(Environment environment, Path path, Term fileNameTerm) {
-        PrologString fileName = new PrologString(path.toString());
-        if (Unifier.unify(environment.getLocalContext(), fileNameTerm, fileName)) {
-            return true;
-        } else {
-            environment.backtrack();
-            return false;
-        }
-    }
-
     /**
      * Many stream accessors operate on either a given stream, or all streams
      *
@@ -1180,8 +1133,7 @@ public final class Io {
             List<LogicalStream> all = new ArrayList<>();
             all.addAll(environment.getOpenStreams());
             YieldSolutions.forAll(environment, all.stream(), stream -> {
-                if (!Unifier.unify(environment.getLocalContext(), streamIdent, stream.getId())) {
-                    environment.backtrack();
+                if (!Unifier.unifyAtomic(environment, streamIdent, stream.getId())) {
                     return false;
                 }
                 lambda.accept(stream.getId(), stream);
@@ -1208,9 +1160,7 @@ public final class Io {
                     StreamProperties properties = new StreamProperties(environment, stream, streamIdent);
                     try {
                         Term actualValue = properties.get(propertyName);
-                        if (!Unifier.unify(environment.getLocalContext(), unifyValue, actualValue)) {
-                            environment.backtrack();
-                        }
+                        Unifier.unifyTerm(environment, unifyValue, actualValue);
                         return;
                     } catch (FutureFlagError ffe) {
                         // handled below
@@ -1233,7 +1183,7 @@ public final class Io {
         } else {
             List<Term> allProps = new StreamProperties(environment, stream, streamIdent).getAll(stream);
             YieldSolutions.forAll(environment, allProps.stream(),
-                    term -> Unifier.unify(environment.getLocalContext(), property, term));
+                    term -> Unifier.unifyTerm(environment, property, term));
         }
     }
 }

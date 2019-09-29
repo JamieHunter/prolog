@@ -17,6 +17,7 @@ import org.jprolog.parser.ExpressionReader;
 import org.jprolog.parser.Tokenizer;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.*;
@@ -87,13 +88,13 @@ public class StructureWriterTest {
     @Test
     public void testList() throws IOException {
         options.ignoreOps = false;
-        expect(new TermListImpl(new Term[]{atom("aa"), atom("bb")}, PrologEmptyList.EMPTY_LIST), equalTo("[aa, bb]"));
-        expect(new TermListImpl(new Term[]{atom("a"), atom("b")}, PrologEmptyList.EMPTY_LIST), equalTo("`ab`"));
-        expect(new TermListImpl(new Term[]{atom("aa"), atom("bb")}, atom("cc")), equalTo("[aa, bb| cc]"));
+        expect(new TermListImpl(Arrays.asList(atom("aa"), atom("bb")), PrologEmptyList.EMPTY_LIST), equalTo("[aa, bb]"));
+        expect(new TermListImpl(Arrays.asList(atom("a"), atom("b")), PrologEmptyList.EMPTY_LIST), equalTo("`ab`"));
+        expect(new TermListImpl(Arrays.asList(atom("aa"), atom("bb")), atom("cc")), equalTo("[aa, bb| cc]"));
         options.ignoreOps = true;
-        expect(new TermListImpl(new Term[]{atom("aa"), atom("bb")}, PrologEmptyList.EMPTY_LIST), equalTo(".(aa, .(bb,[]))"));
-        expect(new TermListImpl(new Term[]{atom("a"), atom("b")}, PrologEmptyList.EMPTY_LIST), equalTo(".(a, .(b,[]))"));
-        expect(new TermListImpl(new Term[]{atom("aa"), atom("bb")}, atom("cc")), equalTo(".(aa, .(bb,cc))"));
+        expect(new TermListImpl(Arrays.asList(atom("aa"), atom("bb")), PrologEmptyList.EMPTY_LIST), equalTo(".(aa, .(bb,[]))"));
+        expect(new TermListImpl(Arrays.asList(atom("a"), atom("b")), PrologEmptyList.EMPTY_LIST), equalTo(".(a, .(b,[]))"));
+        expect(new TermListImpl(Arrays.asList(atom("aa"), atom("bb")), atom("cc")), equalTo(".(aa, .(bb,cc))"));
     }
 
     @Test

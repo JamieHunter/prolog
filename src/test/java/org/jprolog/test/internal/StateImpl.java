@@ -9,7 +9,6 @@ import org.jprolog.constants.PrologString;
 import org.jprolog.exceptions.PrologDomainError;
 import org.jprolog.execution.Environment;
 import org.jprolog.expressions.Term;
-import org.jprolog.expressions.TermList;
 import org.jprolog.flags.StreamProperties;
 import org.jprolog.io.LogicalStream;
 import org.jprolog.predicates.BuiltinPredicateArity0;
@@ -76,9 +75,7 @@ public class StateImpl {
             throw PrologDomainError.error(environment, "##text_log", alias);
         }
         Term count = PrologInteger.from(monitor.getCount());
-        if (!Unifier.unify(environment.getLocalContext(), unifyTerm, count)) {
-            environment.backtrack();
-        }
+        Unifier.unifyInteger(environment, unifyTerm, monitor.getCount());
     }
 
     private void textLog(Environment environment, Term aliasTerm, Term grepTerm) {

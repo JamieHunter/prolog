@@ -89,7 +89,7 @@ public class SpyPoints {
         if ((leashFlags & ExecutionPort.EXCEPTION_FLAG) != 0) {
             flags.add(new PrologAtom("exception"));
         }
-        return TermList.from(flags);
+        return TermList.from(flags).toTerm();
     }
 
     /**

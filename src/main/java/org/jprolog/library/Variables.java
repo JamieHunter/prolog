@@ -54,9 +54,7 @@ public class Variables {
     public static void termVariables(Environment environment, Term term, Term varList) {
         // Extract all the variables out of term as a list
         List<? extends Variable> collected = collectVariables(environment, term);
-        if (!Unifier.unify(environment.getLocalContext(), varList, TermList.from(collected))) {
-            environment.backtrack();
-        }
+        Unifier.unifyList(environment, varList, TermList.from(collected));
     }
 
     /**
@@ -74,9 +72,7 @@ public class Variables {
                 .collect(Collectors.toList()));
         List<? extends Variable> collected = collectVariables(environment, term);
         List<Variable> remaining = collected.stream().filter(t -> !vars.contains(t.id())).collect(Collectors.toList());
-        if (!Unifier.unify(environment.getLocalContext(), tailList, TermList.from(remaining))) {
-            environment.backtrack();
-        }
+        Unifier.unifyList(environment, tailList, TermList.from(remaining));
     }
 
     /**
@@ -97,9 +93,7 @@ public class Variables {
                 index++;
             }
         }
-        if (!Unifier.unify(environment.getLocalContext(), endTerm, PrologInteger.from(index))) {
-            environment.backtrack();
-        }
+        Unifier.unifyInteger(environment, endTerm, index);
     }
 
     /**

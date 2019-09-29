@@ -34,6 +34,7 @@ import org.jprolog.unification.Unifier;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
@@ -97,9 +98,8 @@ public class Conversions {
     @Predicate("text_to_string")
     public static void textToString(Environment environment, Term textTerm, Term stringTerm) {
         String text = Strings.stringFromAtomOrAnyString(textTerm);
-        if (!Unifier.unify(environment.getLocalContext(), stringTerm, new PrologString(text))) {
-            environment.backtrack();
-        }
+        Unifier.unifyString(environment, stringTerm, text,
+                Strings::stringFromAnyString, PrologString::new);
     }
 
     /**
@@ -111,7 +111,7 @@ public class Conversions {
      */
     @Predicate("char_code")
     public static void charCode(Environment environment, Term atomTerm, Term codeTerm) {
-        PrologInteger codeFromAtom = null;
+        BigInteger codeFromAtom = null;
         PrologCharacter charFromCode = null;
         if (atomTerm.isInstantiated()) {
             String charString = "";
@@ -122,20 +122,16 @@ public class Conversions {
             if (charString.length() != 1) {
                 throw PrologTypeError.characterExpected(environment, atomTerm);
             }
-            codeFromAtom = PrologInteger.from(charString.charAt(0));
+            codeFromAtom = BigInteger.valueOf(charString.charAt(0));
         }
         if (codeTerm.isInstantiated()) {
             int code = PrologInteger.from(codeTerm).toChar();
             charFromCode = new PrologCharacter((char) code);
         }
         if (charFromCode != null) {
-            if (!Unifier.unify(environment.getLocalContext(), atomTerm, charFromCode)) {
-                environment.backtrack();
-            }
+            Unifier.unifyAtom(environment, atomTerm, charFromCode);
         } else if (codeFromAtom != null) {
-            if (!Unifier.unify(environment.getLocalContext(), codeTerm, codeFromAtom)) {
-                environment.backtrack();
-            }
+            Unifier.unifyInteger(environment, codeTerm, codeFromAtom);
         } else {
             throw PrologInstantiationError.error(environment, atomTerm);
         }
@@ -188,18 +184,16 @@ public class Conversions {
         if (leftTerm.isInstantiated()) {
             String leftText = extractLeft.apply(leftTerm);
             Term newRight = createRight.apply(leftText);
-            if (!Unifier.unify(environment.getLocalContext(), rightTerm, newRight)) {
-                environment.backtrack();
-            }
+            // allow sub-list type unification, don't use unifyString
+            Unifier.unifyTerm(environment, rightTerm, newRight);
         } else if (!rightTerm.isInstantiated()) {
             throw PrologInstantiationError.error(environment, leftTerm);
         } else {
             // construct left (atom or string), right must be grounded
             String rightText = extractRight.apply(rightTerm);
             Term newLeft = createLeft.apply(rightText);
-            if (!Unifier.unify(environment.getLocalContext(), leftTerm, newLeft)) {
-                environment.backtrack();
-            }
+            // allow sub-list type unification, don't use unifyString
+            Unifier.unifyTerm(environment, leftTerm, newLeft);
         }
     }
 
@@ -246,15 +240,15 @@ public class Conversions {
      * @param environment Execution environment
      * @param number      Number to create or deconstruct
      * @param stringTerm  Term containing a string
-     * @param extractor   Function to extract string from term
+     * @param extract     Function to extract string from term
      * @param create      Function to create a string term
      */
     protected static void numberCharsCommon(Environment environment, Term number, Term stringTerm,
-                                            Function<Term, String> extractor, Function<String, Term> create) {
+                                            Function<Term, String> extract, Function<String, Term> create) {
         PrologNumber parsedNumber = null;
         if (stringTerm.isGrounded()) {
             // construct number through parsing
-            String text = extractor.apply(stringTerm);
+            String text = extract.apply(stringTerm);
             ReadOptions options = new ReadOptions(environment, null);
             try {
                 parsedNumber = parseAndFoldInput(
@@ -307,17 +301,14 @@ public class Conversions {
                 // write number and unify
                 String text = termToString(environment, number);
                 Term deconstructed = create.apply(text);
-                if (!Unifier.unify(environment.getLocalContext(), stringTerm, deconstructed)) {
-                    environment.backtrack();
-                }
+                // allow sub-list type unification, don't use unifyString
+                Unifier.unifyTerm(environment, stringTerm, deconstructed);
                 return;
             }
         } else if (parsedNumber == null) {
             throw PrologInstantiationError.error(environment, stringTerm);
         }
-        if (!Unifier.unify(environment.getLocalContext(), number, parsedNumber)) {
-            environment.backtrack();
-        }
+        Unifier.unifyNumber(environment, number, parsedNumber);
     }
 
     private interface ParseAndFold<R> {

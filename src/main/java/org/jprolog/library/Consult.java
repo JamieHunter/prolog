@@ -19,12 +19,12 @@ import org.jprolog.expressions.Term;
 import org.jprolog.instructions.ExecBlock;
 import org.jprolog.instructions.ExecCallLocal;
 import org.jprolog.instructions.ExecFinally;
+import org.jprolog.io.LogicalStream;
+import org.jprolog.io.Prompt;
 import org.jprolog.predicates.LoadGroup;
 import org.jprolog.predicates.Predication;
 import org.jprolog.unification.Unifier;
 import org.jprolog.utility.LinkNode;
-import org.jprolog.io.LogicalStream;
-import org.jprolog.io.Prompt;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -81,9 +81,7 @@ public final class Consult {
             return;
         }
         PrologFloat time = group.getTime();
-        if (!Unifier.unify(environment.getLocalContext(), timeTerm, time)) {
-            environment.backtrack();
-        }
+        Unifier.unifyFloat(environment, timeTerm, time.get());
     }
 
     /**

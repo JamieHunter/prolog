@@ -3,10 +3,8 @@
 //
 package org.jprolog.constants;
 
-import org.jprolog.execution.Environment;
 import org.jprolog.expressions.Strings;
 import org.jprolog.expressions.Term;
-import org.jprolog.expressions.TermList;
 import org.jprolog.io.StructureWriter;
 import org.jprolog.io.TermWriter;
 import org.jprolog.io.WriteContext;
@@ -24,6 +22,7 @@ public class PrologChars extends PrologStringAsList {
 
     /**
      * Convert list to PrologChars
+     *
      * @param term Term to convert
      * @return converted term (empty-list remains unconverted).
      */

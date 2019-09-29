@@ -3,26 +3,14 @@
 //
 package org.jprolog.expressions;
 
-import org.jprolog.constants.PrologAtom;
-import org.jprolog.constants.PrologChars;
-import org.jprolog.constants.PrologCodePoints;
-import org.jprolog.exceptions.PrologRepresentationError;
 import org.jprolog.unification.HeadTailUnifyIterator;
 import org.jprolog.unification.UnifyIterator;
 import org.jprolog.bootstrap.Interned;
 import org.jprolog.constants.PrologAtomLike;
-import org.jprolog.constants.PrologCharacter;
 import org.jprolog.constants.PrologEmptyList;
-import org.jprolog.constants.PrologInteger;
-import org.jprolog.constants.PrologString;
-import org.jprolog.constants.PrologStringAsList;
 import org.jprolog.exceptions.FutureInstantiationError;
 import org.jprolog.exceptions.FutureTypeError;
-import org.jprolog.exceptions.PrologInstantiationError;
-import org.jprolog.exceptions.PrologTypeError;
 import org.jprolog.enumerators.EnumTermStrategy;
-import org.jprolog.execution.Environment;
-import org.jprolog.execution.LocalContext;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -64,15 +52,6 @@ public interface TermList extends CompoundTerm {
     }
 
     /**
-     * Resolve list
-     *
-     * @param context Context for variable bindings
-     * @return new list
-     */
-    @Override
-    TermList resolve(LocalContext context);
-
-    /**
      * Retrieve head (first element) of list
      *
      * @return Head term
@@ -106,11 +85,6 @@ public interface TermList extends CompoundTerm {
     }
 
     /**
-     * @return Length of list contained in TermList, ignoring tail component
-     */
-    int length();
-
-    /**
      * Copy members to specified array, ignoring tail component
      *
      * @param arr Target array
@@ -126,7 +100,7 @@ public interface TermList extends CompoundTerm {
         return PrologEmptyList.EMPTY_LIST;
     }
 
-    TermList enumTerm(EnumTermStrategy strategy);
+    Term enumTerm(EnumTermStrategy strategy);
 
     /**
      * True if term is a list
@@ -189,11 +163,37 @@ public interface TermList extends CompoundTerm {
      * @return array of list elements
      */
     static List<Term> extractList(Term list) {
+        WorkingTermList partial = compactList(list);
+        if (partial.isConcrete()) {
+            return partial.asList();
+        } else {
+            throw new FutureInstantiationError(list);
+        }
+    }
+
+    /**
+     * Utility to extract partial list (may have a tail that is unspecified)
+     *
+     * @param list Term to query
+     * @return TermList filled as far as possible
+     */
+    static WorkingTermList compactList(Term list) {
         Term origList = list;
         ArrayList<Term> arr = new ArrayList<>();
+        if (list instanceof WorkingTermList) {
+            WorkingTermList self = (WorkingTermList)list;
+            if (self.isConcrete()) {
+                return self;
+            }
+        }
         while (list != PrologEmptyList.EMPTY_LIST) {
             if (!list.isInstantiated()) {
-                throw new FutureInstantiationError(list);
+                // limit of what can be resolved
+                if (arr.size() == 0) {
+                    return new WorkingTermListTail(list);
+                } else {
+                    return new TermListImpl(arr, list);
+                }
             }
             if (list instanceof TermList) {
                 ((TermList) list).copyMembers(arr);
@@ -201,13 +201,15 @@ public interface TermList extends CompoundTerm {
             } else if (isList(list)) {
                 arr.add(((CompoundTerm) list).get(0));
                 list = ((CompoundTerm) list).get(1);
-            } else if (!list.isInstantiated()) {
-                throw new FutureInstantiationError(list);
             } else {
                 throw new FutureTypeError(Interned.LIST_TYPE, origList);
             }
         }
-        return arr;
+        if (arr.size() == 0) {
+            return PrologEmptyList.EMPTY_LIST;
+        } else {
+            return new TermListImpl(arr, PrologEmptyList.EMPTY_LIST);
+        }
     }
 
     /**
@@ -216,7 +218,7 @@ public interface TermList extends CompoundTerm {
      * @param list Java list
      * @return Prolog list
      */
-    static Term from(List<? extends Term> list) {
+    static WorkingTermList from(List<? extends Term> list) {
         if (list.isEmpty()) {
             return PrologEmptyList.EMPTY_LIST;
         } else {

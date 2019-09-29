@@ -5,6 +5,7 @@ package org.jprolog.constants;
 
 import org.jprolog.exceptions.FutureDomainError;
 import org.jprolog.exceptions.FutureEvaluationError;
+import org.jprolog.exceptions.FutureInstantiationError;
 import org.jprolog.exceptions.FutureTypeError;
 import org.jprolog.expressions.Term;
 import org.jprolog.expressions.TypeRank;
@@ -38,6 +39,22 @@ public final class PrologFloat extends AtomicBase implements PrologNumber {
      */
     public static PrologFloat from(double value) {
         return new PrologFloat(value);
+    }
+
+    /**
+     * Utility to retrieve a float from a term.
+     *
+     * @param value Value assumed to be float
+     * @return float value
+     */
+    public static PrologFloat from(Term value) {
+        if (value.isNumber()) {
+            return ((PrologNumber) value).toPrologFloat();
+        } else if (!value.isInstantiated()) {
+            throw new FutureInstantiationError(value);
+        } else {
+            throw new FutureTypeError(Interned.NUMBER_TYPE, value);
+        }
     }
 
     /**

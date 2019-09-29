@@ -416,7 +416,7 @@ public class LogicalStream {
             mapOptionalPosElement(terms, Io.CHAR_POS, pos.getCharPos());
             mapOptionalPosElement(terms, Io.COLUMN_POS, pos.getColumnPos());
             mapOptionalPosElement(terms, Io.LINE_POS, pos.getLinePos());
-            return TermList.from(terms);
+            return TermList.from(terms).toTerm();
         } catch (IOException ioe) {
             // TODO: correct error?
             return PrologEmptyList.EMPTY_LIST;
@@ -894,9 +894,7 @@ public class LogicalStream {
     public void read(Environment environment, Atomic streamId, Term target, Term optionsTerm) {
         assertText(environment, Io.INPUT_ACTION, streamId);
         Term value = read(environment, streamId, new ReadOptions(environment, optionsTerm));
-        if (!Unifier.unify(environment.getLocalContext(), target, value)) {
-            environment.backtrack();
-        }
+        Unifier.unifyTerm(environment, target, value);
     }
 
     /**

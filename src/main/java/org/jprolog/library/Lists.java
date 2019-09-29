@@ -5,11 +5,11 @@ package org.jprolog.library;
 
 import org.jprolog.bootstrap.Interned;
 import org.jprolog.bootstrap.Predicate;
+import org.jprolog.constants.Atomic;
 import org.jprolog.constants.PrologEmptyList;
 import org.jprolog.constants.PrologInteger;
 import org.jprolog.exceptions.PrologDomainError;
 import org.jprolog.exceptions.PrologInstantiationError;
-import org.jprolog.exceptions.PrologRepresentationError;
 import org.jprolog.exceptions.PrologTypeError;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.LocalContext;
@@ -17,13 +17,14 @@ import org.jprolog.expressions.CompoundTerm;
 import org.jprolog.expressions.CompoundTermImpl;
 import org.jprolog.expressions.Term;
 import org.jprolog.expressions.TermList;
-import org.jprolog.expressions.TermListImpl;
+import org.jprolog.expressions.WorkingTermList;
 import org.jprolog.generators.YieldSolutions;
 import org.jprolog.unification.Unifier;
 import org.jprolog.unification.UnifyBuilder;
 import org.jprolog.variables.LabeledVariable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -40,62 +41,61 @@ public final class Lists {
      * instantiated, the list being instantiated, or both updating each other.
      *
      * @param environment Execution environment
-     * @param struct      Structure (left)
-     * @param list        List (right)
+     * @param structTerm  Structure (left)
+     * @param listTerm    List (right)
      */
     @Predicate("=..")
-    public static void univ(Environment environment, Term struct, Term list) {
-        List<Term> structArr;
-        List<Term> listArr;
-        TermList listFromStruct = null;
+    public static void univ(Environment environment, Term structTerm, Term listTerm) {
+        WorkingTermList structArr = null;
+        WorkingTermList listArr = null;
         Term structFromList = null;
 
-        if (!struct.isInstantiated()) {
-            if (!list.isInstantiated()) {
-                throw PrologInstantiationError.error(environment, list);
-            }
-            if (!TermList.isList(list)) {
-                throw PrologTypeError.listExpected(environment, list);
-            }
+        if (structTerm.isInstantiated()) {
+            // flatten structure into a list
+            structArr = extractStructureToList(structTerm);
         }
-        if (struct.isInstantiated()) {
-            structArr = extractStructure(struct);
-            listFromStruct = new TermListImpl(
-                    structArr.toArray(new Term[structArr.size()]),
-                    PrologEmptyList.EMPTY_LIST);
-        }
-        if (list.isInstantiated()) {
-            if (!struct.isInstantiated() && list == PrologEmptyList.EMPTY_LIST) {
-                throw PrologDomainError.nonEmptyList(environment, list);
+        if (listTerm.isInstantiated()) {
+            // validate list
+            listArr = TermList.compactList(listTerm);
+            if (structArr == null && !listArr.isConcrete()) {
+                // Cannot handle a trailing variable if no structure was provided
+                throw PrologInstantiationError.error(environment, listArr.getFinalTailList().toTerm());
             }
-            CompoundTerm listComp = (CompoundTerm) list;
-            Term head = listComp.get(0);
-            Term tail = listComp.get(1);
-            if (!struct.isInstantiated() && !head.isInstantiated()) {
-                throw PrologInstantiationError.error(environment, head);
+            if (listArr.isEmptyList()) {
+                throw PrologDomainError.nonEmptyList(environment, listTerm);
             }
-            if (head.isInstantiated() && !head.isAtomic() && tail == PrologEmptyList.EMPTY_LIST) {
-                throw PrologTypeError.atomicExpected(environment, head);
-            }
-            if (head.isInstantiated() && !head.isAtom() && tail != PrologEmptyList.EMPTY_LIST) {
-                throw PrologTypeError.atomExpected(environment, head);
-            }
-            if (!struct.isInstantiated()) {
-                if (tail == PrologEmptyList.EMPTY_LIST) {
+            Term head = listArr.getHead();
+            WorkingTermList tail = listArr.getTailList();
+            if (head.isInstantiated()) {
+                // extra validations
+                if (tail.isConcrete() && tail.concreteSize() == 0) {
+                    if (!head.isAtomic()) {
+                        throw PrologTypeError.atomicExpected(environment, head);
+                    }
                     structFromList = head;
                 } else {
-                    listArr = TermList.extractList(list);
-                    if ((listArr.size() - 1) > environment.getFlags().maxArity) {
-                        throw PrologRepresentationError.error(environment, Interned.MAX_ARITY_REPRESENTATION);
+                    if (!head.isAtom()) {
+                        throw PrologTypeError.atomExpected(environment, head);
                     }
-                    structFromList = new CompoundTermImpl(
-                            listArr.toArray(new Term[listArr.size()]));
+                    if (structArr == null) {
+                        // only create if needed
+                        structFromList = new CompoundTermImpl((Atomic) head, tail.asList());
+                    }
                 }
             }
         }
-        if ((structFromList != null && !Unifier.unify(environment.getLocalContext(), struct, structFromList)) ||
-                (listFromStruct != null && !Unifier.unify(environment.getLocalContext(), list, listFromStruct))) {
-            environment.backtrack();
+        if (structArr != null && listArr != null) {
+            // In this case, both the structure and the list were extracted and can be unified element by element
+            Unifier.unifyLists(environment, structArr, listArr);
+        } else if (structFromList != null) {
+            // list is used to construct a structure
+            Unifier.unifyTerm(environment, structTerm, structFromList);
+        } else if (structArr != null) {
+            // build list
+            Unifier.unifyList(environment, listTerm, structArr);
+        } else {
+            // unsolvable
+            throw PrologInstantiationError.error(environment, structTerm);
         }
     }
 
@@ -103,16 +103,14 @@ public final class Lists {
      * Compute length from list, or, compute list from length
      *
      * @param environment Execution environment
-     * @param list        Array list (weak)
-     * @param length      Length of list
+     * @param listTerm    Array list (weak)
+     * @param lengthTerm  Length of list
      */
     @Predicate("length")
-    public static void length(Environment environment, Term list, Term length) {
-        int calculatedLength;
-        int specifiedLength;
-        if (length.isInstantiated() && !list.isInstantiated()) {
+    public static void length(Environment environment, Term listTerm, Term lengthTerm) {
+        if (lengthTerm.isInstantiated() && !listTerm.isInstantiated()) {
             // case 1, generate list from length
-            specifiedLength = PrologInteger.from(length).notLessThanZero().toInteger();
+            int specifiedLength = PrologInteger.from(lengthTerm).notLessThanZero().toInteger();
             // compute anonymous list
             Term[] members = new Term[specifiedLength];
             LocalContext context = environment.getLocalContext();
@@ -120,21 +118,13 @@ public final class Lists {
                 members[i] = new LabeledVariable("_", environment.nextVariableId()).
                         resolve(context);
             }
-            TermList genList = new TermListImpl(members, PrologEmptyList.EMPTY_LIST);
-            if (!Unifier.unify(context, list, genList)) {
-                environment.backtrack();
-            }
-            return;
-        }
-        if (list.isInstantiated()) {
+            Unifier.unifyTerm(environment, listTerm, TermList.from(Arrays.asList(members)).toTerm());
+        } else if (listTerm.isInstantiated()) {
             // case 2, unify lengths if list is specified
-            calculatedLength = length(list);
-            Term genLen = PrologInteger.from(calculatedLength);
-            if (!Unifier.unify(environment.getLocalContext(), length, genLen)) {
-                environment.backtrack();
-            }
-        } else if (!length.isInstantiated()) {
-            environment.backtrack();
+            Unifier.unifyInteger(environment, lengthTerm, length(listTerm));
+        } else {
+            // case 3, unsolvable
+            throw PrologInstantiationError.error(environment, listTerm);
         }
     }
 
@@ -149,13 +139,9 @@ public final class Lists {
     public static void member(Environment environment, Term element, Term list) {
         LocalContext context = environment.getLocalContext();
         List<Term> listElements = TermList.extractList(list);
-        Unifier memberUnifier = UnifyBuilder.from(element);
-        YieldSolutions.forAll(environment, listElements.stream(), thisElement -> {
-            if (thisElement.instantiate(element)) {
-                return true;
-            }
-            return memberUnifier.unify(context, thisElement);
-        });
+        Unifier memberUnifier = UnifyBuilder.from(element); // worth compiling
+        YieldSolutions.forAll(environment, listElements.stream(), thisElement ->
+                thisElement.instantiate(element) || memberUnifier.unify(context, thisElement));
     }
 
     // ====================================================================
@@ -169,20 +155,7 @@ public final class Lists {
      * @return length of list
      */
     public static int length(Term list) {
-        int len = 0;
-        while (list != PrologEmptyList.EMPTY_LIST) {
-            if (list instanceof TermList) {
-                len += ((TermList) list).length();
-                list = ((TermList) list).lastTail();
-            } else if (CompoundTerm.termIsA(list, Interned.LIST_FUNCTOR, 2)) {
-                len++;
-                list = ((CompoundTerm) list).get(1);
-            } else {
-                len++;
-                break;
-            }
-        }
-        return len;
+        return TermList.extractList(list).size();
     }
 
     /**
@@ -191,7 +164,7 @@ public final class Lists {
      * @param struct Term assumed to be a structure, can be Atomic
      * @return array of structure elements
      */
-    public static List<Term> extractStructure(Term struct) {
+    public static WorkingTermList extractStructureToList(Term struct) {
         ArrayList<Term> arr = new ArrayList<>();
         if (struct instanceof CompoundTerm) {
             CompoundTerm compound = (CompoundTerm) struct;
@@ -202,6 +175,6 @@ public final class Lists {
         } else {
             arr.add(struct);
         }
-        return arr;
+        return TermList.from(arr);
     }
 }

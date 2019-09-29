@@ -7,12 +7,14 @@ import org.jprolog.constants.Grounded;
 import org.jprolog.enumerators.EnumTermStrategy;
 import org.jprolog.execution.LocalContext;
 
+import java.util.List;
+
 /**
  * TermList after resolving to a grounded term list.
  */
 /*package*/ class GroundedTermList extends TermListImpl implements Grounded {
-    public GroundedTermList(int index, Term[] terms, Term tailTerm) {
-        super(index, terms, tailTerm);
+    protected GroundedTermList(List<Term> terms, Term tailTerm) {
+        super(terms, tailTerm);
     }
 
     /**
@@ -37,8 +39,8 @@ import org.jprolog.execution.LocalContext;
     /**
      * {@inheritDoc}
      */
-    protected TermListImpl newList(int index, Term[] terms, Term tail) {
-        return new GroundedTermList(index, terms, tail);
+    protected TermListImpl newList(List<Term> terms, Term tail) {
+        return new GroundedTermList(terms, tail);
     }
 
     @Override

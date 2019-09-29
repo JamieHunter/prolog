@@ -13,7 +13,6 @@ import org.jprolog.exceptions.PrologInstantiationError;
 import org.jprolog.exceptions.PrologTypeError;
 import org.jprolog.execution.DecisionPointImpl;
 import org.jprolog.execution.Environment;
-import org.jprolog.execution.LocalContext;
 import org.jprolog.expressions.Strings;
 import org.jprolog.expressions.Term;
 import org.jprolog.expressions.TermList;
@@ -69,17 +68,7 @@ public final class AtomsAndStrings {
             throw PrologInstantiationError.error(environment, sourceTerm);
         }
         String text = extract.apply(sourceTerm);
-        if (lengthTerm.isInstantiated()) {
-            BigInteger intLen = PrologInteger.from(lengthTerm).get();
-            if (intLen.compareTo(BigInteger.valueOf(text.length())) != 0) {
-                environment.backtrack();
-            }
-            return;
-        }
-        PrologInteger length = PrologInteger.from(text.length());
-        if (!Unifier.unify(environment.getLocalContext(), lengthTerm, length)) {
-            environment.backtrack();
-        }
+        Unifier.unifyInteger(environment, lengthTerm, text.length());
     }
 
     /**
@@ -121,16 +110,12 @@ public final class AtomsAndStrings {
     public static void stringToTerm(Environment environment, Term stringTerm, Term outTerm, ReadOptions options) {
         String text = Strings.stringFromAtomOrAnyString(stringTerm);
         Term out = StringParser.parse(environment, text, options);
-        if (!Unifier.unify(environment.getLocalContext(), outTerm, out)) {
-            environment.backtrack();
-        }
+        Unifier.unifyTerm(environment, outTerm, out);
     }
 
     public static void termToString(Environment environment, Term inTerm, Term stringTerm, WriteOptions options) {
         String text = StructureWriter.toString(environment, inTerm, options);
-        if (!Unifier.unify(environment.getLocalContext(), stringTerm, new PrologString(text))) {
-            environment.backtrack();
-        }
+        Unifier.unifyString(environment, stringTerm, text, Strings::stringFromAtomOrAnyString, PrologString::new);
     }
 
     /**
@@ -151,9 +136,7 @@ public final class AtomsAndStrings {
             ro.fullStop = ReadOptions.FullStop.ATOM_optional;
         }, optionsTerm);
         Term out = StringParser.parse(environment, text, readOptions);
-        if (!Unifier.unify(environment.getLocalContext(), outTerm, out)) {
-            environment.backtrack();
-        }
+        Unifier.unifyTerm(environment, outTerm, out);
     }
 
     /**
@@ -207,18 +190,14 @@ public final class AtomsAndStrings {
             concatString = extract.apply(concatTerm);
         }
         if (leftString != null && rightString != null) {
-            if (!Unifier.unify(environment.getLocalContext(), concatTerm,
-                    create.apply(leftString + rightString))) {
-                environment.backtrack();
-            }
+            Unifier.unifyString(environment, concatTerm, leftString + rightString, extract, create);
             return;
         }
         if (leftString != null && concatString != null) {
             // rightTerm is uninstantiated
             if (leftString.length() <= concatString.length() &&
                     concatString.substring(0, leftString.length()).equals(leftString)) {
-                Unifier.unify(environment.getLocalContext(), rightTerm,
-                        create.apply(concatString.substring(leftString.length())));
+                Unifier.unifyString(environment, rightTerm, concatString.substring(leftString.length()), extract, create);
             } else {
                 environment.backtrack();
             }
@@ -229,8 +208,7 @@ public final class AtomsAndStrings {
             int off = concatString.length() - rightString.length();
             if (rightString.length() <= concatString.length() &&
                     concatString.substring(off).equals(rightString)) {
-                Unifier.unify(environment.getLocalContext(), leftTerm,
-                        create.apply(concatString.substring(0, off)));
+                Unifier.unifyString(environment, leftTerm, concatString.substring(0, off), extract, create);
             } else {
                 environment.backtrack();
             }
@@ -238,7 +216,7 @@ public final class AtomsAndStrings {
         }
         if (concatString != null) {
             // Final case enumerates all possible permutations
-            new Concat(environment, concatString, leftTerm, rightTerm, create).redo();
+            new Concat(environment, concatString, leftTerm, rightTerm, extract, create).redo();
             return;
         }
         throw PrologInstantiationError.error(environment, concatTerm);
@@ -311,9 +289,6 @@ public final class AtomsAndStrings {
         }
         int code = sourceText.charAt(index - 1);
         Unifier.unifyInteger(environment, codeTerm, BigInteger.valueOf(code));
-        if (!Unifier.unify(environment.getLocalContext(), codeTerm, PrologInteger.from(code))) {
-            environment.backtrack();
-        }
     }
 
 
@@ -412,14 +387,17 @@ public final class AtomsAndStrings {
         private final String concat;
         private final Term leftTerm;
         private final Term rightTerm;
+        private final Function<Term, String> extract;
         private final Function<String, Term> create;
         private int split = 0;
 
-        protected Concat(Environment environment, String concat, Term leftTerm, Term rightTerm, Function<String, Term> create) {
+        protected Concat(Environment environment, String concat, Term leftTerm, Term rightTerm,
+                         Function<Term, String> extract, Function<String, Term> create) {
             super(environment);
             this.concat = concat;
             this.leftTerm = leftTerm;
             this.rightTerm = rightTerm;
+            this.extract = extract;
             this.create = create;
         }
 
@@ -433,14 +411,9 @@ public final class AtomsAndStrings {
             if (split < concat.length()) {
                 environment.pushDecisionPoint(this);
             }
-            LocalContext context = environment.getLocalContext();
-            Term leftNew = create.apply(concat.substring(0, split));
-            Term rightNew = create.apply(concat.substring(split));
+            Unifier.unifyString(environment, leftTerm, concat.substring(0, split), extract, create);
+            Unifier.unifyString(environment, rightTerm, concat.substring(split), extract, create);
             split++;
-            if (!(Unifier.unify(context, leftTerm, leftNew) &&
-                    Unifier.unify(context, rightTerm, rightNew))) {
-                environment.backtrack();
-            }
         }
     }
 

@@ -5,6 +5,7 @@ package org.jprolog.library;
 
 import org.jprolog.bootstrap.Predicate;
 import org.jprolog.constants.Atomic;
+import org.jprolog.constants.PrologAtomLike;
 import org.jprolog.constants.PrologInteger;
 import org.jprolog.enumerators.CopyTerm;
 import org.jprolog.exceptions.PrologInstantiationError;
@@ -158,24 +159,18 @@ public class Terms {
         if (!struct.isInstantiated()) {
             throw PrologInstantiationError.error(environment, struct);
         }
-        if (!index.isInstantiated()) {
-            throw PrologInstantiationError.error(environment, index);
-        }
         PrologInteger indexInt = PrologInteger.from(index);
-        int i = indexInt.notLessThanZero().toInteger();
-        Term value = null;
-        int arity = 0;
         if (struct instanceof CompoundTerm) {
             CompoundTerm comp = (CompoundTerm) struct;
-            arity = comp.arity();
+            int i = indexInt.notLessThanZero().toInteger(); // 1-based index
+            int arity = comp.arity();
             if (i > 0 && i <= arity) {
-                value = comp.get(i - 1);
+                Unifier.unifyTerm(environment, arg, comp.get(i - 1));
+            } else {
+                environment.backtrack();
             }
         } else {
             throw PrologTypeError.compoundExpected(environment, struct);
-        }
-        if (value == null || !Unifier.unify(environment.getLocalContext(), arg, value)) {
-            environment.backtrack();
         }
     }
 
@@ -184,52 +179,47 @@ public class Terms {
      *
      * @param environment Execution environment
      * @param term        Term, typically instantiated
-     * @param name        Functor, typically uninstantiated
-     * @param arity       Arity, typically uninstantiated
+     * @param nameTerm    Functor, typically uninstantiated
+     * @param arityTerm   Arity, typically uninstantiated
      */
     @Predicate("functor")
-    public static void functor(Environment environment, Term term, Term name, Term arity) {
+    public static void functor(Environment environment, Term term, Term nameTerm, Term arityTerm) {
         // struct is expected to be sufficiently grounded to instantiate functor and args
         // however if not instantiated, functor and arity must be instantiated
         LocalContext context = environment.getLocalContext();
-        if (!term.isInstantiated()) {
-            if (!name.isInstantiated()) {
-                throw PrologInstantiationError.error(environment, name);
+        if (term.isInstantiated()) {
+            if (term.isAtomic()) {
+                Unifier.unifyInteger(environment, arityTerm, 0);
+                Unifier.unifyAtomic(environment, nameTerm, term);
+            } else {
+                CompoundTerm comp = (CompoundTerm) term;
+                Unifier.unifyInteger(environment, arityTerm, comp.arity());
+                Unifier.unifyAtom(environment, nameTerm, (PrologAtomLike) comp.functor());
             }
-            if (!arity.isInstantiated()) {
-                throw PrologInstantiationError.error(environment, arity);
+        } else {
+            if (!(nameTerm.isInstantiated() && arityTerm.isInstantiated())) {
+                throw PrologInstantiationError.error(environment, term);
             }
-            if (!name.isAtomic()) {
-                throw PrologTypeError.atomicExpected(environment, name);
+            if (!nameTerm.isAtomic()) {
+                // Per ISO, this is true regardless of arityInt for non-atomic names
+                throw PrologTypeError.atomicExpected(environment, nameTerm);
             }
-            int arityInt = PrologInteger.from(arity).notLessThanZero().toArity(environment);
-            if (arityInt > 0 && !name.isAtom()) {
-                throw PrologTypeError.atomExpected(environment, name);
-            }
+            int arityInt = PrologInteger.from(arityTerm).notLessThanZero().toArity(environment);
             Term newStruct;
             if (arityInt == 0) {
-                newStruct = name;
+                newStruct = nameTerm;
             } else {
+                if (!nameTerm.isAtom()) {
+                    throw PrologTypeError.atomExpected(environment, nameTerm);
+                }
                 // Build a struct from these terms
                 Term[] members = new Term[arityInt];
                 for (int i = 0; i < arityInt; i++) {
                     members[i] = new LabeledVariable("_", environment.nextVariableId()).resolve(context);
                 }
-                newStruct = new CompoundTermImpl((Atomic) name, members);
+                newStruct = new CompoundTermImpl((Atomic) nameTerm, members);
             }
-            if (!term.instantiate(newStruct)) {
-                throw new UnsupportedOperationException("Unable to instantiate");
-            }
-            return;
-        }
-        if (term.isAtomic()) {
-            term = CompoundTerm.from((Atomic) term);
-        }
-        CompoundTerm comp = (CompoundTerm) term;
-        if (!(Unifier.unify(context, name, comp.functor()) &&
-                Unifier.unify(context, arity, PrologInteger.from(comp.arity()))
-        )) {
-            environment.backtrack();
+            Unifier.unifyTerm(environment, term, newStruct);
         }
     }
 
@@ -242,9 +232,7 @@ public class Terms {
      */
     @Predicate("copy_term")
     public static void copyTerm(Environment environment, Term source, Term target) {
-        Term copy = source.enumTerm(new CopyTerm(environment));
-        if (!Unifier.unify(environment.getLocalContext(), target, copy)) {
-            environment.backtrack();
-        }
+        Term copy = source.enumTerm(new CopyTerm(environment)); // valid even if source is uninstantiated
+        Unifier.unifyTerm(environment, target, copy);
     }
 }

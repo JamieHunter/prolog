@@ -24,6 +24,7 @@ public final class Time {
 
     /**
      * Convert an instant to a Prolog TimeStamp
+     *
      * @param instant time represented by Instant
      * @return Prolog TimeStamp
      */
@@ -33,15 +34,17 @@ public final class Time {
 
     /**
      * Convert an epoch time (seconds) to a Prolog TimeStamp
+     *
      * @param epochTime time represented in seconds
      * @return Prolog TimeStamp
      */
     public static PrologFloat toPrologTime(long epochTime) {
-        return new PrologFloat((double)epochTime);
+        return new PrologFloat((double) epochTime);
     }
 
     /**
      * Convert a Java LocalDateTime to Prolog TimeStamp
+     *
      * @param time time represented as LocalDateTime
      * @return Prolog TimeStamp
      */
@@ -51,6 +54,7 @@ public final class Time {
 
     /**
      * Current time
+     *
      * @return Prolog TimeStamp
      */
     public static PrologFloat now() {
@@ -66,8 +70,6 @@ public final class Time {
     @Predicate("get_time")
     public static void getTime(Environment environment, Term timeStamp) {
         PrologFloat now = now();
-        if (!Unifier.unify(environment.getLocalContext(), timeStamp, now)) {
-            environment.backtrack();
-        }
+        Unifier.unifyFloat(environment, timeStamp, now.get());
     }
 }

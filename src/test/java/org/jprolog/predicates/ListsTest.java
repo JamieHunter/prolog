@@ -1,8 +1,12 @@
 package org.jprolog.predicates;
 
+import org.jprolog.exceptions.PrologInstantiationError;
+import org.jprolog.exceptions.PrologTypeError;
 import org.jprolog.test.Matchers;
 import org.jprolog.test.PrologTest;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test list manipulation predicates
@@ -55,6 +59,41 @@ public class ListsTest {
                 .assertSuccess()
                 .variable("X",
                         Matchers.isAtom("hello"));
+    }
+
+    @Test
+    public void testUnivStructToListPartial() {
+        PrologTest.given()
+                .when("?- paid(today,tomorrow) =.. [H|T].")
+                .assertSuccess()
+                .variable("H", Matchers.isAtom("paid"))
+                .variable("T",
+                        Matchers.isList(Matchers.isAtom("today"), Matchers.isAtom("tomorrow")));
+        PrologTest.given()
+                .when("?- paid(today,tomorrow) =.. [H,M|T].")
+                .assertSuccess()
+                .variable("H", Matchers.isAtom("paid"))
+                .variable("M", Matchers.isAtom("today"))
+                .variable("T",
+                        Matchers.isList(Matchers.isAtom("tomorrow")));
+    }
+
+    @Test
+    public void testUnivInstantiationError() {
+        assertThrows(PrologInstantiationError.class, () -> {
+            // Y cannot unify with X
+            PrologTest.given()
+                    .when("?- X=..[foo,a|Y].");
+        });
+    }
+
+    @Test
+    public void testUnivTypeError() {
+        assertThrows(PrologTypeError.class, () -> {
+            // bar cannot unify with X
+            PrologTest.given()
+                    .when("?- X=..[foo|bar].");
+        });
     }
 
     @Test

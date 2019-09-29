@@ -4,6 +4,7 @@
 package org.jprolog.instructions;
 
 import org.jprolog.exceptions.PrologInstantiationError;
+import org.jprolog.exceptions.PrologTypeError;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
 import org.jprolog.expressions.Term;
@@ -34,16 +35,15 @@ public class ExecIs implements Instruction {
      */
     @Override
     public void invoke(Environment environment) {
+        Term boundTarget = target.resolve(environment.getLocalContext());
         // Execute math expression (not debuggable, known to be deterministic
         ops.invoke(environment);
-        Term boundTarget = target.resolve(environment.getLocalContext());
         Term source = environment.pop(); // from stack
         if (!source.isInstantiated()) {
             throw PrologInstantiationError.error(environment, source);
         }
-        if (!(boundTarget.instantiate(source) ||
-                Unifier.unify(environment.getLocalContext(), boundTarget, source))) {
-            environment.backtrack(); // left was instantiated, and values do not unify
-        }
+        // Inria tests suggest some ambiguity here, and that failure is expected rather than type error if boundTarget
+        // is anything but number.
+        Unifier.unifyTerm(environment, boundTarget, source);
     }
 }

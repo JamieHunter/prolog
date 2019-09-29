@@ -29,15 +29,12 @@ public class Flags {
             }
             PrologFlags flags = environment.getFlags();
             Term actual = flags.get(environment, (Atomic) key);
-            if (!Unifier.unify(environment.getLocalContext(), value, actual)) {
-                environment.backtrack();
-            }
+            Unifier.unifyTerm(environment, value, actual);
         } else {
-            LocalContext context = environment.getLocalContext();
             Map<Atomic, Term> allFlags = environment.getFlags().getAll(environment);
             YieldSolutions.forAll(environment, allFlags.entrySet().stream(), entry ->
-                    Unifier.unify(context, key, entry.getKey()) &&
-                            Unifier.unify(context, value, entry.getValue()));
+                    Unifier.unifyTerm(environment, key, entry.getKey()) &&
+                            Unifier.unifyTerm(environment, value, entry.getValue()));
         }
     }
 

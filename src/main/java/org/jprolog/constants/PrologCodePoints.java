@@ -3,10 +3,8 @@
 //
 package org.jprolog.constants;
 
-import org.jprolog.execution.Environment;
 import org.jprolog.expressions.Strings;
 import org.jprolog.expressions.Term;
-import org.jprolog.expressions.TermList;
 
 /**
  * Represents a list of code points (integers).
@@ -19,6 +17,7 @@ public class PrologCodePoints extends PrologStringAsList {
 
     /**
      * Convert list to PrologCodePoints
+     *
      * @param term Term to convert
      * @return converted term (empty-list remains unconverted).
      */
@@ -39,7 +38,7 @@ public class PrologCodePoints extends PrologStringAsList {
      */
     @Override
     protected Term toTerm(char c) {
-        return new PrologInteger((int)c);
+        return new PrologInteger((int) c);
     }
 
     /**

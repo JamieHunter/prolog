@@ -22,9 +22,10 @@ import org.jprolog.expressions.CompoundTermImpl;
 import org.jprolog.expressions.Term;
 import org.jprolog.expressions.TermList;
 import org.jprolog.expressions.TermListImpl;
+import org.jprolog.expressions.WorkingTermList;
+import org.jprolog.flags.ReadOptions;
 import org.jprolog.unification.Unifier;
 import org.jprolog.variables.LabeledVariable;
-import org.jprolog.flags.ReadOptions;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -80,16 +81,12 @@ public final class ExpressionReader {
         // resolves containers.
         Term reduced = t.enumTerm(new SimplifyTerm(environment));
         if (options.variables.isPresent()) {
-            Term variables = collectVariables(tokenizer.getVariableMap());
-            if (!Unifier.unify(environment.getLocalContext(), options.variables.get(), variables)) {
-                environment.backtrack();
-            }
+            WorkingTermList variables = collectVariables(tokenizer.getVariableMap());
+            Unifier.unifyList(environment, options.variables.get(), variables);
         }
         if (options.variableNames.isPresent()) {
-            Term variables = collectVariableNames(tokenizer.getVariableMap());
-            if (!Unifier.unify(environment.getLocalContext(), options.variableNames.get(), variables)) {
-                environment.backtrack();
-            }
+            WorkingTermList variables = collectVariableNames(tokenizer.getVariableMap());
+            Unifier.unifyList(environment, options.variableNames.get(), variables);
         }
         return reduced;
     }
@@ -100,7 +97,7 @@ public final class ExpressionReader {
      * @param varMap Map of variables
      * @return List
      */
-    private Term collectVariables(Map<String, LabeledVariable> varMap) {
+    private WorkingTermList collectVariables(Map<String, LabeledVariable> varMap) {
         List<Term> termList = new ArrayList<>();
         termList.addAll(varMap.values());
         return TermList.from(termList);
@@ -112,7 +109,7 @@ public final class ExpressionReader {
      * @param varMap Map of variables
      * @return List
      */
-    private Term collectVariableNames(Map<String, LabeledVariable> varMap) {
+    private WorkingTermList collectVariableNames(Map<String, LabeledVariable> varMap) {
         List<Term> termList = varMap.values().stream().map(
                 v -> new CompoundTermImpl(Interned.EQUALS_FUNCTOR,
                         new PrologAtom(v.name()),

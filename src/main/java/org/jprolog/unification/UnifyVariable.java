@@ -36,13 +36,13 @@ public final class UnifyVariable implements UnifyStep {
                 return it;
             }
         }
-        if(!resolvedThis.isInstantiated()) {
+        if (!resolvedThis.isInstantiated()) {
             Term resolvedOther = other.resolve(context);
             if (resolvedThis.instantiate(resolvedOther)) {
                 return it;
             }
         }
-        if (Unifier.unify(context, resolvedThis, other)) {
+        if (Unifier.unifyInternal(context, resolvedThis, other)) {
             return it;
         } else {
             return UnifyIterator.FAILED;

@@ -35,9 +35,6 @@ public class ExecUnifyInstantiate implements Instruction {
     public void invoke(Environment environment) {
         Term leftBound = var.resolve(environment.getLocalContext()); // always a variable
         Term rightBound = other.resolve(environment.getLocalContext()); // sometimes a variable
-        if (!(leftBound.instantiate(rightBound) ||
-                Unifier.unify(environment.getLocalContext(), leftBound, rightBound))) {
-            environment.backtrack();
-        }
+        Unifier.unifyTerm(environment, leftBound, rightBound);
     }
 }

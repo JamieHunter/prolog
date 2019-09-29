@@ -3,64 +3,40 @@
 //
 package org.jprolog.expressions;
 
-import org.jprolog.unification.HeadTailUnifyIterator;
-import org.jprolog.unification.UnifyIterator;
 import org.jprolog.constants.PrologEmptyList;
-import org.jprolog.execution.CompileContext;
 import org.jprolog.enumerators.EnumTermStrategy;
+import org.jprolog.execution.CompileContext;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.LocalContext;
 import org.jprolog.io.StructureWriter;
 import org.jprolog.io.WriteContext;
 import org.jprolog.predicates.PredicateDefinition;
 import org.jprolog.predicates.Predication;
+import org.jprolog.unification.HeadTailUnifyIterator;
+import org.jprolog.unification.UnifyIterator;
+import org.jprolog.utility.SubList;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
  * Compact form of a list. That is, an expression of form [A,B,C,D|Tail] is expressed as a TermList, and behaves
  * as a tree of '.'(A, '.'(B, '.'(C, '.'(D, Tail))))
  */
-public class TermListImpl implements TermList {
+public class TermListImpl implements TermList, WorkingTermList {
 
-    protected int index;
-    protected final Term[] terms;
+    protected final SubList<Term> terms;
     protected final Term tail;
 
     /**
-     * Construct a TermList from an array of terms, and a final tail.
-     *
-     * @param terms Terms of the list
-     * @param tail  Final tail, e.g. Tail of [A,B|Tail], or [] if no tail.
-     */
-    public TermListImpl(Term[] terms, Term tail) {
-        this.terms = terms;
-        this.tail = tail;
-    }
-
-    /**
-     * Construct a TermList from a Java list of terms, and a final tail.
+     * Construct a TermList from a list of terms, and a final tail.
      *
      * @param terms Terms of the list
      * @param tail  Final tail, e.g. Tail of [A,B|Tail], or [] if no tail.
      */
     public TermListImpl(List<? extends Term> terms, Term tail) {
-        this(terms.toArray(new Term[terms.size()]), tail);
-    }
-
-    /**
-     * Construct a truncated TermList from an array of terms, and a final tail.
-     *
-     * @param index Truncation index (skip index items)
-     * @param terms Terms of the list (including those skipped)
-     * @param tail  Final tail, e.g. Tail of [A,B|Tail], or [] if no tail.
-     */
-    public TermListImpl(int index, Term[] terms, Term tail) {
-        this.index = index;
-        this.terms = terms;
+        this.terms = SubList.wrap(terms);
         this.tail = tail;
     }
 
@@ -73,26 +49,18 @@ public class TermListImpl implements TermList {
     @Override
     public TermList resolve(LocalContext context) {
         // Algorithm copies on change
-        Term[] target;
-        boolean changed;
-        if (index > 0) {
-            // always copy if index > 0
-            target = Arrays.copyOfRange(terms, index, terms.length);
-            changed = true;
-        } else {
-            target = terms;
-            changed = false;
-        }
+        List<Term> target = null;
+        boolean changed = false;
         boolean grounded = true;
-        for (int i = 0; i < target.length; i++) {
-            Term orig = target[i];
+        for (int i = 0; i < terms.size(); i++) {
+            Term orig = terms.get(i);
             Term res = orig.resolve(context);
             if (orig != res) {
                 if (!changed) {
-                    target = target.clone();
+                    target = new ArrayList<>(terms);
                     changed = true;
                 }
-                target[i] = res;
+                target.set(i, res);
             }
             grounded = grounded && res.isGrounded();
         }
@@ -100,13 +68,16 @@ public class TermListImpl implements TermList {
         if (newTail != tail) {
             changed = true;
         }
+        if (target == null) {
+            target = terms;
+        }
         grounded = grounded && newTail.isGrounded();
         if (grounded) {
-            return new GroundedTermList(0, target, newTail);
+            return new GroundedTermList(target, newTail);
         } else if (!changed) {
             return this;
         } else {
-            return new TermListImpl(0, target, newTail);
+            return new TermListImpl(target, newTail);
         }
     }
 
@@ -124,19 +95,19 @@ public class TermListImpl implements TermList {
     @Override
     public TermList enumAndCopyCompoundTermMembers(EnumTermStrategy strategy) {
         return (TermList) strategy.computeUncachedTerm(this, tt -> {
-            Term[] copy = Arrays.copyOfRange(terms, index, terms.length);
+            List<Term> copy = new ArrayList<>(terms);
             boolean grounded = true;
-            for (int i = 0; i < copy.length; i++) {
-                Term t = copy[i].enumTerm(strategy);
+            for (int i = 0; i < copy.size(); i++) {
+                Term t = copy.get(i).enumTerm(strategy);
                 grounded = grounded && t.isGrounded();
-                copy[i] = t;
+                copy.set(i, t);
             }
             Term newTail = tail.enumTerm(strategy);
             grounded = grounded && newTail.isGrounded();
             if (grounded) {
-                return new GroundedTermList(0, copy, newTail);
+                return new GroundedTermList(copy, newTail);
             } else {
-                return new TermListImpl(0, copy, newTail);
+                return new TermListImpl(copy, newTail);
             }
         });
     }
@@ -146,8 +117,8 @@ public class TermListImpl implements TermList {
      */
     @Override
     public TermList enumCompoundTermMembers(EnumTermStrategy strategy) {
-        for (int i = index; i < terms.length; i++) {
-            terms[i].enumTerm(strategy);
+        for (int i = 0; i < terms.size(); i++) {
+            terms.get(i).enumTerm(strategy);
         }
         return this;
     }
@@ -185,13 +156,12 @@ public class TermListImpl implements TermList {
      * newList is used by Tail to create a new child list. It is implemented to create a list of the same type
      * as the implementing class.
      *
-     * @param index Subscript of list (skip index items)
      * @param terms Full array of terms
      * @param tail  Tail term (rest of list)
      * @return New sublist
      */
-    protected TermListImpl newList(int index, Term[] terms, Term tail) {
-        return new TermListImpl(index, terms, tail);
+    protected TermListImpl newList(List<Term> terms, Term tail) {
+        return new TermListImpl(terms, tail);
     }
 
     /**
@@ -199,10 +169,10 @@ public class TermListImpl implements TermList {
      */
     @Override
     public Term getHead() {
-        if (index == terms.length) {
+        if (terms.size() == 0) {
             return tail;
         } else {
-            return terms[index];
+            return terms.get(0);
         }
     }
 
@@ -211,10 +181,10 @@ public class TermListImpl implements TermList {
      */
     @Override
     public Term getTail() {
-        if (index + 1 >= terms.length) {
+        if (terms.size() <= 1) {
             return tail;
         } else {
-            return newList(index + 1, terms, tail);
+            return newList(terms.subList(1), tail);
         }
     }
 
@@ -222,8 +192,70 @@ public class TermListImpl implements TermList {
      * {@inheritDoc}
      */
     @Override
-    public int length() {
-        return terms.length - index;
+    public WorkingTermList getFinalTailList() {
+        if (tail instanceof WorkingTermList) {
+            return (WorkingTermList)tail;
+        } else {
+            return new WorkingTermListTail(tail);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public WorkingTermList getTailList() {
+        Term tail = getTail();
+        if (tail instanceof WorkingTermList) {
+            return (WorkingTermList)tail;
+        } else {
+            return new WorkingTermListTail(tail);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Term getAt(int i) {
+        int limit = concreteSize();
+        if (i < 0 || i >= limit) {
+            return null;
+        } else {
+            return terms.get(i);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isConcrete() {
+        return tail == PrologEmptyList.EMPTY_LIST;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isEmptyList() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int concreteSize() {
+        return terms.size();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<Term> asList() {
+        return terms;
     }
 
     /**
@@ -231,7 +263,7 @@ public class TermListImpl implements TermList {
      */
     @Override
     public void copyMembers(ArrayList<Term> arr) {
-        arr.addAll(Arrays.asList(terms));
+        arr.addAll(terms);
     }
 
     /**
@@ -242,6 +274,23 @@ public class TermListImpl implements TermList {
         return tail;
     }
 
+    @Override
+    public WorkingTermList subList(int n) {
+        if (n < 0 || n > terms.size()) {
+            throw new IllegalArgumentException("Specified an index out of range");
+        }
+        if (n == terms.size()) {
+            return getFinalTailList();
+        } else {
+            return new TermListImpl(terms.subList(n), tail);
+        }
+    }
+
+    @Override
+    public Term toTerm() {
+        return this;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -250,9 +299,9 @@ public class TermListImpl implements TermList {
         StringBuilder builder = new StringBuilder();
         builder.append('[');
         builder.append(getHead().toString());
-        for (int i = index + 1; i < terms.length; i++) {
+        for (int i = 1; i < terms.size(); i++) {
             builder.append(',');
-            builder.append(terms[i].toString());
+            builder.append(terms.get(i).toString());
         }
         if (tail != PrologEmptyList.EMPTY_LIST) {
             builder.append('|');
