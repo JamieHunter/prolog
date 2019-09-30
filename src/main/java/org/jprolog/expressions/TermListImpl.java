@@ -117,8 +117,8 @@ public class TermListImpl implements TermList, WorkingTermList {
      */
     @Override
     public TermList enumCompoundTermMembers(EnumTermStrategy strategy) {
-        for (int i = 0; i < terms.size(); i++) {
-            terms.get(i).enumTerm(strategy);
+        for (Term t : terms) {
+            t.enumTerm(strategy);
         }
         return this;
     }

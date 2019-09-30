@@ -51,7 +51,7 @@ public class ExecIgnore extends ExecCall {
     /**
      * DecisionPoint to handle failure case.
      */
-    private class OnBacktrack extends DecisionPointImpl {
+    private static class OnBacktrack extends DecisionPointImpl {
 
         OnBacktrack(Environment environment) {
             super(environment);

@@ -12,6 +12,7 @@ import org.jprolog.constants.PrologInteger;
 import org.jprolog.debugging.SpySpec;
 import org.jprolog.exceptions.PrologDomainError;
 import org.jprolog.exceptions.PrologInstantiationError;
+import org.jprolog.exceptions.PrologSyntaxError;
 import org.jprolog.execution.Environment;
 import org.jprolog.expressions.CompoundTerm;
 import org.jprolog.expressions.Term;
@@ -165,6 +166,7 @@ public final class Debug {
             if (t instanceof CompoundTerm) {
                 CompoundTerm tt = (CompoundTerm) t;
                 if (tt.arity() != 1) {
+                    throw PrologSyntaxError.error(environment, "port", "Unable to interpret " + tt.toString());
                 }
                 String prefixString = PrologAtomLike.from(tt.functor()).name();
                 if (prefixString.equals("-")) {

@@ -86,7 +86,7 @@ public class SpySpec {
 
         @Override
         public String toString() {
-            return functor.toString() + "/" + String.valueOf(arity);
+            return functor.toString() + "/" + arity;
         }
     }
 }

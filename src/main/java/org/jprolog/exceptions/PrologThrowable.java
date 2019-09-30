@@ -4,10 +4,9 @@
 package org.jprolog.exceptions;
 
 import org.jprolog.enumerators.EnumTermStrategy;
+import org.jprolog.execution.LocalContext;
 import org.jprolog.expressions.Container;
 import org.jprolog.expressions.Term;
-import org.jprolog.execution.Environment;
-import org.jprolog.execution.LocalContext;
 import org.jprolog.io.WriteContext;
 
 import java.io.IOException;

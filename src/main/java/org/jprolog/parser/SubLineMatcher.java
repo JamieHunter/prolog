@@ -40,7 +40,7 @@ public class SubLineMatcher extends LineMatcher {
      */
     @Override
     public void setAtEnd() {
-        this.setAtEnd();
+        super.setAtEnd();
         parent.setAtEnd();
     }
 

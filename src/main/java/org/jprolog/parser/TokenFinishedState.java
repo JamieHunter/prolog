@@ -33,7 +33,7 @@ class TokenFinishedState implements ParseState {
     }
 
     @Override
-    public ParseState next() throws IOException {
+    public ParseState next() {
         return this;
     }
 

@@ -52,6 +52,7 @@ public class ReadableFlagEntry<T> {
         this.key = source.key;
         this.onUpdate = source.onUpdate;
         this.onRead = source.onRead;
+        this.protect = source.protect;
     }
 
     /**

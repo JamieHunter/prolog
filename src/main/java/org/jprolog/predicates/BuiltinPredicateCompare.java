@@ -3,12 +3,11 @@
 //
 package org.jprolog.predicates;
 
-import org.jprolog.expressions.CompoundTerm;
-import org.jprolog.instructions.ExecPopAndTest;
 import org.jprolog.execution.CompileContext;
-import org.jprolog.functions.StackFunction;
-import org.jprolog.instructions.*;
+import org.jprolog.expressions.CompoundTerm;
 import org.jprolog.functions.CompileMathExpression;
+import org.jprolog.functions.StackFunction;
+import org.jprolog.instructions.ExecPopAndTest;
 
 /**
  * Predicate for comparing two expressions.

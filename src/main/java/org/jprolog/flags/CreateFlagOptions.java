@@ -16,7 +16,7 @@ import java.util.Optional;
  */
 public class CreateFlagOptions implements Flags {
 
-    private static OptionParser<CreateFlagOptions> parser = new OptionParser<>();
+    private static final OptionParser<CreateFlagOptions> parser = new OptionParser<>();
 
     static {
         // TODO: These are all placeholders and not yet parsed

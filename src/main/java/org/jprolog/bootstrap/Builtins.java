@@ -90,9 +90,8 @@ public class Builtins {
      * @param predication Name/arity of predicate
      * @param definition  Definition of predicate
      */
-    public static <T extends PredicateDefinition> T defineVarArg(Predication.Interned predication, T definition) {
+    public static <T extends PredicateDefinition> void defineVarArg(Predication.Interned predication, T definition) {
         builtinVarArgs.put(predication.functor(), new VarArgDefinition(predication, definition));
-        return definition;
     }
 
     /**
@@ -102,9 +101,9 @@ public class Builtins {
      * @param predication Name/arity
      * @param onDemand    On-demand handler
      */
-    public static DemandLoadPredicate onDemand(Predication.Interned predication, LoadResourceOnDemand onDemand) {
+    public static void onDemand(Predication.Interned predication, LoadResourceOnDemand onDemand) {
         DemandLoadPredicate definition = new DemandLoadPredicate(onDemand);
-        return define(predication, definition, false);
+        define(predication, definition, false);
     }
 
     /**
@@ -124,9 +123,8 @@ public class Builtins {
      * @param instruction Singleton run-time implementation of predicate
      * @param notrace     true if invisible to trace
      */
-    public static BuiltinPredicateSingleton define(Predication.Interned predication, Instruction instruction, boolean notrace) {
-        BuiltinPredicateSingleton def = define(predication, new BuiltinPredicateSingleton(instruction), notrace);
-        return def;
+    public static void define(Predication.Interned predication, Instruction instruction, boolean notrace) {
+        define(predication, new BuiltinPredicateSingleton(instruction), notrace);
     }
 
     /**
@@ -145,9 +143,8 @@ public class Builtins {
      * @param predication Name/arity
      * @param function    Proxy that operates on the stack
      */
-    public static StackFunction defineFunction(Predication.Interned predication, StackFunction function) {
+    public static void defineFunction(Predication.Interned predication, StackFunction function) {
         functions.put(predication, function);
-        return function;
     }
 
     /**

@@ -4,7 +4,6 @@
 package org.jprolog.unification;
 
 import org.jprolog.constants.PrologAtomLike;
-import org.jprolog.constants.PrologEmptyList;
 import org.jprolog.constants.PrologFloat;
 import org.jprolog.constants.PrologInteger;
 import org.jprolog.constants.PrologNumber;
@@ -19,7 +18,6 @@ import org.jprolog.expressions.WorkingTermList;
 
 import java.math.BigInteger;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -253,7 +251,7 @@ public interface Unifier {
             environment.backtrack();
             return false;
         }
-        for(int i = 0;;i++) {
+        for (int i = 0; ; i++) {
             Term p = parameters.getAt(i);
             Term q = list.getAt(i);
             if (p != null && q != null) {

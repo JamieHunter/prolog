@@ -98,8 +98,7 @@ public final class ExpressionReader {
      * @return List
      */
     private WorkingTermList collectVariables(Map<String, LabeledVariable> varMap) {
-        List<Term> termList = new ArrayList<>();
-        termList.addAll(varMap.values());
+        List<Term> termList = new ArrayList<>(varMap.values());
         return TermList.from(termList);
     }
 

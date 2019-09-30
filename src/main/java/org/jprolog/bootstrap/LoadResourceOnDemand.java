@@ -7,12 +7,10 @@ import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
 import org.jprolog.expressions.CompoundTerm;
 import org.jprolog.expressions.Term;
-import org.jprolog.instructions.ExecBlock;
-import org.jprolog.instructions.ExecFuture;
-import org.jprolog.instructions.ExecOnce;
-import org.jprolog.predicates.OnDemand;
 import org.jprolog.flags.ReadOptions;
 import org.jprolog.flags.StreamProperties;
+import org.jprolog.instructions.ExecBlock;
+import org.jprolog.instructions.ExecOnce;
 import org.jprolog.io.InputBuffered;
 import org.jprolog.io.InputLineHandler;
 import org.jprolog.io.PrologInputStream;
@@ -21,6 +19,7 @@ import org.jprolog.library.Dictionary;
 import org.jprolog.library.Io;
 import org.jprolog.parser.ExpressionReader;
 import org.jprolog.parser.Tokenizer;
+import org.jprolog.predicates.OnDemand;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -78,7 +77,6 @@ public class LoadResourceOnDemand implements OnDemand {
                     Dictionary.addClauseZ(environment, term);
                 }
             }
-            javaStream.close();
         } catch (IOException ioe) {
             throw new InternalError(ioe);
         }

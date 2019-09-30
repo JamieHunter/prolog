@@ -19,7 +19,7 @@ import java.util.Set;
  */
 public class OpenOptions implements Flags {
 
-    private static OptionParser<OpenOptions> parser = new OptionParser<>();
+    private final static OptionParser<OpenOptions> parser = new OptionParser<>();
 
     static {
         // TODO: These are all placeholders and not yet parsed

@@ -4,10 +4,9 @@
 package org.jprolog.expressions;
 
 import org.jprolog.bootstrap.Interned;
+import org.jprolog.enumerators.EnumTermStrategy;
 import org.jprolog.exceptions.FutureTypeError;
 import org.jprolog.execution.CompileContext;
-import org.jprolog.enumerators.EnumTermStrategy;
-import org.jprolog.execution.Environment;
 import org.jprolog.execution.LocalContext;
 import org.jprolog.io.WriteContext;
 
@@ -170,7 +169,7 @@ public interface Term extends Comparable<Term> {
      *
      * @param left  Left term
      * @param right right term
-     * @return
+     * @return 0/-1/1 per {@link #compareTo(Term)}
      */
     static int compare(Term left, Term right) {
         int lt = left.typeRank();

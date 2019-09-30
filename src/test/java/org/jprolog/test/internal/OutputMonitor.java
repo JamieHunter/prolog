@@ -30,7 +30,7 @@ public class OutputMonitor implements PrologOutputStream {
      * {@inheritDoc}
      */
     @Override
-    public void write(int symbol) throws IOException {
+    public void write(int symbol) {
         switch (symbol) {
             case '\r':
                 break;
@@ -48,7 +48,7 @@ public class OutputMonitor implements PrologOutputStream {
      * {@inheritDoc}
      */
     @Override
-    public void close(CloseOptions options) throws IOException {
+    public void close(CloseOptions options) {
         endOfLine();
     }
 
@@ -56,7 +56,7 @@ public class OutputMonitor implements PrologOutputStream {
      * {@inheritDoc}
      */
     @Override
-    public void seekEndOfStream() throws IOException {
+    public void seekEndOfStream() {
 
     }
 

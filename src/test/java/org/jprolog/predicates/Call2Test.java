@@ -5,8 +5,6 @@ import org.jprolog.test.Matchers;
 import org.jprolog.test.PrologTest;
 import org.junit.jupiter.api.Test;
 
-import static org.jprolog.test.Matchers.isInteger;
-
 public class Call2Test {
 
     protected Given given() {

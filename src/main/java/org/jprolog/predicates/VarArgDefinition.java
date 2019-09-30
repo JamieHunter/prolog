@@ -24,7 +24,7 @@ public class VarArgDefinition {
     public PredicateDefinition lookup(Predication.Interned predication) {
         // assume the functor is already tested
         // defined like this to later support multiple vararg variants if needed
-        if (predication.arity() <= predication.arity()) {
+        if (this.predication.arity() <= predication.arity()) {
             return definition;
         }
         return null;

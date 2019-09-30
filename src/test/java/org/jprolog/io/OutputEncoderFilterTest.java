@@ -14,9 +14,9 @@ public class OutputEncoderFilterTest {
     //
     // Streamed output, converting to byte stream in the process
     //
-    private ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
-    private OutputEncoderFilter stream = new OutputEncoderFilter(
+    private final OutputEncoderFilter stream = new OutputEncoderFilter(
             new SequentialOutputStream(buffer),
             StandardCharsets.UTF_8);
 
@@ -39,18 +39,6 @@ public class OutputEncoderFilterTest {
         assertBuffer("\u0904\uD83c\uDf09");
         stream.write("xx\u0903yy".toCharArray(), 1, 3);
         assertBuffer("\u0904\uD83c\uDf09x\u0903y");
-    }
-
-    @Test
-    public void testFlush() {
-        // TODO, to be implemented
-        //stream.flush();
-    }
-
-    @Test
-    public void testClose() {
-        // TODO, to be implemented
-        //stream.close();
     }
 
     private static Integer[] conv(byte... data) {

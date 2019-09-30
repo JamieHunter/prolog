@@ -9,7 +9,7 @@ import java.io.Closeable;
  */
 public class ThenScope implements Closeable {
 
-    private static ThreadLocal<Then> thenScope = new ThreadLocal<>();
+    private static final ThreadLocal<Then> thenScope = new ThreadLocal<>();
 
     private final Then prior;
 

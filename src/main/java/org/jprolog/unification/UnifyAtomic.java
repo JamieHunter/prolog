@@ -4,7 +4,6 @@
 package org.jprolog.unification;
 
 import org.jprolog.constants.Atomic;
-import org.jprolog.execution.Environment;
 import org.jprolog.execution.LocalContext;
 import org.jprolog.expressions.Term;
 

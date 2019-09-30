@@ -36,7 +36,7 @@ public class YieldSolutions<T> extends DecisionPointImpl {
      * @param consumer    Consumer of next value, return true to yield the value, false to backtrack
      */
     public static <T> void forAll(Environment environment, Stream<T> stream, Predicate<T> consumer) {
-        new YieldSolutions<T>(environment, stream.spliterator(), consumer).redo();
+        new YieldSolutions<>(environment, stream.spliterator(), consumer).redo();
     }
 
     /**
@@ -48,7 +48,7 @@ public class YieldSolutions<T> extends DecisionPointImpl {
      * @param consumer    Consumer of next value, return true to yield the value, false to backtrack
      */
     public static <T> void forAll(Environment environment, Spliterator<T> spliterator, Predicate<T> consumer) {
-        new YieldSolutions<T>(environment, spliterator, consumer).redo();
+        new YieldSolutions<>(environment, spliterator, consumer).redo();
     }
 
     /**

@@ -28,8 +28,8 @@ import static org.jprolog.test.Matchers.isAtom;
  */
 public class OptionParserTest implements Flags {
 
-    private OptionParser<OptionParserTest> parser = new OptionParser<>();
-    private Environment environment = new Environment();
+    private final OptionParser<OptionParserTest> parser = new OptionParser<>();
+    private final Environment environment = new Environment();
     private Boolean bool_flag = null;
     private PrologAtomLike atom_flag = null;
     private Long int_flag = null;

@@ -125,7 +125,7 @@ public class FifoStreams {
          * {@inheritDoc}
          */
         @Override
-        public void close() throws IOException {
+        public void close() {
             synchronized (lock) {
                 flush();
                 outputClosed.set(true);
@@ -181,9 +181,9 @@ public class FifoStreams {
          * {@inheritDoc}
          */
         @Override
-        public int available() throws IOException {
+        public int available() {
             synchronized (lock) {
-                return (int) Math.min(available, (long) Integer.MAX_VALUE);
+                return (int) Math.min(available, Integer.MAX_VALUE);
             }
         }
 
@@ -191,7 +191,7 @@ public class FifoStreams {
          * {@inheritDoc}
          */
         @Override
-        public int read() throws IOException {
+        public int read() {
             synchronized (lock) {
                 if (!prepareAndFill()) {
                     return IoUtility.EOF;
@@ -208,7 +208,7 @@ public class FifoStreams {
          * {@inheritDoc}
          */
         @Override
-        public int read(byte[] b, int off, int len) throws IOException {
+        public int read(byte[] b, int off, int len) {
             synchronized (lock) {
                 if (!prepareAndFill()) {
                     return IoUtility.EOF;

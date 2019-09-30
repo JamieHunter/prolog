@@ -13,7 +13,7 @@ public class Apply {
      * List of predicates defined by the resource "apply.pl".
      */
     @DemandLoad("apply.pl")
-    public static Predication apply[] = {
+    public static Predication[] apply = {
             Builtins.predicate("include", 3),
             Builtins.predicate("exclude", 3),
             Builtins.predicate("partition", 4),

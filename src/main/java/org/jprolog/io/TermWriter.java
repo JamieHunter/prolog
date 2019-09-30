@@ -71,9 +71,7 @@ public abstract class TermWriter<T extends Term> extends TokenRegex {
     public void writeMaybeQuoted(char quote, String text) throws IOException {
         if (context.options().quoted) {
             writeQuoted(quote, text);
-        } else if (text.length() == 0) {
-            // write nothing
-        } else {
+        } else if (text.length() > 0) {
             // guess if whitespace is required or not
             char first = text.charAt(0);
             char last = text.charAt(text.length() - 1);

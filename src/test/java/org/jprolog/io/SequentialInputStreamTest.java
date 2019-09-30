@@ -10,9 +10,9 @@ import static org.hamcrest.Matchers.*;
 
 public class SequentialInputStreamTest {
 
-    private static byte[] testData = "Hello\nWorld\n123".getBytes();
+    private static final byte[] testData = "Hello\nWorld\n123".getBytes();
 
-    private SequentialInputStream stream = new SequentialInputStream(new ByteArrayInputStream(testData));
+    private final SequentialInputStream stream = new SequentialInputStream(new ByteArrayInputStream(testData));
 
     @Test
     public void testRead1() throws IOException {
@@ -41,6 +41,7 @@ public class SequentialInputStreamTest {
         assertThat(len, is(3));
         assertArrays(target1, 'H', '1', '2', '3', 'W', 'o', 'r', '\n', 'd', '\0');
         len = stream.read(target1, 1, 9); // read past end
+        assertThat(len, is(-1));
         assertArrays(target1, 'H', '1', '2', '3', 'W', 'o', 'r', '\n', 'd', '\0');
     }
 
@@ -89,11 +90,6 @@ public class SequentialInputStreamTest {
         text = stream.readLine(); // past end
         assertThat(text, is(nullValue()));
         assertThat(stream.available(), is(0));
-    }
-
-    @Test
-    public void testClose() {
-        // TODO
     }
 
     @Test
@@ -150,7 +146,7 @@ public class SequentialInputStreamTest {
         assertArrays(conv(a), conv(b));
     }
 
-    private void assertPosition(long expected) throws IOException {
+    private void assertPosition(long expected) {
         Position pos = new Position();
         stream.getPosition(pos);
         assertThat(pos.getCharPos().isPresent(), is(true));

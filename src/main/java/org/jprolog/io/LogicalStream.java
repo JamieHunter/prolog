@@ -70,8 +70,8 @@ public class LogicalStream {
     private PrologInputStream input = null;
     private PrologOutputStream output = null;
     private PositionTracker tracker = null;
-    private List<PrologAtomInterned> aliases = new ArrayList<>();
-    private StreamProperties.OpenMode openMode;
+    private final List<PrologAtomInterned> aliases = new ArrayList<>();
+    private final StreamProperties.OpenMode openMode;
     private StreamProperties.NewLineMode newLineMode = StreamProperties.NewLineMode.ATOM_detect;
     private StreamProperties.Buffering bufferMode = StreamProperties.Buffering.ATOM_full;
     private Long bufferSize = null;
@@ -83,7 +83,7 @@ public class LogicalStream {
     private StreamProperties.Type type = StreamProperties.Type.ATOM_text;
     private Term fileName = PrologEmptyList.EMPTY_LIST;
     private boolean recordPosition = true;
-    private boolean seekable = true;
+    private final boolean seekable = true;
     private boolean isTTY = false;
     private boolean ioChanged;
 
@@ -192,12 +192,10 @@ public class LogicalStream {
     }
 
     /**
-     * @return Retrieve all aliases.
+     * @return Retrieve copy of all aliases.
      */
     public ArrayList<PrologAtomInterned> getAliases() {
-        ArrayList<PrologAtomInterned> atoms = new ArrayList<>();
-        atoms.addAll(aliases);
-        return atoms;
+        return new ArrayList<>(aliases);
     }
 
     /**
@@ -471,9 +469,7 @@ public class LogicalStream {
     }
 
     private static void mapOptionalPosElement(ArrayList<Term> list, Atomic name, Optional<Long> element) {
-        if (element.isPresent()) {
-            list.add(new CompoundTermImpl(name, PrologInteger.from(element.get())));
-        }
+        element.ifPresent(aLong -> list.add(new CompoundTermImpl(name, PrologInteger.from(aLong))));
     }
 
     /**
@@ -848,15 +844,11 @@ public class LogicalStream {
      *
      * @param environment Execution environment
      * @param streamId    Stream id for error reporting (or null if unknown)
-     * @param options     Read options
      * @return read line
      */
-    public String readLine(Environment environment, Atomic streamId, ReadOptions options) {
+    public String readLine(Environment environment, Atomic streamId) {
         assertText(environment, Io.INPUT_ACTION, streamId);
         PrologInputStream input = getInputStream(environment, streamId);
-        if (options == null) {
-            options = new ReadOptions(environment, null);
-        }
         try {
             return input.readLine();
         } catch (IOException ioe) {

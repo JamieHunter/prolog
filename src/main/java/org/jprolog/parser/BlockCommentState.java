@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 class BlockCommentState extends ActiveParsingState {
 
     private final LineMatcher lineMatcher;
-    private static final Pattern PATTERN = Pattern.compile("\\*\\/");
+    private static final Pattern PATTERN = Pattern.compile("\\*/");
 
     /**
      * {@inheritDoc}

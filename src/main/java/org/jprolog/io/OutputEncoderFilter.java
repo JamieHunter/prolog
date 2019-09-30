@@ -76,7 +76,7 @@ public class OutputEncoderFilter extends FilteredOutputStream {
      * {@inheritDoc}
      */
     @Override
-    public void write(byte[] buffer, int off, int len) throws IOException {
+    public void write(byte[] buffer, int off, int len) {
         throw new UnsupportedOperationException("Call to write(byte[]) not permitted here");
     }
 
@@ -103,7 +103,7 @@ public class OutputEncoderFilter extends FilteredOutputStream {
             return; // already closed
         }
 
-        this.flushLeftoverChar((CharBuffer) null, true);
+        this.flushLeftoverChar(null, true);
         assert (nextChar == NO_CHAR);
 
         try {
@@ -152,7 +152,7 @@ public class OutputEncoderFilter extends FilteredOutputStream {
                 CoderResult coderResult = this.encoder.encode(lcb, this.bb, closing);
                 if (coderResult.isUnderflow()) {
                     if (lcb.hasRemaining()) {
-                        this.nextChar = (char) lcb.get();
+                        this.nextChar = lcb.get();
                         if (buffer != null && buffer.hasRemaining()) {
                             this.flushLeftoverChar(buffer, closing);
                         }

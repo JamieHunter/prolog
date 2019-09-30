@@ -8,12 +8,11 @@ import org.jprolog.constants.Atomic;
 import org.jprolog.exceptions.PrologInstantiationError;
 import org.jprolog.exceptions.PrologTypeError;
 import org.jprolog.execution.Environment;
-import org.jprolog.execution.LocalContext;
 import org.jprolog.expressions.Term;
-import org.jprolog.generators.YieldSolutions;
-import org.jprolog.unification.Unifier;
 import org.jprolog.flags.CreateFlagOptions;
 import org.jprolog.flags.PrologFlags;
+import org.jprolog.generators.YieldSolutions;
+import org.jprolog.unification.Unifier;
 
 import java.util.Map;
 

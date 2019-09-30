@@ -48,8 +48,8 @@ public class VariableCollector extends EnumTermStrategy {
      */
     public List<? extends Variable> getVariables() {
         return variables.values().stream().
-                filter(t -> t.isPresent())
-                .map(t -> t.get())
+                filter(Optional::isPresent)
+                .map(Optional::get)
                 .collect(Collectors.toList());
     }
 

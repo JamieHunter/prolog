@@ -32,7 +32,7 @@ class ReadableParser<T> extends ParserBase<T, ReadableFlagEntry<T>> {
      */
     ReadableParser(ReadableParser<T> source) {
         for (Map.Entry<Atomic, ReadableFlagEntry<T>> entry : source.flags.entrySet()) {
-            flags.put(entry.getKey(), new ReadableFlagEntry<T>(entry.getValue()));
+            flags.put(entry.getKey(), new ReadableFlagEntry<>(entry.getValue()));
         }
     }
 

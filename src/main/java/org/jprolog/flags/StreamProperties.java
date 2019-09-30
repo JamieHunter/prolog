@@ -68,17 +68,15 @@ public class StreamProperties implements FlagsWithEnvironment {
 
     private final Environment environment;
     private final LogicalStream binding;
-    private final Atomic streamIdent;
 
     /**
      * Create a new PrologFlags associated with a new environment
      *
      * @param binding Prolog stream
      */
-    public StreamProperties(Environment environment, LogicalStream binding, Atomic streamIdent) {
+    public StreamProperties(Environment environment, LogicalStream binding) {
         this.environment = environment;
         this.binding = binding;
-        this.streamIdent = streamIdent;
     }
 
     @Override

@@ -91,12 +91,11 @@ public enum ExecutionPort {
     RETURN {
         // Not really a port
     };
-    public static int CALL_FLAG = 0x01;
-    public static int EXIT_FLAG = 0x02;
-    public static int FAIL_FLAG = 0x04;
-    public static int REDO_FLAG = 0x08;
-    public static int EXCEPTION_FLAG = 0x10;
-    public static int ANY_FLAG = -1;
+    public static final int CALL_FLAG = 0x01;
+    public static final int EXIT_FLAG = 0x02;
+    public static final int FAIL_FLAG = 0x04;
+    public static final int REDO_FLAG = 0x08;
+    public static final int EXCEPTION_FLAG = 0x10;
 
     public boolean canIgnore() {
         return true;

@@ -25,10 +25,7 @@ public class ExecSetOf extends ExecBagOf {
      */
     @Override
     protected ArrayList<Term> collate(ArrayList<Term> source) {
-        TreeSet<Term> collated = new TreeSet<>();
-        collated.addAll(source);
-        ArrayList<Term> copy = new ArrayList<>();
-        copy.addAll(collated);
-        return copy;
+        TreeSet<Term> collated = new TreeSet<>(source);
+        return new ArrayList<>(collated);
     }
 }

@@ -23,8 +23,8 @@ public class ComposedCallInstruction extends AbstractComposedCallInstruction {
     @Override
     protected void addMembers(Environment environment, ArrayList<Term> members) {
         LocalContext context = environment.getLocalContext();
-        for (int i = 0; i < args.length; i++) {
-            members.add(args[i].resolve(context));
+        for (Term arg : args) {
+            members.add(arg.resolve(context));
         }
     }
 }

@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.WeakHashMap;
 import java.util.function.Consumer;
@@ -307,12 +308,11 @@ public class ActiveDebugger implements DebuggerHook {
         } else if (limit == 0) {
             limit = 1;
         }
-        List<Scoped> stack = environment.getCallStack()
+        return environment.getCallStack()
                 .map(ep -> exitMap.get(ep.id()))
-                .filter(scoped -> scoped != null)
+                .filter(Objects::nonNull)
                 .limit(limit)
                 .collect(Collectors.toList());
-        return stack;
     }
 
     /**
@@ -390,7 +390,7 @@ public class ActiveDebugger implements DebuggerHook {
      */
     private String readLine() {
         DefaultIoBinding.USER_INPUT.setPrompt(environment, null, Prompt.NONE);
-        return DefaultIoBinding.USER_INPUT.readLine(environment, null, null);
+        return DefaultIoBinding.USER_INPUT.readLine(environment, null);
     }
 
     /**
@@ -674,7 +674,7 @@ public class ActiveDebugger implements DebuggerHook {
      * Execute command given as an argument
      *
      * @param arg Command argument
-     * @return
+     * @return optional new mode indicating debugger should resume in given mode.
      */
     private StepMode doCommand(String arg) {
         ReadOptions options = new ReadOptions(environment, null);

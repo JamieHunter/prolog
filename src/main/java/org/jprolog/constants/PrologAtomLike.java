@@ -149,7 +149,7 @@ public abstract class PrologAtomLike extends AtomicBase {
         return strategy.visitAtom(this);
     }
 
-    /**
+    /*
      * Note, equals/hashCode is not defined, as it is not possible to correctly define these and get
      * desired behavior. equals() therefore is for reference equality and only makes sense with interned atoms.
      */

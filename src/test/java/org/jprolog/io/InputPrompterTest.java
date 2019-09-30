@@ -17,9 +17,9 @@ public class InputPrompterTest {
     // The Input Prompter will issue prompts if more data is required at start of line
     //
 
-    private Deque<String> demand = new LinkedList<>();
-    private FifoStreams outputFifo = new FifoStreams();
-    private FifoStreams inputFifo = new FifoStreams() {
+    private final Deque<String> demand = new LinkedList<>();
+    private final FifoStreams outputFifo = new FifoStreams();
+    private final FifoStreams inputFifo = new FifoStreams() {
         @Override
         public void onEmpty(OutputStream stream) {
             if (!demand.isEmpty()) {
@@ -36,14 +36,14 @@ public class InputPrompterTest {
             }
         }
     };
-    private SequentialOutputStream inputFillStream = new SequentialOutputStream(inputFifo.getOutput());
-    private SequentialOutputStream promptOutputStream = new SequentialOutputStream(outputFifo.getOutput());
-    private SequentialInputStream outputReader = new SequentialInputStream(outputFifo.getInput());
+    private final SequentialOutputStream inputFillStream = new SequentialOutputStream(inputFifo.getOutput());
+    private final SequentialOutputStream promptOutputStream = new SequentialOutputStream(outputFifo.getOutput());
+    private final SequentialInputStream outputReader = new SequentialInputStream(outputFifo.getInput());
 
-    private InputPrompter promptStream = new InputPrompter(
+    private final InputPrompter promptStream = new InputPrompter(
             new SequentialInputStream(inputFifo.getInput()),
             promptOutputStream);
-    private InputLineHandler lineStream = new InputLineHandler(
+    private final InputLineHandler lineStream = new InputLineHandler(
             promptStream,
             StreamProperties.NewLineMode.ATOM_detect);
 

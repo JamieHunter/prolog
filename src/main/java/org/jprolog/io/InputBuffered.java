@@ -122,7 +122,7 @@ public class InputBuffered extends FilteredInputStream {
      * {@inheritDoc}
      */
     @Override
-    public void getPosition(Position position) throws IOException {
+    public void getPosition(Position position) {
         position.setCharPos(charPos);
     }
 

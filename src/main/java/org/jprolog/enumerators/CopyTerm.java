@@ -4,13 +4,8 @@
 package org.jprolog.enumerators;
 
 import org.jprolog.execution.Environment;
-import org.jprolog.execution.LocalContext;
-import org.jprolog.expressions.Term;
 import org.jprolog.variables.ActiveVariable;
 import org.jprolog.variables.LabeledVariable;
-import org.jprolog.variables.Variable;
-
-import java.util.HashMap;
 
 /**
  * Context for copying a tree of terms
@@ -29,6 +24,6 @@ public class CopyTerm extends CopySimpleTerm {
      */
     @Override
     protected ActiveVariable renameVariable(ActiveVariable source) {
-        return context.copy((LabeledVariable)super.renameVariable(source));
+        return context.copy((LabeledVariable) super.renameVariable(source));
     }
 }

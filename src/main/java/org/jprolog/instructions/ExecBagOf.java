@@ -16,7 +16,6 @@ import org.jprolog.expressions.Term;
 import org.jprolog.expressions.TermList;
 import org.jprolog.generators.DoRedo;
 import org.jprolog.unification.Unifier;
-import org.jprolog.unification.UnifyBuilder;
 import org.jprolog.variables.ActiveVariable;
 import org.jprolog.variables.Variable;
 
@@ -56,7 +55,7 @@ public class ExecBagOf extends ExecFindAll {
         Term modifiedCallable = collectFreeVariables(fvc, callable); // any additional existential and free variables
         CompoundTerm freeVariables = new CompoundTermImpl(Interned.DOT, fvc.getVariables());
         CompoundTerm combinedTemplate = new CompoundTermImpl(Interned.CAROT_FUNCTOR, template, freeVariables);
-        final Set<Long> freeVariableIds = new HashSet<Long>();
+        final Set<Long> freeVariableIds = new HashSet<>();
         for (int i = 0; i < freeVariables.arity(); i++) {
             freeVariableIds.add(((Variable) freeVariables.get(i)).id());
         }
@@ -64,14 +63,11 @@ public class ExecBagOf extends ExecFindAll {
         DoRedo.invoke(environment,
                 // Perform the findAll phase and obtain all solutions. Unlike findall, this also considers
                 // free variables.
-                () -> getSourceSolutions(environment, modifiedCallable, () -> {
-                    builder.add(combinedTemplate.enumTerm(new BagOfCopyTerm(environment, freeVariableIds)));
-                }),
+                () -> getSourceSolutions(environment, modifiedCallable, () ->
+                        builder.add(combinedTemplate.enumTerm(new BagOfCopyTerm(environment, freeVariableIds)))),
                 // Once the find-all portion completes, move to the production phase, which will yield multiple
                 // solutions
-                () -> {
-                    new ProduceIterator(environment, freeVariables, builder, listUnifier).redo();
-                });
+                () -> new ProduceIterator(environment, freeVariables, builder, listUnifier).redo());
     }
 
     /**
@@ -142,8 +138,8 @@ public class ExecBagOf extends ExecFindAll {
                     continue;
                 }
                 CompoundTerm compNext = (CompoundTerm) next.resolve(context);
-                CompoundTerm solnValues = (CompoundTerm)compNext.get(1);
-                if (tryMatch(solnValues,bound)) {
+                CompoundTerm solnValues = (CompoundTerm) compNext.get(1);
+                if (tryMatch(solnValues, bound)) {
                     values.add(compNext.get(0));
                     solutions.set(i, PrologEmptyList.EMPTY_LIST); // don't include again
                     if (i == iter) {
@@ -165,15 +161,16 @@ public class ExecBagOf extends ExecFindAll {
         /**
          * Succeeds if either free variables contain the same value as before, or if the free variables can be assigned
          * new values not previously seen before
+         *
          * @param solnValues Values in this solution
-         * @param bound Set identifying what free variables have been unified
+         * @param bound      Set identifying what free variables have been unified
          * @return true if solution can be included
          */
         protected boolean tryMatch(CompoundTerm solnValues, Set<Long> bound) {
             List<Long> newBound = new ArrayList<>();
             int depth = environment.getBacktrackDepth();
-            for(int j = 0; j < freeVariables.arity(); j++) {
-                ActiveVariable freeVariable = (ActiveVariable)freeVariables.get(j);
+            for (int j = 0; j < freeVariables.arity(); j++) {
+                ActiveVariable freeVariable = (ActiveVariable) freeVariables.get(j);
                 Term solnValue = solnValues.get(j);
                 if (freeVariable.compareTo(solnValue) != 0) {
                     // pick? make sure free variable is not already picked and unify it

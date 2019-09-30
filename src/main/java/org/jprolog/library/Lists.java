@@ -3,10 +3,8 @@
 //
 package org.jprolog.library;
 
-import org.jprolog.bootstrap.Interned;
 import org.jprolog.bootstrap.Predicate;
 import org.jprolog.constants.Atomic;
-import org.jprolog.constants.PrologEmptyList;
 import org.jprolog.constants.PrologInteger;
 import org.jprolog.exceptions.PrologDomainError;
 import org.jprolog.exceptions.PrologInstantiationError;

@@ -83,7 +83,7 @@ public class Environment {
         // load group mappings
         private final HashMap<String, LoadGroup> loadGroups = new HashMap<>();
         // debugging spy points
-        private SpyPoints spyPoints = new SpyPoints();
+        private final SpyPoints spyPoints = new SpyPoints();
         // Variable ID allocator
         private long nextVariableId = 10;
         // global flags
@@ -247,7 +247,7 @@ public class Environment {
     // current load group
     private LoadGroup loadGroup;
     // break level
-    private int breakLevel;
+    private final int breakLevel;
 
     /**
      * Construct a new environment.
@@ -260,7 +260,7 @@ public class Environment {
      * Construct a child environment (break). Prefer this over other variants to track
      * break depth and inherit some variables.
      *
-     * @param parent
+     * @param parent Parent environment that this is derived from (sets break level).
      */
     public Environment(Environment parent) {
         this.shared = parent.shared;
@@ -512,7 +512,7 @@ public class Environment {
      *
      * @param targetDepth new target depth of backtrack stack
      */
-    public int cutBacktrackStack(int targetDepth) {
+    public void cutBacktrackStack(int targetDepth) {
         //
         // Determine how far back we can rewind backtracking
         //
@@ -524,7 +524,6 @@ public class Environment {
         while (delta-- > 0) {
             iter.next().cut(iter);
         }
-        return backtrackStack.size();
     }
 
     /**
@@ -678,16 +677,10 @@ public class Environment {
      * Remove predicate for the specified clause name and arity.
      *
      * @param predication functor/arity
-     * @return old definition
      */
-    public PredicateDefinition abolishPredicate(Predication predication) {
+    public void abolishPredicate(Predication predication) {
         Predication.Interned interned = predication.intern(this);
-        PredicateDefinition entry = shared.dictionary.remove(interned);
-        if (entry == null) {
-            return MissingPredicate.MISSING_PREDICATE;
-        } else {
-            return entry;
-        }
+        shared.dictionary.remove(interned);
     }
 
     /**
@@ -802,7 +795,6 @@ public class Environment {
      * Change output stream.
      *
      * @param logicalStream New stream
-     * @return old stream
      */
     public void setOutputStream(LogicalStream logicalStream) {
         this.outputStream = logicalStream;
@@ -914,11 +906,10 @@ public class Environment {
      *
      * @param alias  Stream alias (if null, becomes a no-op)
      * @param stream Stream
-     * @return previous stream with this alias, or null if none
      */
-    public LogicalStream addStreamAlias(PrologAtomInterned alias, LogicalStream stream) {
+    public void addStreamAlias(PrologAtomInterned alias, LogicalStream stream) {
         if (alias == null || stream == null) {
-            return null;
+            return;
         }
         LogicalStream prior;
         prior = shared.streamByAlias.put(alias, stream);
@@ -926,11 +917,8 @@ public class Environment {
             if (prior != null) {
                 prior.removeAlias(alias);
             }
-            if (stream != null) {
-                stream.addAlias(alias);
-            }
+            stream.addAlias(alias);
         }
-        return prior;
     }
 
     /**
@@ -974,9 +962,9 @@ public class Environment {
     public void removeOperator(OperatorEntry.Code code, PrologAtomInterned atom) {
         OperatorEntry entry;
         if (code.isPrefix()) {
-            entry = shared.prefixOperatorTable.remove(atom);
+            shared.prefixOperatorTable.remove(atom);
         } else {
-            entry = shared.infixPostfixOperatorTable.remove(atom);
+            shared.infixPostfixOperatorTable.remove(atom);
         }
     }
 

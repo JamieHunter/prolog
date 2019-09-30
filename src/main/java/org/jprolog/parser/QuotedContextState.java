@@ -4,8 +4,6 @@
 package org.jprolog.parser;
 
 import org.jprolog.constants.PrologAtom;
-import org.jprolog.constants.PrologChars;
-import org.jprolog.constants.PrologCodePoints;
 import org.jprolog.constants.PrologInteger;
 import org.jprolog.constants.PrologQuotedAtom;
 import org.jprolog.constants.PrologString;
@@ -25,7 +23,7 @@ class QuotedContextState extends ActiveParsingState {
     private final String quote;
     private final boolean once;
     private final boolean escapes = tokenizer.options().characterEscapes;
-    private LineMatcher lineMatcher;
+    private final LineMatcher lineMatcher;
 
     /**
      * Determine regex to use based on string quote.
@@ -98,9 +96,8 @@ class QuotedContextState extends ActiveParsingState {
      * Proceed by progressing forward the match area past what was just matched.
      *
      * @return self
-     * @throws IOException on IO error
      */
-    private ParseState proceed() throws IOException {
+    private ParseState proceed() {
         if (once && builder.length() > 0) {
             return end();
         } else {
@@ -113,9 +110,8 @@ class QuotedContextState extends ActiveParsingState {
      * End of quoted text. Turn into token
      *
      * @return {@link TokenFinishedState}
-     * @throws IOException on IO error
      */
-    private ParseState end() throws IOException {
+    private ParseState end() {
         lineMatcher.end();
         if (once) {
             if (builder.length() > 0) {

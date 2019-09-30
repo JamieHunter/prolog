@@ -3,7 +3,6 @@ package org.jprolog.predicates;
 import org.jprolog.test.Given;
 import org.jprolog.test.Matchers;
 import org.jprolog.test.PrologTest;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.jprolog.test.Matchers.isInteger;
@@ -32,19 +31,19 @@ public class CutTest {
                 .and("catches(X) :- catch(X, B, log(thrown)).")
                 .and("bar(A,B) :- A=1,B=2, ! .")
                 .and("bar(A,B) :- A=2,B=3 .")
-        ;
+                ;
     }
 
     @Test
     public void reference() {
-            // this relies on non-cut behavior, so serves as a reference
-            PrologTest.given("old(X) :- age(X,Y), Y > 30.")
-                    .and("age(john, 10).")
-                    .and("age(sam, 50).")
-                    .and("age(peter, 13).")
-                    .when("?- old(X).")
-                    .assertSuccess()
-                    .variable("X", Matchers.isAtom("sam"));
+        // this relies on non-cut behavior, so serves as a reference
+        PrologTest.given("old(X) :- age(X,Y), Y > 30.")
+                .and("age(john, 10).")
+                .and("age(sam, 50).")
+                .and("age(peter, 13).")
+                .when("?- old(X).")
+                .assertSuccess()
+                .variable("X", Matchers.isAtom("sam"));
 
 
     }
@@ -110,10 +109,10 @@ public class CutTest {
         // based off of a failing Inria test
         given().when("?- bar(A,B).")
                 .solutions(
-                  soln -> {
-                      soln.variable("A", isInteger(1));
-                      soln.variable("B", isInteger(2));
-                  }
+                        soln -> {
+                            soln.variable("A", isInteger(1));
+                            soln.variable("B", isInteger(2));
+                        }
                 );
     }
 

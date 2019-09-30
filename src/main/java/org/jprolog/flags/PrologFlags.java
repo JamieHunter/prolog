@@ -22,7 +22,7 @@ public class PrologFlags implements Flags {
     private static final PrologFlagsParser global = new PrologFlagsParser();
     private static final long DEFAULT_MAX_ARITY = 255;
 
-    public class Scope {
+    public static class Scope {
         public final Environment environment;
         public final PrologFlags flags;
 
@@ -40,14 +40,12 @@ public class PrologFlags implements Flags {
         global.protectedFlag(Interned.internAtom("bounded")).
                 constant(Interned.FALSE_ATOM).protect();
         global.protectedFlag(Interned.internAtom("break_level")).
-                readInteger(o -> (long) o.flags.breakLevel).protect();
+                readInteger(o -> (long) o.environment.getBreakLevel()).protect();
         global.booleanFlag(Interned.internAtom("character_escapes"), (o, v) -> o.flags.characterEscapes = v).
                 readBoolean(o -> o.flags.characterEscapes).protect();
         global.onOffFlag(Interned.internAtom("char_conversion"), (o, v) -> o.flags.charConversion = v).
                 readOnOff(o -> o.flags.charConversion).protect();
-        global.onOffFlag(Interned.internAtom("debug"), (o, v) -> {
-            o.environment.enableDebugger(v);
-        }).
+        global.onOffFlag(Interned.internAtom("debug"), (o, v) -> o.environment.enableDebugger(v)).
                 readOnOff(o -> o.environment.isDebuggerEnabled()).protect();
         global.enumFlag(Interned.internAtom("encoding"), StreamProperties.Encoding.class, (o, v) -> o.flags.encoding = v).
                 readEnum(StreamProperties.Encoding.class, o -> o.flags.encoding).protect();
@@ -71,10 +69,6 @@ public class PrologFlags implements Flags {
      * Handling of double quotes
      */
     public Quotes doubleQuotes = Quotes.ATOM_string;
-    /**
-     * Current break levels
-     */
-    public int breakLevel = 0;
     /**
      * Handling of character escapes
      */

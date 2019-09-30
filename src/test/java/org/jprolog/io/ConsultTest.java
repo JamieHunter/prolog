@@ -33,7 +33,7 @@ public class ConsultTest {
     private String logPath;
 
     @BeforeEach
-    public void setLog() throws IOException {
+    public void setLog() {
         logFile = new File(testFolder, "logFile.tmp");
         logPath = quotePath(logFile);
     }

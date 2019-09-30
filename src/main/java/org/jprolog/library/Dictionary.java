@@ -294,12 +294,8 @@ public final class Dictionary {
 
             // Attempt to unify
             Unifier headUnifier = entry.getUnifier();
-            if (headUnifier.unify(newContext, headMatcher) &&
-                    bodyUnifier.unify(newContext, boundBody)) {
-                return true;
-            } else {
-                return false;
-            }
+            return headUnifier.unify(newContext, headMatcher) &&
+                    bodyUnifier.unify(newContext, boundBody);
         };
         YieldSolutions.forAll(environment, clauses.stream(), clauseAction);
     }
@@ -443,7 +439,7 @@ public final class Dictionary {
             // Rule
             CompoundTerm clause = (CompoundTerm) copy;
             Term head = clause.get(0);
-            Term tail = clause.get(1).enumTerm(new CallifyTerm(environment, Optional.empty()));
+            Term tail = clause.get(1).enumTerm(new CallifyTerm(environment, null));
             addClauseRule(environment, head, tail, add, isDynamic);
         } else {
             // Fact
@@ -498,7 +494,7 @@ public final class Dictionary {
         }
 
         // add clause to library (don't compile until execution)
-        ClauseEntry entry = new ClauseEntry(environment.getShared(), (CompoundTerm) head, body, unifier);
+        ClauseEntry entry = new ClauseEntry((CompoundTerm) head, body, unifier);
         add.accept(dictionaryEntry, entry);
     }
 

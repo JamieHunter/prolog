@@ -11,8 +11,8 @@ import static org.hamcrest.Matchers.is;
 
 public class SequentialOutputStreamTest {
 
-    private ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-    private SequentialOutputStream stream = new SequentialOutputStream(buffer);
+    private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    private final SequentialOutputStream stream = new SequentialOutputStream(buffer);
 
     private String asString() {
         return new String(buffer.toByteArray());
@@ -49,18 +49,6 @@ public class SequentialOutputStreamTest {
         assertThat(asString(), is(equalTo("teMor")));
         stream.write("Done!".toCharArray(), 0, 5);
         assertThat(asString(), is(equalTo("teMorDone!")));
-    }
-
-    @Test
-    public void testFlush() {
-        // TODO, to be implemented
-        //stream.flush();
-    }
-
-    @Test
-    public void testClose() {
-        // TODO, to be implemented
-        //stream.close();
     }
 
     @Test

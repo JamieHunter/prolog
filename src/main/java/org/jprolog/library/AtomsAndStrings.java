@@ -504,7 +504,8 @@ public final class AtomsAndStrings {
                 }
             }
             // Given the constraints (provided or inferred), determine the algorithm and starting condition
-            if (beforeConstraint != null && lengthConstraint != null && afterConstraint != null) {
+            if (beforeConstraint != null && lengthConstraint != null) {
+                assert afterConstraint != null;
                 int checkLen = beforeConstraint + lengthConstraint + afterConstraint;
                 if (checkLen != sourceLength) {
                     return; // not solvable
@@ -522,7 +523,8 @@ public final class AtomsAndStrings {
                 limit = length;
                 return;
             }
-            if (beforeConstraint != null && afterConstraint == null) {
+            if (beforeConstraint != null) {
+                assert afterConstraint == null;
                 assert lengthConstraint == null;
                 algorithm = this::enumerateFixedLeft;
                 offset = beforeConstraint;
@@ -733,7 +735,7 @@ public final class AtomsAndStrings {
         private final Term codeTerm;
         private final int codeConstraint;
         private int index;
-        private int limit;
+        private final int limit;
 
         /**
          * Backtrackable algorithm to enumerate all indexes matching code, or all code/index combinations

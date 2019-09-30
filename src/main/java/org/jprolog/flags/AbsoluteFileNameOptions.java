@@ -21,12 +21,12 @@ import static org.jprolog.flags.AbsoluteFileNameOptions.FileType.ATOM_txt;
  */
 public class AbsoluteFileNameOptions implements Flags {
 
-    private static OptionParser<AbsoluteFileNameOptions> parser = new OptionParser<>();
+    private static final OptionParser<AbsoluteFileNameOptions> parser = new OptionParser<>();
 
     static {
-        parser.other(Interned.internAtom("extensions"), (o, v) -> o.addExtensions(v));
+        parser.other(Interned.internAtom("extensions"), AbsoluteFileNameOptions::addExtensions);
         parser.enumFlag(Interned.internAtom("file_type"), AbsoluteFileNameOptions.FileType.class,
-                (o, v) -> o.setType(v));
+                AbsoluteFileNameOptions::setType);
     }
 
     public enum FileType {
@@ -35,7 +35,7 @@ public class AbsoluteFileNameOptions implements Flags {
         ATOM_directory
     }
 
-    public ArrayList<String> extensions = new ArrayList<>();
+    public final ArrayList<String> extensions = new ArrayList<>();
     public FileType type = ATOM_txt;
 
     private void addExtensions(Term list) {

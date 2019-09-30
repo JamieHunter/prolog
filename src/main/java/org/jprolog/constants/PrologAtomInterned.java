@@ -8,7 +8,6 @@ import org.jprolog.expressions.Term;
 
 import java.lang.ref.WeakReference;
 import java.util.Map;
-import java.util.WeakHashMap;
 
 /**
  * A self describing self referencing entity. In other languages, it would be considered a symbol or an enum value.
@@ -115,13 +114,13 @@ public final class PrologAtomInterned extends PrologAtomLike {
             if (obj == this) {
                 return true;
             }
-            if (this == null || obj == null) {
+            if (obj == null) {
                 return false;
             }
             if (obj.getClass() != this.getClass()) {
                 return false;
             }
-            Holder other = (Holder)obj;
+            Holder other = (Holder) obj;
             return name.equals(other.name);
         }
 

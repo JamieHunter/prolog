@@ -18,8 +18,8 @@ public class InputDecoderFilter extends FilteredInputStream {
     private static final int NO_CHAR = -2;
     private static final int DEFAULT_BYTE_BUFFER_SIZE = 8192;
     private int nextChar = NO_CHAR;
-    private CharsetDecoder decoder;
-    private ByteBuffer bb;
+    private final CharsetDecoder decoder;
+    private final ByteBuffer bb;
     private long charPos = 0; // effective character position
 
     public InputDecoderFilter(PrologInputStream stream, Charset charset) {
@@ -117,7 +117,7 @@ public class InputDecoderFilter extends FilteredInputStream {
      * {@inheritDoc}
      */
     @Override
-    public void getPosition(Position position) throws IOException {
+    public void getPosition(Position position) {
         position.setCharPos(charPos);
     }
 
@@ -144,7 +144,7 @@ public class InputDecoderFilter extends FilteredInputStream {
      * {@inheritDoc}
      */
     @Override
-    public int read(byte[] b, int off, int len) throws IOException {
+    public int read(byte[] b, int off, int len) {
         throw new UnsupportedOperationException("Call to read(byte[]) not permitted here");
     }
 

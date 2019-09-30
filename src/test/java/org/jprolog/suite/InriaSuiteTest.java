@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -146,8 +147,8 @@ public class InriaSuiteTest extends Suite {
     /**
      * Wraps a goal in ?-/1
      *
-     * @param goal
-     * @return prepared goal
+     * @param goal Goal to execute, expressed as a term
+     * @return prepared goal, wrapped in ?-/1.
      */
     private Term prepareGoal(Term goal) {
         return new CompoundTermImpl(Interned.QUERY_FUNCTOR, goal);
@@ -249,7 +250,13 @@ public class InriaSuiteTest extends Suite {
         }
         // Determine how to report mismatches
         StringBuilder builder = new StringBuilder();
-        builder.append("Executed [" + formatTerm(given, goal) + "] " + times + " out of " + expected + " times.");
+        builder.append("Executed [")
+                .append(formatTerm(given, goal))
+                .append("] ")
+                .append(times)
+                .append(" out of ")
+                .append(expected)
+                .append(" times.");
         if (solutions.size() > 0) {
             builder.append(" Missing solutions: ");
             for (Term soln : solutions) {
@@ -264,7 +271,7 @@ public class InriaSuiteTest extends Suite {
                 builder.append(" ");
             }
         }
-        if (times != times || solutions.size() > 0 || extra.size() > 0) {
+        if (solutions.size() > 0 || extra.size() > 0) {
             fail(builder.toString());
         }
     }
@@ -349,7 +356,7 @@ public class InriaSuiteTest extends Suite {
             } else {
                 return null;
             }
-        }).filter(t -> t != null).collect(Collectors.toList());
+        }).filter(Objects::nonNull).collect(Collectors.toList());
         return TermList.from(terms).toTerm();
     }
 }

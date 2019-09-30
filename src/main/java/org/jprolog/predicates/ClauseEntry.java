@@ -17,7 +17,6 @@ import org.jprolog.utility.LinkNode;
  * on debug context / global changes (broadGeneration).
  */
 public class ClauseEntry {
-    private final Environment.Shared environmentShared;
     private final CompoundTerm head;
     private final Term body;
     private final Unifier unifier;
@@ -27,16 +26,14 @@ public class ClauseEntry {
     /**
      * Create a clause entry.
      *
-     * @param environmentShared Shared context of environment(s).
      * @param head        Head term (for reference)
      * @param body        Callable body term (for reference)
      * @param unifier     Head unifier
      */
-    public ClauseEntry(Environment.Shared environmentShared, CompoundTerm head, Term body, Unifier unifier) {
-        this.environmentShared = environmentShared;
+    public ClauseEntry(CompoundTerm head, Term body, Unifier unifier) {
         this.head = head;
         this.body = body;
-        this.instruction = new ClauseEntryBodyInstruction(body, this);
+        this.instruction = new ClauseEntryBodyInstruction(this);
         this.unifier = unifier;
         this.node = new LinkNode<>(this);
     }

@@ -6,7 +6,6 @@ package org.jprolog.test;
 import org.jprolog.execution.Environment;
 import org.jprolog.expressions.Term;
 
-import java.nio.file.Path;
 import java.util.function.Consumer;
 
 public interface Given {
@@ -44,6 +43,7 @@ public interface Given {
 
     /**
      * Assumes text is pre-parsed.
+     *
      * @param term Prolog term, assumes clause or fact unless ?-(x) or :-(x).
      * @return {@link Then}
      */
@@ -51,6 +51,7 @@ public interface Given {
 
     /**
      * For additional setup, obtains a then state, then calls lambda
+     *
      * @param lambda Lambda function to further state
      * @return state also passed into lambda
      */
@@ -58,6 +59,7 @@ public interface Given {
 
     /**
      * Perform environment operations
+     *
      * @return environment Underlying environment
      */
     Given environment(Consumer<Environment> consumer);
@@ -69,6 +71,7 @@ public interface Given {
 
     /**
      * Creates a new context/environment.
+     *
      * @return break' given
      */
     Given breakEnvironment();

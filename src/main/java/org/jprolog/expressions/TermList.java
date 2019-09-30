@@ -124,7 +124,7 @@ public interface TermList extends CompoundTerm {
 
     class TermIterator implements Iterator<Term> {
 
-        private Term origList;
+        private final Term origList;
         private Term next;
 
         public TermIterator(Term term) {

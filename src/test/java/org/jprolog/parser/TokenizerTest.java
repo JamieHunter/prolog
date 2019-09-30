@@ -30,7 +30,8 @@ public class TokenizerTest {
         readOptions = new ReadOptions(environment, null);
     }
 
-    private void expect(String text, Matcher<? super Term>... terms) {
+    @SafeVarargs
+    private final void expect(String text, Matcher<? super Term>... terms) {
         PrologInputStream stream = StreamUtils.bufferedString(text);
         Tokenizer tok = new Tokenizer(
                 environment,

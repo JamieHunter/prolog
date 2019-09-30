@@ -63,7 +63,7 @@ public abstract class ParserBase<T, R> {
                 }
                 key = (Atomic) keyTerm;
                 value = compoundTerm.get(1);
-                flag = compoundTerm = new CompoundTermImpl(key, value); // improve error reporting below
+                flag = new CompoundTermImpl(key, value); // improve error reporting below
             } else {
                 if (compoundTerm.arity() != 1) {
                     throw new FutureFlagKeyError(flag);
@@ -199,10 +199,9 @@ public abstract class ParserBase<T, R> {
      * @param cls      Enum class
      * @param consumer Specific value function
      * @param <E>      Enum type
-     * @return Option/Flag dependent
      */
-    public <E extends Enum<E>> R enumFlags(final Atomic key, final Class<E> cls, final BiConsumer<T, Set<E>> consumer) {
-        return createKey(key, (obj, value) -> {
+    public <E extends Enum<E>> void enumFlags(final Atomic key, final Class<E> cls, final BiConsumer<T, Set<E>> consumer) {
+        createKey(key, (obj, value) -> {
             List<Term> flags = TermList.extractList(value);
             consumer.accept(obj, flags.stream().map(v -> toEnum(cls, key, v)).collect(Collectors.toSet()));
         });

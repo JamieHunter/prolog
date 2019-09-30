@@ -96,7 +96,7 @@ public final class IoUtility {
      *
      * @param reader reader function
      * @return Read string, or null if EOF reached before any text read
-     * @throws IOException
+     * @throws IOException io error
      */
     public static String readLine(IoRead reader) throws IOException {
         StringBuilder builder = new StringBuilder();

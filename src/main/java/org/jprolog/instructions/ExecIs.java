@@ -4,7 +4,6 @@
 package org.jprolog.instructions;
 
 import org.jprolog.exceptions.PrologInstantiationError;
-import org.jprolog.exceptions.PrologTypeError;
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
 import org.jprolog.expressions.Term;
@@ -22,7 +21,7 @@ public class ExecIs implements Instruction {
     /**
      * Create instruction that takes value of stack and unifies it with target.
      *
-     * @param expr Math expression for RHS of Is
+     * @param expr   Math expression for RHS of Is
      * @param target Target term, assumed to be a variable.
      */
     public ExecIs(CompileMathExpression expr, Term target) {

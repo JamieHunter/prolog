@@ -15,8 +15,8 @@ import org.jprolog.unification.Unifier;
 import org.jprolog.variables.Variable;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -67,9 +67,8 @@ public class Variables {
      */
     @Predicate("term_variables")
     public static void termVariables(Environment environment, Term term, Term headList, Term tailList) {
-        HashSet<Long> vars = new HashSet<>();
-        vars.addAll(TermList.extractList(headList).stream().map(t -> t instanceof Variable ? ((Variable) t).id() : -1L)
-                .collect(Collectors.toList()));
+        Set<Long> vars = TermList.extractList(headList).stream().map(t -> t instanceof Variable ? ((Variable) t).id() : -1L)
+                .collect(Collectors.toSet());
         List<? extends Variable> collected = collectVariables(environment, term);
         List<Variable> remaining = collected.stream().filter(t -> !vars.contains(t.id())).collect(Collectors.toList());
         Unifier.unifyList(environment, tailList, TermList.from(remaining));
@@ -110,7 +109,7 @@ public class Variables {
             environment.backtrack();
         }
         Stream<? extends Variable> stream = collectVariables(environment, term).stream();
-        if (!stream.filter(t -> t.compareTo(var) == 0).findFirst().isPresent()) {
+        if (stream.noneMatch(t -> t.compareTo(var) == 0)) {
             environment.backtrack();
         }
     }

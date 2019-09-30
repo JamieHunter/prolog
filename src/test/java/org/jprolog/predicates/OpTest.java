@@ -37,7 +37,7 @@ public class OpTest {
                 .andWhen("?- op(0, fy, foo).")
                 .assertSuccess()
                 .andWhen("?- current_op(P, fy, foo).")
-                .assertFailed();
+                .assertFailed()
         ;
     }
 

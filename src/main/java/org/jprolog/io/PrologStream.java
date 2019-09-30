@@ -36,7 +36,6 @@ public interface PrologStream {
      * Restore virtual position (where applicable)
      *
      * @param position known position information
-     * @throws IOException on IO Error
      */
     default void setKnownPosition(Position position) {
     }
@@ -53,7 +52,6 @@ public interface PrologStream {
     /**
      * Close is attempted with flags.
      * @param options Options passed into close
-     * @return true if closed
      */
     void close(CloseOptions options) throws IOException;
 

@@ -9,7 +9,6 @@ import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.WeakHashMap;
 
 /**
  * These are interned atoms, that is, they are valid always across all environments. Other interned atoms exist within

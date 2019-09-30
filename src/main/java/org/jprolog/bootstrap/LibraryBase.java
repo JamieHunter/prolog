@@ -42,7 +42,7 @@ public class LibraryBase {
     //
     // Mapping table, given an arity of N, identify an optimal pair of classes to use for the Lambda mappings
     //
-    private static final Entry byArity[] = {
+    private static final Entry[] byArity = {
             new Entry(BuiltinPredicateArity0.class, BuiltinPredicateArity0.Lambda.class),
             new Entry(BuiltinPredicateArity1.class, BuiltinPredicateArity1.Lambda.class),
             new Entry(BuiltinPredicateArity2.class, BuiltinPredicateArity2.Lambda.class),

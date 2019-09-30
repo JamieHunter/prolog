@@ -12,21 +12,19 @@ import org.jprolog.predicates.ClauseEntry;
  * Defers compilation of clause entry body.
  */
 public class ClauseEntryBodyInstruction extends AbstractDeferredCompileInstruction {
-    private final Term body;
     private final ClauseEntry clauseEntry;
 
-    public ClauseEntryBodyInstruction(Term body, ClauseEntry clauseEntry) {
-        this.body = body;
+    public ClauseEntryBodyInstruction(ClauseEntry clauseEntry) {
         this.clauseEntry = clauseEntry;
     }
 
     @Override
-    public Term begin() {
+    protected Term begin() {
         return clauseEntry.getBody();
     }
 
     @Override
-    public Instruction complete(CompileContext context) {
+    protected Instruction complete(CompileContext context) {
         return context.toInstruction(clauseEntry);
     }
 }

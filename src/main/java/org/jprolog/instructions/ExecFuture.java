@@ -29,7 +29,7 @@ public class ExecFuture implements Instruction {
         if (!bound.isInstantiated()) {
             throw PrologInstantiationError.error(environment, bound);
         }
-        bound = bound.enumTerm(new CallifyTerm(environment, Optional.of(bound)));
+        bound = bound.enumTerm(new CallifyTerm(environment, bound));
         CompileContext context = environment.newCompileContext();
         bound.compile(context);
         context.toInstruction().invoke(environment);

@@ -29,11 +29,11 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * PrologTest then clause. This clause allows testing results of a directive.
  */
-public class ThenImpl implements Then {
+public final class ThenImpl implements Then {
 
     private final GivenImpl given;
     private final StateImpl state;
-    private Query query;
+    private final Query query;
     private ExecutionState lastExec = null;
     private Map<String, ActiveVariable> vars = Collections.emptyMap();
 
@@ -180,7 +180,7 @@ public class ThenImpl implements Then {
                 } else {
                     fail("only " + soln + " solution(s) provided out of " + solutions.length + " expected");
                 }
-            };
+            }
             solutions[soln].accept(this);
             anotherSolution();
         }
@@ -191,12 +191,8 @@ public class ThenImpl implements Then {
                 count++;
                 anotherSolution();
             }
-            if (solutions.length == 0) {
-                fail(count + " solution(s) provided when none expected");
-            } else {
-                fail(count + " solution(s) provided when only " + solutions.length + " solution(s) expected");
-            }
-        };
+            fail(count + " solution(s) provided when only " + solutions.length + " solution(s) expected");
+        }
         return this;
     }
 
@@ -218,7 +214,7 @@ public class ThenImpl implements Then {
     }
 
 
-    private class TestQuery extends Query {
+    private static class TestQuery extends Query {
 
         TestQuery(Environment environment) {
             super(environment);

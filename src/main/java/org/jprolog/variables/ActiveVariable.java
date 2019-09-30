@@ -10,7 +10,6 @@ import org.jprolog.execution.Environment;
 import org.jprolog.execution.LocalContext;
 import org.jprolog.expressions.Term;
 import org.jprolog.instructions.ExecBlock;
-import org.jprolog.instructions.ExecFuture;
 import org.jprolog.instructions.ExecCall;
 import org.jprolog.io.WriteContext;
 
@@ -89,7 +88,7 @@ public class ActiveVariable implements Variable {
         Term v = value;
         long i = id;
         while (v instanceof ActiveVariable) {
-            ActiveVariable av = (ActiveVariable)v;
+            ActiveVariable av = (ActiveVariable) v;
             i = av.id;
             v = av.value;
         }

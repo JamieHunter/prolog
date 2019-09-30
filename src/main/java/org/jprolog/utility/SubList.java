@@ -29,11 +29,12 @@ public class SubList<E> implements List<E>, RandomAccess {
         this.offset = offset;
     }
 
+    @SuppressWarnings("unchecked")
     public static <Q> SubList<Q> wrap(List<? extends Q> list) {
         if (list instanceof SubList) {
             return (SubList<Q>) list;
         } else if (list instanceof ArrayList) {
-            return new SubList<Q>((ArrayList<Q>) list, 0);
+            return new SubList<>((ArrayList<Q>) list, 0);
         } else {
             ArrayList<Q> ar = new ArrayList<>(list);
             return new SubList<>(ar, 0);
@@ -219,8 +220,7 @@ public class SubList<E> implements List<E>, RandomAccess {
         if (fromIndex < 0 || fromIndex > size()) {
             throw new IllegalArgumentException("fromIndex out of range");
         }
-        SubList<E> subList = new SubList<E>(parent, offset + fromIndex);
-        return subList;
+        return new SubList<>(parent, offset + fromIndex);
     }
 
     public Spliterator<E> spliterator() {

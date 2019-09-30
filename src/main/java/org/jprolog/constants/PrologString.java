@@ -5,10 +5,7 @@ package org.jprolog.constants;
 
 import org.jprolog.bootstrap.Interned;
 import org.jprolog.exceptions.FutureTypeError;
-import org.jprolog.exceptions.PrologTypeError;
-import org.jprolog.execution.Environment;
 import org.jprolog.expressions.Term;
-import org.jprolog.expressions.TermList;
 import org.jprolog.expressions.TypeRank;
 import org.jprolog.io.TermWriter;
 import org.jprolog.io.WriteContext;
@@ -37,12 +34,13 @@ public class PrologString extends AtomicBase {
 
     /**
      * Convert term to PrologString
+     *
      * @param term Term to convert
      * @return converted term
      */
     public static PrologString from(Term term) {
         if (term instanceof PrologString) {
-            return (PrologString)term;
+            return (PrologString) term;
         }
         throw new FutureTypeError(Interned.STRING_TYPE, term);
     }

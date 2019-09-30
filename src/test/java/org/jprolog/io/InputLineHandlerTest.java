@@ -16,20 +16,20 @@ public class InputLineHandlerTest {
     // a prompt if a prompt handler exists.
     //
 
-    private static String testString = "One\nTwo\n\nThree\rFour\r\nFive\n\rSix";
-    private static byte[] testData = testString.getBytes();
+    private static final String testString = "One\nTwo\n\nThree\rFour\r\nFive\n\rSix";
+    private static final byte[] testData = testString.getBytes();
 
-    private SequentialInputStream sourceStream = new SequentialInputStream(new ByteArrayInputStream(testData));
+    private final SequentialInputStream sourceStream = new SequentialInputStream(new ByteArrayInputStream(testData));
 
-    private InputLineHandler detectingStream = new InputLineHandler(
+    private final InputLineHandler detectingStream = new InputLineHandler(
             sourceStream,
             StreamProperties.NewLineMode.ATOM_detect);
 
-    private InputLineHandler dosStream = new InputLineHandler(
+    private final InputLineHandler dosStream = new InputLineHandler(
             sourceStream,
             StreamProperties.NewLineMode.ATOM_dos);
 
-    private InputLineHandler posixStream = new InputLineHandler(
+    private final InputLineHandler posixStream = new InputLineHandler(
             sourceStream,
             StreamProperties.NewLineMode.ATOM_posix);
 

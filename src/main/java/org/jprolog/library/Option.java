@@ -12,10 +12,10 @@ public class Option {
     /**
      * List of predicates defined by the resource "option.pl".
      * This library provides option processing like the built-in option processing
-     * See {@link prolog.flags.OptionParser}.
+     * See {@link org.jprolog.flags.OptionParser}.
      */
     @DemandLoad("option.pl")
-    public static Predication option[] = {
+    public static Predication[] option = {
             Builtins.predicate("option", 2), // basic
             Builtins.predicate("option", 3), // with default
             Builtins.predicate("select_option", 3), // remove from list

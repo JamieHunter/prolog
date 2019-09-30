@@ -24,9 +24,9 @@ import java.util.Optional;
 public class CallifyTerm extends EnumTermStrategy {
 
     private boolean trimmed = false;
-    private final Optional<Term> originalTerm;
+    private final Term originalTerm;
 
-    public CallifyTerm(Environment environment, Optional<Term> originalTerm) {
+    public CallifyTerm(Environment environment, Term originalTerm) {
         super(environment);
         this.originalTerm = originalTerm;
     }
@@ -61,7 +61,7 @@ public class CallifyTerm extends EnumTermStrategy {
         if (trimmed) {
             return atomic;
         } else {
-            throw PrologTypeError.callableExpected(environment(), originalTerm.orElse(atomic));
+            throw PrologTypeError.callableExpected(environment(), originalTerm == null ? atomic : originalTerm);
         }
     }
 

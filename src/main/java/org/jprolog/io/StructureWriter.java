@@ -213,7 +213,7 @@ public class StructureWriter extends TermWriter<Term> {
      * Write a compound term structure in canonical form.
      *
      * @param term Term to write
-     * @throws IOException
+     * @throws IOException on IO error
      */
     private void writeStructure(CompoundTerm term) throws IOException {
         // TODO conflict if structure is a prefix operator, not handled
@@ -298,7 +298,7 @@ public class StructureWriter extends TermWriter<Term> {
         context.write("]");
     }
 
-    private class OpCompare {
+    private static class OpCompare {
         final OperatorEntry parent;
 
         OpCompare(OperatorEntry entry) {
@@ -311,7 +311,7 @@ public class StructureWriter extends TermWriter<Term> {
 
     }
 
-    private class LeftCompare extends OpCompare {
+    private static class LeftCompare extends OpCompare {
 
         LeftCompare(OperatorEntry entry) {
             super(entry);
@@ -336,7 +336,7 @@ public class StructureWriter extends TermWriter<Term> {
         }
     }
 
-    private class RightCompare extends OpCompare {
+    private static class RightCompare extends OpCompare {
 
         RightCompare(OperatorEntry entry) {
             super(entry);

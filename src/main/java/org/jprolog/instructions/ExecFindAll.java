@@ -64,9 +64,8 @@ public class ExecFindAll implements Instruction {
 
         DoRedo.invoke(environment,
                 // First iteration, execute the 'recursive' instructions compiled above
-                () -> getSourceSolutions(environment, callable, () -> {
-                    builder.add(template.enumTerm(new CopyTerm(environment)));
-                }),
+                () -> getSourceSolutions(environment, callable, () ->
+                        builder.add(template.enumTerm(new CopyTerm(environment)))),
                 // When callable finally fails, we're complete (executed in future)
                 () -> {
                     if (!listUnifier.unify(environment.getLocalContext(), TermList.from(builder).toTerm())) {

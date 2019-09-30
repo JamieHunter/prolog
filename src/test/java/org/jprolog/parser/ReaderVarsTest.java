@@ -4,10 +4,6 @@ import org.jprolog.test.Matchers;
 import org.jprolog.test.PrologTest;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 /**
  * Test ability to discover variables during read process
  */
@@ -34,7 +30,7 @@ public class ReaderVarsTest {
                         Matchers.isCompoundTerm("=", Matchers.isAtom("A"), Matchers.isVariable("A")),
                         Matchers.isCompoundTerm("=", Matchers.isAtom("T"), Matchers.isVariable("T")),
                         Matchers.isCompoundTerm("=", Matchers.isAtom("X"), Matchers.isVariable("X"))
-                                ))
+                ))
         ;
     }
 }

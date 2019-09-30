@@ -21,7 +21,7 @@ public class StringOutputStream implements PrologOutputStream, Closeable {
      * {@inheritDoc}
      */
     @Override
-    public void write(int symbol) throws IOException {
+    public void write(int symbol) {
         writer.write(symbol);
     }
 
@@ -29,7 +29,7 @@ public class StringOutputStream implements PrologOutputStream, Closeable {
      * {@inheritDoc}
      */
     @Override
-    public void write(String text) throws IOException {
+    public void write(String text) {
         writer.write(text);
     }
 
@@ -37,7 +37,7 @@ public class StringOutputStream implements PrologOutputStream, Closeable {
      * {@inheritDoc}
      */
     @Override
-    public void write(char[] buffer, int off, int len) throws IOException {
+    public void write(char[] buffer, int off, int len) {
         writer.write(buffer, off, len);
     }
 

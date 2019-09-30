@@ -16,11 +16,11 @@ public class InputDecoderFilterTest {
     // Streamed input, converting to specified character set in the process.
     //
 
-    private static String testString = "Hello\n\u0903\u0904\uD83c\uDf09\nEnd";
-    private static char[] chars = testString.toCharArray();
-    private static byte[] testData = testString.getBytes();
+    private static final String testString = "Hello\n\u0903\u0904\uD83c\uDf09\nEnd";
+    private static final char[] chars = testString.toCharArray();
+    private static final byte[] testData = testString.getBytes();
 
-    private InputDecoderFilter stream = new InputDecoderFilter(
+    private final InputDecoderFilter stream = new InputDecoderFilter(
             new SequentialInputStream(new ByteArrayInputStream(testData)),
             StandardCharsets.UTF_8);
 
@@ -56,11 +56,6 @@ public class InputDecoderFilterTest {
         assertThat(len, is(-1));
         assertPosition(14);
         assertArrays(target1, 'H', 'E', 'n', 'd', '\u0903', '\u0904', '\uD83c', '\uDf09', '\n', '\0');
-    }
-
-    @Test
-    public void testClose() {
-        // TODO
     }
 
     @Test

@@ -3,14 +3,13 @@
 //
 package org.jprolog.expressions;
 
-import org.jprolog.unification.UnifyIterator;
 import org.jprolog.constants.Atomic;
 import org.jprolog.constants.PrologAtomInterned;
 import org.jprolog.constants.PrologAtomLike;
 import org.jprolog.enumerators.EnumTermStrategy;
-import org.jprolog.execution.Environment;
 import org.jprolog.execution.LocalContext;
 import org.jprolog.predicates.Predication;
+import org.jprolog.unification.UnifyIterator;
 
 /**
  * Compound term. A compound term (usually) consists of an atom, and one or more components. We permit a compound term
@@ -145,6 +144,7 @@ public interface CompoundTerm extends Term {
 
     /**
      * Obtain predication of compound term
+     *
      * @return Predication
      */
     default Predication toPredication() {

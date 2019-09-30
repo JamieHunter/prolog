@@ -6,6 +6,7 @@ package org.jprolog.io;
 import org.jprolog.flags.CloseOptions;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.function.Consumer;
 
 /**
@@ -15,20 +16,17 @@ public class PositionTracker implements PrologStream {
     private long linePos = 0;
     private long columnPos = 0;
     private boolean startOfLine = true;
-    private static final Consumer<PositionTracker>[] handler = new Consumer[0x20];
+    private static final Consumer<PositionTracker>[] handler;
 
     private static final Consumer<PositionTracker> noop = o->{};
-    private static final Consumer<PositionTracker> nl = o->{
-        o.startOfLine = true;
-    };
-    private static final Consumer<PositionTracker> tab = o->{
-        o.columnPos += 8 - (o.columnPos & 7);
-    };
+    private static final Consumer<PositionTracker> nl = o-> o.startOfLine = true;
+    private static final Consumer<PositionTracker> tab = o-> o.columnPos += 8 - (o.columnPos & 7);
 
     static {
-        for(int i = 0; i < handler.length; i++) {
-            handler[i] = noop;
-        }
+        @SuppressWarnings("unchecked")
+        Consumer<PositionTracker>[] h = new Consumer[0x20];
+        handler = h;
+        Arrays.fill(handler, noop);
         handler['\t'] = tab;
         handler['\n'] = nl;
     }
@@ -105,7 +103,7 @@ public class PositionTracker implements PrologStream {
      * {@inheritDoc}
      */
     @Override
-    public void getPosition(Position position) throws IOException {
+    public void getPosition(Position position) {
         handleStartOfLine();
         position.setLinePos(linePos);
         position.setColumnPos(columnPos);
@@ -115,7 +113,7 @@ public class PositionTracker implements PrologStream {
      * {@inheritDoc}
      */
     @Override
-    public boolean seekPosition(Position position) throws IOException {
+    public boolean seekPosition(Position position) {
         setKnownPosition(position);
         return false;
     }
@@ -141,6 +139,6 @@ public class PositionTracker implements PrologStream {
      * {@inheritDoc}
      */
     @Override
-    public void seekEndOfStream() throws IOException {
+    public void seekEndOfStream() {
     }
 }

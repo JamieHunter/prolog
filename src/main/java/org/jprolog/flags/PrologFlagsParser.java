@@ -100,9 +100,7 @@ public class PrologFlagsParser extends ReadableParser<PrologFlags.Scope> {
                     });
                     break;
                 default:
-                    entry.setOnUpdate((o, v) -> {
-                        o.flags.setOther(key, v);
-                    });
+                    entry.setOnUpdate((o, v) -> o.flags.setOther(key, v));
                     break;
             }
         }

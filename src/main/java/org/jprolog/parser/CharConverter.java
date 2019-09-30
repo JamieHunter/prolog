@@ -3,6 +3,8 @@
 //
 package org.jprolog.parser;
 
+import java.util.Arrays;
+
 /**
  * Perform/query character conversion (per char_conversion spec)
  */
@@ -61,9 +63,7 @@ public class CharConverter {
             return;
         }
         char [] newTable = new char[size];
-        for(int i = 0; i < table.length; i++) {
-            newTable[i] = table[i];
-        }
+        System.arraycopy(table, 0, newTable, 0, table.length);
         for(int i = table.length; i < size; i++) {
             newTable[i] = (char)i;
         }

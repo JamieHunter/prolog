@@ -66,7 +66,7 @@ public final class Control {
      * Keep repeating, infinite decision points.
      */
     @Predicate("repeat")
-    public static final void repeat(Environment environment) {
+    public static void repeat(Environment environment) {
         RepeatForever.run(environment);
     }
 

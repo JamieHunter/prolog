@@ -3,6 +3,7 @@ package org.jprolog.predicates;
 import org.jprolog.test.Given;
 import org.jprolog.test.Matchers;
 import org.jprolog.test.PrologTest;
+import org.jprolog.test.Then;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -149,7 +150,7 @@ public class BagOfTest {
         given()
                 // from sec810.pl, edge case fails
                 .when("?- setof(X, member(X, [V, U, f(U), f(V)]), [a, b, f(a), f(b)]).")
-                .solutions(soln -> soln.assertSuccess());
+                .solutions(Then::assertSuccess);
     }
 
     @Test

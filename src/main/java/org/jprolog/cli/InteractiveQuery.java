@@ -66,11 +66,10 @@ public class InteractiveQuery extends Query {
      * Read line of input, with no prompt.
      *
      * @return Line of input
-     * @throws IOException on IO error
      */
     private String readLine() {
         IN.setPrompt(environment, null, Prompt.NONE);
-        return IN.readLine(environment, null, null);
+        return IN.readLine(environment, null);
     }
 
     /**
@@ -78,9 +77,8 @@ public class InteractiveQuery extends Query {
      *
      * @param name  Name of variable
      * @param value Value of variable
-     * @throws IOException IO Exception if any
      */
-    private void reportVar(String name, ActiveVariable value) throws IOException {
+    private void reportVar(String name, ActiveVariable value) {
         OUT.write(environment, null, " " + name + " <- ");
         WriteOptions options = new WriteOptions(environment, null);
         options.quoted = true;

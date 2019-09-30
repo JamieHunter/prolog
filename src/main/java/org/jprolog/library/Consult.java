@@ -99,12 +99,8 @@ public final class Consult {
         final LoadGroup newGroup = new LoadGroup(newId, time);
 
         new ExecFinally(ExecBlock.future(callable),
-                e -> {
-                    environment.changeLoadGroup(newGroup);
-                },
-                e -> {
-                    environment.changeLoadGroup(priorGroup);
-                }).invoke(environment);
+                e -> environment.changeLoadGroup(newGroup),
+                e -> environment.changeLoadGroup(priorGroup)).invoke(environment);
     }
 
     /**
@@ -120,15 +116,11 @@ public final class Consult {
         if (!Files.isDirectory(path)) {
             path = path.getParent();
         }
-        final LinkNode node = new LinkNode(path);
+        final LinkNode<Path> node = new LinkNode<>(path);
 
         new ExecFinally(ExecBlock.future(callable),
-                e -> {
-                    environment.getSearchPath().addHead(node);
-                },
-                e -> {
-                    node.remove();
-                }).invoke(environment);
+                e -> environment.getSearchPath().addHead(node),
+                e -> node.remove()).invoke(environment);
     }
 
     /**
@@ -180,7 +172,7 @@ public final class Consult {
      * List of predicates defined by the resource "consult.pl".
      */
     @DemandLoad("consult.pl")
-    public static Predication consult[] = {
+    public static Predication[] consult = {
             // parent for all loading predicates except include
             // note there are a lot of options to this predicate
             Builtins.predicate("load_files", 2),

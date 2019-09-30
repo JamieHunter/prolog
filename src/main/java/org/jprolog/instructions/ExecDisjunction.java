@@ -32,7 +32,7 @@ public class ExecDisjunction implements Instruction {
      */
     @Override
     public void invoke(Environment environment) {
-        YieldSolutions.forAll(environment, Arrays.asList(alternates).stream(), i -> {
+        YieldSolutions.forAll(environment, Arrays.stream(alternates), i -> {
             i.invoke(environment);
             return true;
         });

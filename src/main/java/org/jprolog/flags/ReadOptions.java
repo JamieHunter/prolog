@@ -17,7 +17,7 @@ import java.util.function.Consumer;
  */
 public class ReadOptions implements Flags {
 
-    private static OptionParser<ReadOptions> parser = new OptionParser<>();
+    private static final OptionParser<ReadOptions> parser = new OptionParser<>();
 
     static {
         // TODO: These are all placeholders and not yet parsed

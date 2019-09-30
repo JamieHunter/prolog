@@ -14,7 +14,7 @@ import org.jprolog.expressions.Term;
  */
 public class CloseOptions implements Flags {
 
-    private static OptionParser<CloseOptions> parser = new OptionParser<>();
+    private static final OptionParser<CloseOptions> parser = new OptionParser<>();
 
     static {
         // TODO: These are all placeholders and not yet parsed

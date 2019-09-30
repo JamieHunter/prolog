@@ -5,6 +5,7 @@ package org.jprolog.instructions;
 
 import org.jprolog.execution.Environment;
 import org.jprolog.execution.Instruction;
+import org.jprolog.expressions.Term;
 import org.jprolog.library.Control;
 
 import java.util.ArrayList;
@@ -45,8 +46,8 @@ public final class ExecSimpleBlock implements Instruction {
      * @param environment Execution environment
      */
     public void invoke(Environment environment) {
-        for (int i = 0; i < block.length; i++) {
-            block[i].invoke(environment);
+        for (Instruction i : block) {
+            i.invoke(environment);
         }
         if (!environment.isForward()) {
             throw new InternalError("Simple Block should never backtrack");

@@ -4,10 +4,7 @@ import org.jprolog.test.Matchers;
 import org.jprolog.test.PrologTest;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.jprolog.test.Matchers.isInteger;
 
 /**
  * Sanity test to make sure OutputMonitor behaves as expected

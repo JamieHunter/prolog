@@ -122,7 +122,7 @@ public final class PrologEmptyList extends AtomicBase implements WorkingTermList
     public WorkingTermList subList(int n) {
         if (n != 0) {
             throw new IllegalArgumentException("Cannot create this sublist");
-        };
+        }
         return this;
     }
 

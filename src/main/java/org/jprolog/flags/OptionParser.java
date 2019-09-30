@@ -22,7 +22,7 @@ import java.util.function.BiConsumer;
  * Class that when executed, modifies a flags object from a list of flags. These structures are expected to be created
  * as part of the bootstrap.
  */
-class OptionParser<T extends Flags> extends ParserBase<T, Void> {
+public class OptionParser<T extends Flags> extends ParserBase<T, Void> {
     private final Map<Atomic, BiConsumer<T, Term>> consumers = new TreeMap<>();
 
     /**
@@ -32,9 +32,9 @@ class OptionParser<T extends Flags> extends ParserBase<T, Void> {
      * @param obj         Flags object
      * @param listTerm    A term providing a list of terms.
      */
-    public T apply(Environment environment, T obj, Term listTerm) {
+    public void apply(Environment environment, T obj, Term listTerm) {
         if (Optional.ofNullable(listTerm).orElse(PrologEmptyList.EMPTY_LIST) == PrologEmptyList.EMPTY_LIST) {
-            return obj;
+            return;
         }
         if (!listTerm.isInstantiated()) {
             throw new FutureInstantiationError(listTerm);
@@ -45,7 +45,6 @@ class OptionParser<T extends Flags> extends ParserBase<T, Void> {
         for (Term flagStruct : TermList.extractList(listTerm)) {
             setFlagFromStruct(obj, flagStruct);
         }
-        return obj;
     }
 
     /**

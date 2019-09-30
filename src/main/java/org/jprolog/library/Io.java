@@ -270,9 +270,8 @@ public final class Io {
         if (streamIdent.isInstantiated() && !streamIdent.isAtomic()) {
             throw PrologDomainError.stream(environment, streamIdent);
         }
-        forEachStream(environment, streamIdent, (id, stream) -> {
-            forEachStreamProperty(environment, id, stream, propertyStruct);
-        });
+        forEachStream(environment, streamIdent, (id, stream) ->
+                forEachStreamProperty(environment, id, stream, propertyStruct));
     }
 
     /**
@@ -295,7 +294,7 @@ public final class Io {
         }
         Atomic propertyName = compoundProperty.functor();
         Term propertyValue = compoundProperty.get(0);
-        StreamProperties properties = new StreamProperties(environment, logicalStream, (Atomic) streamIdent);
+        StreamProperties properties = new StreamProperties(environment, logicalStream);
         properties.set(propertyName, propertyValue);
     }
 
@@ -364,6 +363,7 @@ public final class Io {
                 countPos = pos.getLinePos().get();
             }
         } catch (IOException e) {
+            // ignore exception
         }
         Unifier.unifyInteger(environment, count, countPos);
     }
@@ -916,7 +916,7 @@ public final class Io {
         }
         mode = PrologAtomInterned.from(environment, mode);
         // TODO: consider options above for the open mode below
-        Set<OpenOption> op = new HashSet<OpenOption>();
+        Set<OpenOption> op = new HashSet<>();
         if (mode.is(OPEN_READ)) {
             op.add(StandardOpenOption.READ);
             openMode = StreamProperties.OpenMode.ATOM_read;
@@ -1030,9 +1030,8 @@ public final class Io {
             }
             return basic;
         }
-        ListIterator<Path> search = environment.getSearchPath().listIterator();
-        while (search.hasNext()) {
-            Path path = search.next().resolve(basic);
+        for (Path searchPath : environment.getSearchPath()) {
+            Path path = searchPath.resolve(basic);
             path = transform.apply(path);
             if (path != null) {
                 return path.normalize();
@@ -1130,8 +1129,7 @@ public final class Io {
             LogicalStream stream = lookupStream(environment, streamIdent);
             lambda.accept((Atomic) streamIdent, stream);
         } else {
-            List<LogicalStream> all = new ArrayList<>();
-            all.addAll(environment.getOpenStreams());
+            List<LogicalStream> all = new ArrayList<>(environment.getOpenStreams());
             YieldSolutions.forAll(environment, all.stream(), stream -> {
                 if (!Unifier.unifyAtomic(environment, streamIdent, stream.getId())) {
                     return false;
@@ -1157,7 +1155,7 @@ public final class Io {
                 if (compoundProperty.arity() == 1) {
                     Atomic propertyName = compoundProperty.functor();
                     Term unifyValue = compoundProperty.get(0);
-                    StreamProperties properties = new StreamProperties(environment, stream, streamIdent);
+                    StreamProperties properties = new StreamProperties(environment, stream);
                     try {
                         Term actualValue = properties.get(propertyName);
                         Unifier.unifyTerm(environment, unifyValue, actualValue);
@@ -1181,7 +1179,7 @@ public final class Io {
             }
             throw PrologDomainError.streamProperty(environment, property);
         } else {
-            List<Term> allProps = new StreamProperties(environment, stream, streamIdent).getAll(stream);
+            List<Term> allProps = new StreamProperties(environment, stream).getAll(stream);
             YieldSolutions.forAll(environment, allProps.stream(),
                     term -> Unifier.unifyTerm(environment, property, term));
         }

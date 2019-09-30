@@ -1,5 +1,6 @@
 package org.jprolog.io;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -15,10 +16,10 @@ public class InputBufferedTest {
     // Input buffering has ability to rewind and move around. This is incorporated into these tests.
     //
 
-    private static byte[] testData = "Hello\nWorld\nOne\nTwo\nThree\nFour\nFive".getBytes();
+    private static final byte[] testData = "Hello\nWorld\nOne\nTwo\nThree\nFour\nFive".getBytes();
     private static final int BUFFER_SIZE = 7; // intentionally prime, small, extreme
 
-    private InputBuffered stream = new InputBuffered(
+    private final InputBuffered stream = new InputBuffered(
             new SequentialInputStream(new ByteArrayInputStream(testData)),
             BUFFER_SIZE);
 
@@ -173,11 +174,6 @@ public class InputBufferedTest {
         text = stream.readLine(); // past end
         assertThat(text, is(nullValue()));
         assertThat(stream.available(), is(0));
-    }
-
-    @Test
-    public void testClose() {
-        // TODO
     }
 
     @Test

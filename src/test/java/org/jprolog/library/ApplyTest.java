@@ -89,7 +89,7 @@ public class ApplyTest {
                 .when("?- maplist(record, [john, peter, james, suzie]).")
                 .assertSuccess()
                 .andWhen("?- isold(john), isold(suzie), isyoung(peter), isyoung(james).")
-                .assertSuccess();
+                .assertSuccess()
         ;
 
     }
@@ -154,7 +154,7 @@ public class ApplyTest {
         given()
                 .when("?- add_age(james, 3, Out).")
                 .assertSuccess()
-                .variable("Out", isInteger(23));
+                .variable("Out", isInteger(23))
             ;
         given()
                 .when("?- foldl(_, [], -1, -1).")
@@ -172,7 +172,7 @@ public class ApplyTest {
         given()
                 .when("?- add_age(james, 3, Out).")
                 .assertSuccess()
-                .variable("Out", isInteger(23));
+                .variable("Out", isInteger(23))
         ;
         given()
                 .when("?- scanl(_, [], -1, [-1]).")
@@ -198,7 +198,7 @@ public class ApplyTest {
         given()
                 .when("?- add_age_x(james, 10, 3, Out).")
                 .assertSuccess()
-                .variable("Out", isInteger(203));
+                .variable("Out", isInteger(203))
         ;
         given()
                 .when("?- scanl(_, [], [], -1, [-1]).")
@@ -232,7 +232,7 @@ public class ApplyTest {
         given()
                 .when("?- add_age_x(james, 10, 5, 3, Out).")
                 .assertSuccess()
-                .variable("Out", isInteger(215));
+                .variable("Out", isInteger(215))
         ;
         given()
                 .when("?- scanl(_, [], [], [], -1, [-1]).")
@@ -266,7 +266,7 @@ public class ApplyTest {
         given()
                 .when("?- add_age_x(james, 10, 5, -15, 3, Out).")
                 .assertSuccess()
-                .variable("Out", isInteger(200));
+                .variable("Out", isInteger(200))
         ;
         given()
                 .when("?- scanl(_, [], [], [], -1, [-1]).")

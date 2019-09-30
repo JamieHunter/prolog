@@ -8,9 +8,8 @@ import org.jprolog.test.Matchers;
 import org.jprolog.test.PrologTest;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.any;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CallTest {
 
@@ -52,10 +51,10 @@ public class CallTest {
                 () -> given().when("?- call((1;true))."));
         MatcherAssert.assertThat(err.value(), Matchers.isCompoundTerm("error",
                 Matchers.isCompoundTerm("type_error",
-                    Matchers.isAtom("callable"),
-                    Matchers.isCompoundTerm(";",
-                            Matchers.isInteger(1),
-                            Matchers.isAtom("true"))),
+                        Matchers.isAtom("callable"),
+                        Matchers.isCompoundTerm(";",
+                                Matchers.isInteger(1),
+                                Matchers.isAtom("true"))),
                 any(Term.class)));
     }
 }
